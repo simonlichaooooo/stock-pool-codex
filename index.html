@@ -524,7 +524,7 @@
 
     async function fetchExchangeRates() {
       try {
-        const response = await fetch("https://open.er-api.com/v6/latest/CNY");
+        const response = await fetchWithTimeout("https://open.er-api.com/v6/latest/CNY", 3000);
         if (!response.ok) throw new Error(`汇率接口 HTTP ${response.status}`);
         const json = await response.json();
         if (json.result !== "success" || !json.rates) throw new Error("汇率接口返回异常");
@@ -538,6 +538,12 @@
       } catch (error) {
         console.warn("汇率接口不可用，使用固定备用汇率。", error);
       }
+    }
+
+    function fetchWithTimeout(url, timeoutMs) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { signal: controller.signal }).finally(() => window.clearTimeout(timeout));
     }
 
     function jsonp(url, callbackParam = "cb") {
@@ -1244,13 +1250,15 @@
     }
 
     async function init() {
-      await fetchExchangeRates();
       const { data, error } = await supabaseClient.auth.getSession();
       if (error) state.lastError = error.message;
       state.session = data?.session || null;
       if (state.session) await loadStocks();
       state.loading = false;
       render();
+      fetchExchangeRates().then(() => {
+        if (!state.drawerOpen) render();
+      });
 
       supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         state.session = session;
