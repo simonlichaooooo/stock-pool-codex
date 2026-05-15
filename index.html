@@ -319,12 +319,17 @@
 <body>
   <div id="app"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const STORAGE = {
-      session: "stockpool.session",
-      tokens: "stockpool.magicTokens",
-      stocks: "stockpool.stocks"
-    };
+    const SUPABASE_URL = "https://woywnriyagjlfphezlnx.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndveXducml5YWdqbGZwaGV6bG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjA0MDAsImV4cCI6MjA5NDQzNjQwMH0.fQRfiZBOYjxSGKANEMD0HZKg7jKJGwGtR-vUx5ULt2s";
+    const AUTH_REDIRECT_URL = `${location.origin}${location.pathname}`;
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true
+      }
+    });
 
     const currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -345,9 +350,9 @@
     ];
 
     const state = {
-      session: readJson(STORAGE.session, null),
-      tokens: readJson(STORAGE.tokens, []),
-      stocks: readJson(STORAGE.stocks, []),
+      loading: true,
+      session: null,
+      stocks: [],
       route: location.hash || "#/",
       filter: "ALL",
       query: "",
@@ -355,23 +360,14 @@
       drawerOpen: false,
       editingId: null,
       form: null,
-      loginLink: ""
+      loginNotice: "",
+      lastError: ""
     };
 
     window.addEventListener("hashchange", () => {
       state.route = location.hash || "#/";
-      handleMagicLink();
       render();
     });
-
-    function readJson(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-      catch { return fallback; }
-    }
-
-    function writeJson(key, value) {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
 
     function id(prefix) {
       return prefix + "-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -438,28 +434,29 @@
     }
 
     function ensureAuth() {
-      if (!state.session && !state.route.startsWith("#/magic")) {
+      if (state.loading) {
+        renderLoading();
+        return false;
+      }
+      if (!state.session) {
         renderLogin();
         return false;
       }
       return true;
     }
 
-    function handleMagicLink() {
-      if (!location.hash.startsWith("#/magic")) return;
-      const token = new URLSearchParams(location.hash.split("?")[1] || "").get("token");
-      const match = state.tokens.find((item) => item.token === token && !item.usedAt && Date.now() < item.expiresAt);
-      if (match) {
-        match.usedAt = new Date().toISOString();
-        state.session = { email: match.email, loginAt: new Date().toISOString() };
-        writeJson(STORAGE.tokens, state.tokens);
-        writeJson(STORAGE.session, state.session);
-        location.hash = "#/";
-      }
+    function renderLoading() {
+      document.getElementById("app").innerHTML = `
+        <main class="login-wrap">
+          <section class="login-panel">
+            <h1>股池管理</h1>
+            <p>正在连接登录状态和股池数据...</p>
+          </section>
+        </main>
+      `;
     }
 
     function render() {
-      handleMagicLink();
       if (!ensureAuth()) return;
       document.getElementById("app").innerHTML = `
         <div class="shell">
@@ -469,7 +466,7 @@
               <span>股票匹配、估值假设与预期回报管理</span>
             </div>
             <div class="userbar">
-              <span>${escapeHtml(state.session.email)}</span>
+              <span>${escapeHtml(state.session.user.email)}</span>
               <button class="ghost" data-action="logout">退出</button>
             </div>
           </header>
@@ -488,7 +485,7 @@
         <main class="login-wrap">
           <section class="login-panel">
             <h1>股池管理</h1>
-            <p>输入邮箱后发送 Magic Link 登录。当前是本地开发版本，会在页面中生成一条可点击的登录链接。</p>
+            <p>输入邮箱后发送 Magic Link 登录。登录成功后，你的股池会保存到云端数据库。</p>
             <form class="form-row" data-form="login">
               <div class="field">
                 <label for="email">邮箱</label>
@@ -496,11 +493,11 @@
               </div>
               <button class="primary" type="submit">发送链接</button>
             </form>
-            ${state.loginLink ? `
+            ${state.loginNotice ? `
               <div class="notice">
-                登录链接已生成，有效期 15 分钟。<br>
-                <button class="primary" data-action="openMagic" type="button">打开登录链接</button>
+                ${escapeHtml(state.loginNotice)}
               </div>` : ""}
+            ${state.lastError ? `<div class="notice" style="border-color:#f6c0b7;background:#fff3f0;color:#912018">${escapeHtml(state.lastError)}</div>` : ""}
           </section>
         </main>
       `;
@@ -524,9 +521,8 @@
     }
 
     function userStocks() {
-      const email = state.session?.email;
       const query = state.query.trim().toLowerCase();
-      let rows = state.stocks.filter((item) => item.userEmail === email);
+      let rows = [...state.stocks];
       if (state.filter !== "ALL") rows = rows.filter((item) => item.market === state.filter);
       if (query) {
         rows = rows.filter((item) => `${item.name} ${item.code}`.toLowerCase().includes(query));
@@ -787,15 +783,12 @@
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
     }
 
-    function onAction(event) {
+    async function onAction(event) {
       const action = event.currentTarget.dataset.action;
       const stockId = event.currentTarget.dataset.id;
       if (action === "logout") {
-        state.session = null;
-        writeJson(STORAGE.session, null);
-        render();
+        await supabaseClient.auth.signOut();
       }
-      if (action === "openMagic") location.hash = state.loginLink;
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
@@ -805,14 +798,23 @@
       if (action === "delete") deleteStock(stockId);
     }
 
-    function onLogin(event) {
+    async function onLogin(event) {
       event.preventDefault();
       const email = new FormData(event.currentTarget).get("email").trim().toLowerCase();
       if (!email) return;
-      const token = id("token");
-      state.tokens.push({ token, email, expiresAt: Date.now() + 15 * 60 * 1000, usedAt: null });
-      writeJson(STORAGE.tokens, state.tokens);
-      state.loginLink = `#/magic?token=${token}`;
+      state.lastError = "";
+      state.loginNotice = "正在发送登录邮件...";
+      renderLogin();
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: AUTH_REDIRECT_URL }
+      });
+      if (error) {
+        state.lastError = error.message;
+        state.loginNotice = "";
+      } else {
+        state.loginNotice = `登录链接已发送到 ${email}，请在邮箱中点击链接完成登录。`;
+      }
       renderLogin();
     }
 
@@ -903,7 +905,7 @@
       render();
     }
 
-    function saveStock() {
+    async function saveStock() {
       if (!state.form.name.trim() || !state.form.code.trim()) {
         alert("请填写股票名称和代码。");
         return;
@@ -911,33 +913,68 @@
       const now = new Date().toISOString();
       const payload = {
         ...state.form,
-        userEmail: state.session.email,
         updatedAt: now,
         manualOrder: state.form.manualOrder ?? Date.now()
       };
       if (payload.id) {
+        const { error } = await supabaseClient
+          .from("stock_records")
+          .update({ payload, updated_at: now })
+          .eq("id", payload.id);
+        if (error) {
+          alert(`保存失败：${error.message}`);
+          return;
+        }
         state.stocks = state.stocks.map((item) => item.id === payload.id ? payload : item);
       } else {
-        payload.id = id("stock");
         payload.createdAt = now;
         payload.pin = "normal";
+        const { data, error } = await supabaseClient
+          .from("stock_records")
+          .insert({
+            user_id: state.session.user.id,
+            payload
+          })
+          .select("id,payload")
+          .single();
+        if (error) {
+          alert(`保存失败：${error.message}`);
+          return;
+        }
+        payload.id = data.id;
         state.stocks.push(payload);
       }
-      writeJson(STORAGE.stocks, state.stocks);
       closeDrawer();
     }
 
-    function updatePin(stockId, pin) {
-      state.stocks = state.stocks.map((item) => item.id === stockId ? { ...item, pin } : item);
-      writeJson(STORAGE.stocks, state.stocks);
+    async function updatePin(stockId, pin) {
+      const stock = state.stocks.find((item) => item.id === stockId);
+      if (!stock) return;
+      const payload = { ...stock, pin, updatedAt: new Date().toISOString() };
+      const { error } = await supabaseClient
+        .from("stock_records")
+        .update({ payload, updated_at: payload.updatedAt })
+        .eq("id", stockId);
+      if (error) {
+        alert(`更新失败：${error.message}`);
+        return;
+      }
+      state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
       render();
     }
 
-    function deleteStock(stockId) {
+    async function deleteStock(stockId) {
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock || !confirm(`删除 ${stock.name}？`)) return;
+      const { error } = await supabaseClient
+        .from("stock_records")
+        .delete()
+        .eq("id", stockId);
+      if (error) {
+        alert(`删除失败：${error.message}`);
+        return;
+      }
       state.stocks = state.stocks.filter((item) => item.id !== stockId);
-      writeJson(STORAGE.stocks, state.stocks);
       render();
     }
 
@@ -948,7 +985,45 @@
       render();
     }
 
-    render();
+    async function loadStocks() {
+      const { data, error } = await supabaseClient
+        .from("stock_records")
+        .select("id,payload,created_at,updated_at")
+        .order("created_at", { ascending: true });
+      if (error) {
+        state.lastError = error.message;
+        state.stocks = [];
+        return;
+      }
+      state.stocks = (data || []).map((row) => ({
+        ...row.payload,
+        id: row.id
+      }));
+    }
+
+    async function init() {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) state.lastError = error.message;
+      state.session = data?.session || null;
+      if (state.session) await loadStocks();
+      state.loading = false;
+      render();
+
+      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+        state.session = session;
+        state.loginNotice = "";
+        state.lastError = "";
+        state.drawerOpen = false;
+        state.form = null;
+        if (session) await loadStocks();
+        else state.stocks = [];
+        state.loading = false;
+        if (location.hash) history.replaceState(null, "", AUTH_REDIRECT_URL);
+        render();
+      });
+    }
+
+    init();
   </script>
 </body>
 </html>
