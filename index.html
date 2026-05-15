@@ -243,6 +243,7 @@
     .drawer-body {
       padding: 18px 22px 24px;
       overflow: auto;
+      background: #f8fafc;
     }
     .drawer-foot {
       padding: 14px 22px;
@@ -268,23 +269,25 @@
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .valuation-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 330px;
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
       align-items: start;
     }
     .valuation-form {
-      padding-right: 18px;
-      border-right: 2px solid #2b2f38;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
     }
     .compact-row {
       display: grid;
-      grid-template-columns: 110px minmax(0, 1fr) auto;
+      grid-template-columns: 108px minmax(0, 1fr) auto;
       gap: 12px;
       align-items: center;
       margin-bottom: 14px;
     }
     .compact-row.two {
-      grid-template-columns: 110px minmax(0, 1fr) 90px minmax(0, 1fr);
+      grid-template-columns: 108px minmax(0, 1fr) 112px minmax(0, 1fr);
     }
     .compact-row label,
     .inline-label {
@@ -298,11 +301,16 @@
     .form-divider {
       margin: 18px 0;
       padding-bottom: 8px;
-      border-bottom: 2px solid #2b2f38;
+      border-bottom: 1px solid #98a2b3;
       font-weight: 700;
     }
     .result-panel {
-      padding: 4px 0 0;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      position: sticky;
+      top: 82px;
     }
     .result-panel h3 {
       margin: 0 0 22px;
@@ -311,11 +319,14 @@
     .result-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 22px 28px;
-      font-size: 16px;
+      gap: 16px;
+      font-size: 15px;
     }
     .result-grid strong {
       font-weight: 700;
+      display: block;
+      margin-bottom: 6px;
+      color: #344054;
     }
     .search-results {
       border: 1px solid var(--line);
@@ -363,7 +374,8 @@
       .toolbar { grid-template-columns: 1fr; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .valuation-layout { grid-template-columns: 1fr; }
-      .valuation-form { padding-right: 0; border-right: 0; }
+      .valuation-form { padding: 14px; }
+      .result-panel { position: static; }
       .compact-row,
       .compact-row.two { grid-template-columns: 1fr; }
       .brand span { display: none; }
@@ -502,7 +514,7 @@
       if (classify === "AStock") {
         market = "CN";
         exchange = item.MktNum === "1" ? "SSE" : "SZSE";
-      } else if (classify === "HK" && securityType === "19") {
+      } else if (classify === "HK" && item.TypeUS === "3") {
         market = "HK";
         exchange = "HKEX";
       } else if (classify === "UsStock" && securityType === "20") {
@@ -575,6 +587,28 @@
       });
     }
 
+    function loadScript(url) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        const timeout = window.setTimeout(() => {
+          script.remove();
+          reject(new Error("脚本请求超时"));
+        }, 8000);
+        script.onload = () => {
+          window.clearTimeout(timeout);
+          script.remove();
+          resolve();
+        };
+        script.onerror = () => {
+          window.clearTimeout(timeout);
+          script.remove();
+          reject(new Error("脚本请求失败"));
+        };
+        script.src = url;
+        document.head.appendChild(script);
+      });
+    }
+
     async function searchStocks(query) {
       const url = `https://searchapi.eastmoney.com/api/suggest/get?input=${encodeURIComponent(query)}&type=14&token=D43BF722C8E33BD95256D2E364145C90&count=8`;
       try {
@@ -597,6 +631,11 @@
 
     async function fetchQuote(stock) {
       if (!stock.quoteId) return stock;
+      try {
+        return await fetchTencentQuote(stock);
+      } catch (error) {
+        console.warn("腾讯行情接口不可用，尝试东方财富备用行情。", error);
+      }
       const fields = "f57,f58,f116";
       const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${encodeURIComponent(stock.quoteId)}&fields=${fields}`;
       try {
@@ -623,6 +662,35 @@
           marketCapUpdatedAt: stock.updatedAt || todayString()
         };
       }
+    }
+
+    function tencentSymbol(stock) {
+      const raw = String(stock.rawCode || stock.code || "").replace(/\.(HK|SH|SZ)$/i, "");
+      if (stock.market === "HK") return `hk${raw.padStart(5, "0")}`;
+      if (stock.market === "CN") return `${raw.startsWith("6") ? "sh" : "sz"}${raw}`;
+      if (stock.market === "US") return `us${raw.toUpperCase()}`;
+      return "";
+    }
+
+    async function fetchTencentQuote(stock) {
+      const symbol = tencentSymbol(stock);
+      if (!symbol) throw new Error("无法识别腾讯行情代码");
+      const variableName = `v_${symbol}`;
+      delete window[variableName];
+      await loadScript(`https://qt.gtimg.cn/q=${symbol}`);
+      const text = window[variableName];
+      delete window[variableName];
+      if (!text) throw new Error("腾讯行情没有返回数据");
+      const parts = text.split("~");
+      const marketCapYi = Number(parts[45] || parts[44]);
+      if (!marketCapYi || Number.isNaN(marketCapYi)) throw new Error("腾讯行情没有返回总市值");
+      const sourceCurrency = marketCurrency(stock.market);
+      return {
+        ...stock,
+        latestMarketCapCny: marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1),
+        marketCapSourceCurrency: sourceCurrency,
+        marketCapUpdatedAt: todayString()
+      };
     }
 
     function calc(stock) {
