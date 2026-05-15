@@ -386,17 +386,11 @@
 <body>
   <div id="app"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://woywnriyagjlfphezlnx.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndveXducml5YWdqbGZwaGV6bG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjA0MDAsImV4cCI6MjA5NDQzNjQwMH0.fQRfiZBOYjxSGKANEMD0HZKg7jKJGwGtR-vUx5ULt2s";
     const AUTH_REDIRECT_URL = `${location.origin}${location.pathname}`;
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        detectSessionInUrl: true,
-        persistSession: true
-      }
-    });
+    const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
 
     let currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -441,6 +435,98 @@
 
     function id(prefix) {
       return prefix + "-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function readJson(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+      catch { return fallback; }
+    }
+
+    function writeJson(key, value) {
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function decodeJwt(token) {
+      try {
+        const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        return JSON.parse(decodeURIComponent(Array.from(atob(payload)).map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`).join("")));
+      } catch {
+        return {};
+      }
+    }
+
+    function sessionFromHash() {
+      if (!location.hash.includes("access_token=")) return null;
+      const params = new URLSearchParams(location.hash.slice(1));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      const expiresAt = Number(params.get("expires_at")) || Math.floor(Date.now() / 1000) + Number(params.get("expires_in") || 3600);
+      if (!accessToken) return null;
+      const claims = decodeJwt(accessToken);
+      const session = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: expiresAt,
+        user: {
+          id: claims.sub,
+          email: claims.email || claims.user_metadata?.email || ""
+        }
+      };
+      writeJson(AUTH_STORAGE_KEY, session);
+      history.replaceState(null, "", AUTH_REDIRECT_URL);
+      return session;
+    }
+
+    function currentSession() {
+      const hashSession = sessionFromHash();
+      if (hashSession) return hashSession;
+      const saved = readJson(AUTH_STORAGE_KEY, null);
+      if (!saved?.access_token) return null;
+      return saved;
+    }
+
+    async function sendMagicLink(email) {
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          create_user: true,
+          data: {},
+          options: {
+            email_redirect_to: AUTH_REDIRECT_URL
+          }
+        })
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `发送登录邮件失败：HTTP ${response.status}`);
+      }
+    }
+
+    async function supabaseRequest(path, options = {}) {
+      if (!state.session?.access_token) throw new Error("请先登录。");
+      const response = await fetch(`${SUPABASE_URL}${path}`, {
+        ...options,
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${state.session.access_token}`,
+          "Content-Type": "application/json",
+          Prefer: options.prefer || "",
+          ...(options.headers || {})
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Supabase 请求失败：HTTP ${response.status}`);
+      }
+      if (response.status === 204) return null;
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
     }
 
     function escapeHtml(value) {
@@ -1095,7 +1181,10 @@
       const action = event.currentTarget.dataset.action;
       const stockId = event.currentTarget.dataset.id;
       if (action === "logout") {
-        await supabaseClient.auth.signOut();
+        writeJson(AUTH_STORAGE_KEY, null);
+        state.session = null;
+        state.stocks = [];
+        render();
       }
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
@@ -1113,15 +1202,12 @@
       state.lastError = "";
       state.loginNotice = "正在发送登录邮件...";
       renderLogin();
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: AUTH_REDIRECT_URL }
-      });
-      if (error) {
-        state.lastError = error.message;
-        state.loginNotice = "";
-      } else {
+      try {
+        await sendMagicLink(email);
         state.loginNotice = `登录链接已发送到 ${email}，请在邮箱中点击链接完成登录。`;
+      } catch (error) {
+        state.lastError = error.message || String(error);
+        state.loginNotice = "";
       }
       renderLogin();
     }
@@ -1233,31 +1319,34 @@
         manualOrder: state.form.manualOrder ?? Date.now()
       };
       if (payload.id) {
-        const { error } = await supabaseClient
-          .from("stock_records")
-          .update({ payload, updated_at: now })
-          .eq("id", payload.id);
-        if (error) {
-          alert(`保存失败：${error.message}`);
+        try {
+          await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(payload.id)}`, {
+            method: "PATCH",
+            body: JSON.stringify({ payload, updated_at: now })
+          });
+        } catch (error) {
+          alert(`保存失败：${error.message || String(error)}`);
           return;
         }
         state.stocks = state.stocks.map((item) => item.id === payload.id ? payload : item);
       } else {
         payload.createdAt = now;
         payload.pin = "normal";
-        const { data, error } = await supabaseClient
-          .from("stock_records")
-          .insert({
+        let data;
+        try {
+          data = await supabaseRequest("/rest/v1/stock_records?select=id,payload", {
+            method: "POST",
+            prefer: "return=representation",
+            body: JSON.stringify({
             user_id: state.session.user.id,
             payload
-          })
-          .select("id,payload")
-          .single();
-        if (error) {
-          alert(`保存失败：${error.message}`);
+            })
+          });
+        } catch (error) {
+          alert(`保存失败：${error.message || String(error)}`);
           return;
         }
-        payload.id = data.id;
+        payload.id = data?.[0]?.id;
         state.stocks.push(payload);
       }
       closeDrawer();
@@ -1267,12 +1356,13 @@
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock) return;
       const payload = { ...stock, pin, updatedAt: new Date().toISOString() };
-      const { error } = await supabaseClient
-        .from("stock_records")
-        .update({ payload, updated_at: payload.updatedAt })
-        .eq("id", stockId);
-      if (error) {
-        alert(`更新失败：${error.message}`);
+      try {
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ payload, updated_at: payload.updatedAt })
+        });
+      } catch (error) {
+        alert(`更新失败：${error.message || String(error)}`);
         return;
       }
       state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
@@ -1282,12 +1372,12 @@
     async function deleteStock(stockId) {
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock || !confirm(`删除 ${stock.name}？`)) return;
-      const { error } = await supabaseClient
-        .from("stock_records")
-        .delete()
-        .eq("id", stockId);
-      if (error) {
-        alert(`删除失败：${error.message}`);
+      try {
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
+          method: "DELETE"
+        });
+      } catch (error) {
+        alert(`删除失败：${error.message || String(error)}`);
         return;
       }
       state.stocks = state.stocks.filter((item) => item.id !== stockId);
@@ -1302,12 +1392,11 @@
     }
 
     async function loadStocks() {
-      const { data, error } = await supabaseClient
-        .from("stock_records")
-        .select("id,payload,created_at,updated_at")
-        .order("created_at", { ascending: true });
-      if (error) {
-        state.lastError = error.message;
+      let data;
+      try {
+        data = await supabaseRequest("/rest/v1/stock_records?select=id,payload,created_at,updated_at&order=created_at.asc");
+      } catch (error) {
+        state.lastError = error.message || String(error);
         state.stocks = [];
         return;
       }
@@ -1318,27 +1407,12 @@
     }
 
     async function init() {
-      const { data, error } = await supabaseClient.auth.getSession();
-      if (error) state.lastError = error.message;
-      state.session = data?.session || null;
+      state.session = currentSession();
       if (state.session) await loadStocks();
       state.loading = false;
       render();
       fetchExchangeRates().then(() => {
         if (!state.drawerOpen) render();
-      });
-
-      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-        state.session = session;
-        state.loginNotice = "";
-        state.lastError = "";
-        state.drawerOpen = false;
-        state.form = null;
-        if (session) await loadStocks();
-        else state.stocks = [];
-        state.loading = false;
-        if (location.hash) history.replaceState(null, "", AUTH_REDIRECT_URL);
-        render();
       });
     }
 
