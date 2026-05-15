@@ -200,6 +200,31 @@
     }
     .login-panel h1 { margin: 0 0 8px; font-size: 24px; }
     .login-panel p { margin: 0 0 22px; color: var(--muted); line-height: 1.6; }
+    .login-actions { display: grid; gap: 12px; }
+    .oauth-button {
+      width: 100%;
+      min-height: 44px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 4px 0;
+    }
+    .login-divider::before,
+    .login-divider::after {
+      content: "";
+      height: 1px;
+      background: var(--line);
+      flex: 1;
+    }
     .field { display: grid; gap: 7px; }
     .field label { font-size: 13px; color: #344054; font-weight: 700; }
     .form-row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; align-items: end; }
@@ -507,6 +532,13 @@
         const text = await response.text();
         throw new Error(text || `发送登录邮件失败：HTTP ${response.status}`);
       }
+    }
+
+    function loginWithGithub() {
+      const url = new URL(`${SUPABASE_URL}/auth/v1/authorize`);
+      url.searchParams.set("provider", "github");
+      url.searchParams.set("redirect_to", AUTH_REDIRECT_URL);
+      location.href = url.toString();
     }
 
     async function supabaseRequest(path, options = {}) {
@@ -848,7 +880,11 @@
         <main class="login-wrap">
           <section class="login-panel">
             <h1>股池管理</h1>
-            <p>输入邮箱后发送 Magic Link 登录。登录成功后，你的股池会保存到云端数据库。</p>
+            <p>登录成功后，你的股池会保存到云端数据库。</p>
+            <div class="login-actions">
+              <button class="primary oauth-button" data-action="githubLogin" type="button">使用 GitHub 登录</button>
+              <div class="login-divider">或使用邮箱 Magic Link</div>
+            </div>
             <form class="form-row" data-form="login">
               <div class="field">
                 <label for="email">邮箱</label>
@@ -1187,6 +1223,7 @@
         state.stocks = [];
         render();
       }
+      if (action === "githubLogin") loginWithGithub();
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
