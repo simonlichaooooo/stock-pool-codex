@@ -282,7 +282,7 @@
     }
     .share-state strong, .source-cell strong { font-size: 13px; }
     .publish-box {
-      margin-top: 18px;
+      margin-top: 22px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -293,6 +293,24 @@
       font-weight: 700;
       color: #344054;
       margin-bottom: 8px;
+    }
+    .publish-box textarea { min-height: 112px; }
+    .publish-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+    .publish-actions button { min-width: 96px; }
+    .form-error {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border: 1px solid #f6c0b7;
+      background: #fff3f0;
+      color: #912018;
+      border-radius: 6px;
+      line-height: 1.5;
+      text-align: left;
+      font-size: 13px;
     }
 
     .drawer {
@@ -516,6 +534,7 @@
       drawerOpen: false,
       editingId: null,
       form: null,
+      drawerError: "",
       loginNotice: "",
       lastError: ""
     };
@@ -1291,11 +1310,7 @@
                   <input type="hidden" data-field="market" value="${escapeHtml(form.market)}">
                   <input type="hidden" data-field="exchange" value="${escapeHtml(form.exchange)}">
                   <input type="hidden" data-field="marketCapUpdatedAt" value="${escapeHtml(form.marketCapUpdatedAt)}">
-                  <div class="publish-box">
-                    <label>发布变更说明</label>
-                    <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
-                    <div class="hint">点击“发布”才会进入分享列表并记录版本；只点“保存”不会记录版本。</div>
-                  </div>
+                  ${state.drawerError ? `<div class="form-error">${escapeHtml(state.drawerError)}</div>` : ""}
                 </div>
                 <div class="result-panel">
                   <h3>测算结果:</h3>
@@ -1306,12 +1321,19 @@
                     ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                   </div>
                   <div class="hint" style="margin-top:24px">股票匹配优先使用公开行情接口；市值会按所选货币实时换算，可手动调整估值假设。</div>
+                  <div class="publish-box">
+                    <label>发布变更说明</label>
+                    <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
+                    <div class="hint">点击“发布”才会进入分享列表并记录版本；只点“保存”不会记录版本。</div>
+                    <div class="publish-actions">
+                      <button data-action="publishStock">发布</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             <div class="drawer-foot">
               <button data-action="closeDrawer">取消</button>
-              <button data-action="publishStock">发布</button>
               <button class="primary" data-action="saveStock">保存</button>
             </div>
           </div>
@@ -1487,6 +1509,7 @@
       const stock = state.stocks.find((item) => item.id === stockId);
       state.editingId = stockId;
       state.form = stock ? { ...stock } : emptyForm();
+      state.drawerError = "";
       state.drawerOpen = true;
       render();
     }
@@ -1495,6 +1518,7 @@
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
+      state.drawerError = "";
       render();
     }
 
@@ -1580,9 +1604,11 @@
 
     async function saveStock({ keepOpen = false } = {}) {
       if (!state.form.name.trim() || !state.form.code.trim()) {
-        alert("请填写股票名称和代码。");
+        state.drawerError = "请填写股票名称和代码。";
+        render();
         return null;
       }
+      state.drawerError = "";
       const now = new Date().toISOString();
       const payload = {
         ...state.form,
@@ -1607,7 +1633,8 @@
             body: JSON.stringify(rowPatch)
           });
         } catch (error) {
-          alert(`保存失败：${error.message || String(error)}`);
+          state.drawerError = `保存失败：${error.message || String(error)}`;
+          render();
           return null;
         }
         state.stocks = state.stocks.map((item) => item.id === payload.id ? payload : item);
@@ -1625,7 +1652,8 @@
             })
           });
         } catch (error) {
-          alert(`保存失败：${error.message || String(error)}`);
+          state.drawerError = `保存失败：${error.message || String(error)}`;
+          render();
           return null;
         }
         payload.id = data?.[0]?.id;
@@ -1671,7 +1699,8 @@
           })
         });
       } catch (error) {
-        alert(`发布失败：${error.message || String(error)}`);
+        state.drawerError = `发布失败：${error.message || String(error)}`;
+        render();
         return;
       }
       state.stocks = state.stocks.map((item) => item.id === stock.id ? payload : item);
