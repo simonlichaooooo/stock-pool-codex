@@ -2,9 +2,15 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   nickname text not null unique,
+  bio text,
+  share_visibility text not null default 'private' check (share_visibility in ('public', 'private')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists bio text,
+  add column if not exists share_visibility text not null default 'private';
 
 alter table public.profiles enable row level security;
 
@@ -33,9 +39,53 @@ alter table public.stock_records
   add column if not exists source_user_id uuid references auth.users(id) on delete set null,
   add column if not exists source_stock_id uuid references public.stock_records(id) on delete set null,
   add column if not exists source_nickname text,
+  add column if not exists source_type text not null default 'self',
   add column if not exists last_source_updated_at timestamptz,
+  add column if not exists source_seen_published_at timestamptz,
   add column if not exists is_shared boolean not null default false,
   add column if not exists last_published_at timestamptz;
+
+create table if not exists public.stock_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references auth.users(id) on delete cascade,
+  publisher_id uuid not null references auth.users(id) on delete cascade,
+  source_stock_id uuid not null references public.stock_records(id) on delete cascade,
+  target_stock_id uuid references public.stock_records(id) on delete set null,
+  status text not null default 'active' check (status in ('active', 'cancelled', 'stopped')),
+  last_seen_published_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(subscriber_id, publisher_id, source_stock_id)
+);
+
+alter table public.stock_subscriptions enable row level security;
+
+grant select, insert, update, delete on public.stock_subscriptions to authenticated;
+
+drop policy if exists "Users can read own stock subscriptions" on public.stock_subscriptions;
+create policy "Users can read own stock subscriptions"
+on public.stock_subscriptions for select
+to authenticated
+using (subscriber_id = auth.uid());
+
+drop policy if exists "Users can create own stock subscriptions" on public.stock_subscriptions;
+create policy "Users can create own stock subscriptions"
+on public.stock_subscriptions for insert
+to authenticated
+with check (subscriber_id = auth.uid());
+
+drop policy if exists "Users can update own stock subscriptions" on public.stock_subscriptions;
+create policy "Users can update own stock subscriptions"
+on public.stock_subscriptions for update
+to authenticated
+using (subscriber_id = auth.uid())
+with check (subscriber_id = auth.uid());
+
+drop policy if exists "Users can delete own stock subscriptions" on public.stock_subscriptions;
+create policy "Users can delete own stock subscriptions"
+on public.stock_subscriptions for delete
+to authenticated
+using (subscriber_id = auth.uid());
 
 grant select, insert, update, delete on public.stock_records to authenticated;
 

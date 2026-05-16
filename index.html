@@ -101,7 +101,7 @@
     }
     .toolbar {
       display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
+      grid-template-columns: minmax(220px, 1fr) auto auto auto auto auto auto;
       gap: 12px;
       align-items: center;
       margin-bottom: 16px;
@@ -269,6 +269,47 @@
       align-items: center;
       gap: 12px;
     }
+    .update-banner {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border: 1px solid #f1d28a;
+      background: #fff8e5;
+      color: #7a4b00;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .publisher-panel {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .publisher-panel h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+    .publisher-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .share-settings {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .share-settings select { width: 112px; }
     .share-link {
       display: flex;
       align-items: center;
@@ -281,6 +322,9 @@
       gap: 4px;
     }
     .share-state strong, .source-cell strong { font-size: 13px; }
+    .source-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .badge.soft { font-weight: 500; color: var(--muted); background: #f4f6fa; }
+    .badge.warn { background: #fff4cc; color: #805400; }
     .publish-box {
       margin-top: 22px;
       padding: 14px;
@@ -311,6 +355,24 @@
       line-height: 1.5;
       text-align: left;
       font-size: 13px;
+    }
+    .readonly-note {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border: 1px solid #d7e3f8;
+      background: #f2f6ff;
+      color: #24436f;
+      border-radius: 6px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .disclaimer {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .drawer {
@@ -524,6 +586,8 @@
       followedPublishers: [],
       stocks: [],
       publisherStocks: [],
+      publisherProfile: null,
+      sourceUpdateCount: 0,
       viewPublisherId: "own",
       shareFilter: "ALL",
       route: location.hash || "#/",
@@ -977,6 +1041,8 @@
           </header>
           <main class="workspace">
             ${renderShareInvite()}
+            ${renderUpdateBanner()}
+            ${renderPublisherPanel()}
             ${renderToolbar()}
             ${renderTable()}
           </main>
@@ -1015,6 +1081,35 @@
             <div class="muted">关注后，可以在顶部下拉框查看 TA 已发布的股票。</div>
           </div>
           <button class="primary" data-action="followPublisher" data-id="${profile.id}" ${followed ? "disabled" : ""}>${followed ? "已关注" : "关注分享"}</button>
+        </div>
+      `;
+    }
+
+    function renderUpdateBanner() {
+      if (state.viewPublisherId !== "own" || !state.sourceUpdateCount) return "";
+      return `
+        <div class="update-banner">
+          <div>你订阅的股池有 ${state.sourceUpdateCount} 条更新。</div>
+          <button data-action="markSourceUpdatesRead">标记已读</button>
+        </div>
+      `;
+    }
+
+    function renderPublisherPanel() {
+      if (state.viewPublisherId === "own") return "";
+      const profile = state.publisherProfile || state.followedPublishers.find((item) => item.id === state.viewPublisherId);
+      const latest = state.publisherStocks.map((item) => item.lastPublishedAt).filter(Boolean).sort().at(-1);
+      return `
+        <div class="publisher-panel">
+          <div>
+            <h2>${escapeHtml(profile?.nickname || "分享股池")}</h2>
+            <div class="publisher-meta">
+              <span>${profile?.share_visibility === "public" ? "公开分享" : "私密分享"}</span>
+              <span>${state.publisherStocks.length} 只已发布股票</span>
+              <span>最近发布：${formatDateTime(latest)}</span>
+            </div>
+          </div>
+          <div class="muted">这是发布者的公开观点视图，内容为个人记录，不构成投资建议。</div>
         </div>
       `;
     }
@@ -1065,6 +1160,13 @@
           </div>
           ${viewingOwn ? `
             <button class="${state.shareFilter === "SHARED" ? "primary" : ""}" data-action="toggleSharedFilter">已分享</button>
+            <label class="share-settings">
+              分享方式
+              <select data-input="shareVisibility">
+                <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密</option>
+                <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""}>公开</option>
+              </select>
+            </label>
             <button data-action="copyShareLink">复制分享链接</button>
             <button class="primary" data-action="newStock">新增股票</button>
           ` : ""}
@@ -1171,8 +1273,15 @@
                 <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
                 <button class="icon" title="置顶" data-action="pinTop" data-id="${stock.id}">↑</button>
                 <button class="icon" title="置底" data-action="pinBottom" data-id="${stock.id}">↓</button>
+                ${stock.sourceType === "subscribed" ? `
+                  <button title="取消订阅" data-action="unsubscribeStock" data-id="${stock.id}">取消订阅</button>
+                  <button title="转为我的股票" data-action="convertToOwn" data-id="${stock.id}">转为我的</button>
+                ` : ""}
                 <button class="icon danger" title="删除" data-action="delete" data-id="${stock.id}">×</button>
-              ` : `<button class="primary" data-action="copySharedStock" data-id="${stock.id}">一键COPY</button>`}
+              ` : `
+                <button data-action="copySharedStock" data-id="${stock.id}">一键复制</button>
+                <button class="primary" data-action="subscribeStock" data-id="${stock.id}">订阅</button>
+              `}
             </div>
           </td>
         </tr>
@@ -1191,9 +1300,15 @@
 
     function renderSourceCell(stock) {
       if (!stock.sourceStockId) return "";
+      const typeLabel = stock.sourceType === "subscribed" ? "订阅" : stock.sourceType === "copied" ? "复制" : "来源";
       return `
         <div class="source-cell">
-          <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
+          <div class="source-tags">
+            <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
+            <span class="badge soft">${typeLabel}</span>
+            ${stock.sourceStopped ? `<span class="badge warn">已停止分享</span>` : ""}
+            ${stock.hasSourceUpdate ? `<span class="badge warn">有更新</span>` : ""}
+          </div>
           <span class="stock-code">${formatDateTime(stock.lastSourceUpdatedAt || stock.updatedAt)}</span>
         </div>
       `;
@@ -1225,7 +1340,12 @@
         sourceUserId: "",
         sourceStockId: "",
         sourceNickname: "",
-        lastSourceUpdatedAt: ""
+        sourceType: "self",
+        sourceSeenPublishedAt: "",
+        lastSourceUpdatedAt: "",
+        sourceStopped: false,
+        hasSourceUpdate: false,
+        myNote: ""
       };
     }
 
@@ -1233,6 +1353,8 @@
       const form = state.form || emptyForm();
       const c = calc(form);
       const currency = form.displayCurrency || "CNY";
+      const isSubscribed = form.sourceType === "subscribed";
+      const locked = isSubscribed ? "disabled" : "";
       return `
         <aside class="drawer ${state.drawerOpen ? "open" : ""}">
           <div class="drawer-panel">
@@ -1243,10 +1365,11 @@
             <div class="drawer-body">
               <div class="valuation-layout">
                 <div class="valuation-form">
+                  ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
                   <div class="compact-row">
                     <label>股票名称:</label>
                     <div>
-                      <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入名称或股票代码搜索">
+                      <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入名称或股票代码搜索" ${locked}>
                       <div class="search-results" id="searchResults"></div>
                     </div>
                     <span></span>
@@ -1258,7 +1381,7 @@
                   </div>
                   <div class="compact-row">
                     <label>货币单位:</label>
-                    <select data-field="displayCurrency">
+                    <select data-field="displayCurrency" ${locked}>
                       ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key}</option>`).join("")}
                     </select>
                     <span></span>
@@ -1268,42 +1391,45 @@
                   <div class="form-divider">前瞻利润&股东回报</div>
                   <div class="compact-row two">
                     <label>前瞻利润:</label>
-                    <div><input type="number" step="any" data-amount="expectedProfitCny" value="${escapeHtml(toDisplay(form.expectedProfitCny, currency))}"></div>
+                    <div><input type="number" step="any" data-amount="expectedProfitCny" value="${escapeHtml(toDisplay(form.expectedProfitCny, currency))}" ${locked}></div>
                     <span class="amount-suffix">亿 ${currency}</span>
                     <span></span>
                   </div>
                   <div class="compact-row two">
                     <label>前瞻PE:</label>
-                    <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容">
+                    <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">前瞻年份:</label>
-                    ${forecastYearSelect(form.forecastYear)}
+                    ${forecastYearSelect(form.forecastYear, locked)}
                   </div>
                   <div class="compact-row two">
                     <label>利润备注:</label>
-                    <input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="请输入内容">
+                    <input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">前瞻股东回报:</label>
-                    <div><input type="number" step="any" data-amount="expectedShareholderReturnCny" value="${escapeHtml(toDisplay(form.expectedShareholderReturnCny, currency))}" placeholder="请输入"></div>
+                    <div><input type="number" step="any" data-amount="expectedShareholderReturnCny" value="${escapeHtml(toDisplay(form.expectedShareholderReturnCny, currency))}" placeholder="请输入" ${locked}></div>
                   </div>
                   <div class="compact-row two">
                     <span></span>
                     <span></span>
                     <label class="inline-label">股东回报政策</label>
-                    <input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="请输入内容">
+                    <input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="请输入内容" ${locked}>
                   </div>
 
                   <div class="form-divider">净现金</div>
                   <div class="compact-row two">
                     <label>净现金盘点:</label>
-                    <div><input type="number" step="any" data-amount="netCashCny" value="${escapeHtml(toDisplay(form.netCashCny, currency))}" placeholder="请输入"></div>
+                    <div><input type="number" step="any" data-amount="netCashCny" value="${escapeHtml(toDisplay(form.netCashCny, currency))}" placeholder="请输入" ${locked}></div>
                     <span class="amount-suffix">亿 ${currency}</span>
                     <span></span>
                   </div>
                   <div class="compact-row two">
                     <label>净现金口径:</label>
-                    <input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="请输入">
+                    <input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="请输入" ${locked}>
                     <label class="inline-label">净现金打折系数:</label>
-                    <input type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="输入0-1之间数字">
+                    <input type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="输入0-1之间数字" ${locked}>
                   </div>
+
+                  <div class="form-divider">我的备注</div>
+                  <textarea data-field="myNote" placeholder="记录你自己的观察，这部分不会影响发布者原始数据。">${escapeHtml(form.myNote || "")}</textarea>
 
                   <input type="hidden" data-field="name" value="${escapeHtml(form.name)}">
                   <input type="hidden" data-field="code" value="${escapeHtml(form.code)}">
@@ -1324,10 +1450,11 @@
                   <div class="publish-box">
                     <label>发布变更说明</label>
                     <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
-                    <div class="hint">点击“发布”才会进入分享列表并记录版本；只点“保存”不会记录版本。</div>
+                    <div class="hint">发布会先保存当前内容，再进入分享股池并记录版本。未发布内容仅自己可见。</div>
                     <div class="publish-actions">
-                      <button data-action="publishStock">发布</button>
+                      <button data-action="publishStock" ${isSubscribed ? "disabled" : ""}>发布</button>
                     </div>
+                    <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
                   </div>
                 </div>
               </div>
@@ -1376,11 +1503,11 @@
       return `<div><strong>${label}:</strong> ${value}</div>`;
     }
 
-    function forecastYearSelect(value) {
+    function forecastYearSelect(value, attrs = "") {
       const years = [];
       for (let year = 2025; year <= 2035; year += 1) years.push(`${year}E`);
       return `
-        <select data-field="forecastYear">
+        <select data-field="forecastYear" ${attrs}>
           ${years.map((year) => `<option value="${year}" ${value === year ? "selected" : ""}>${year}</option>`).join("")}
         </select>
       `;
@@ -1425,6 +1552,8 @@
         if (state.viewPublisherId !== "own") await loadPublisherStocks(state.viewPublisherId);
         render();
       });
+      const shareVisibility = document.querySelector("[data-input='shareVisibility']");
+      if (shareVisibility) shareVisibility.addEventListener("change", (event) => updateShareVisibility(event.target.value));
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
     }
@@ -1439,6 +1568,7 @@
         state.profileRequired = false;
         state.stocks = [];
         state.publisherStocks = [];
+        state.publisherProfile = null;
         state.followedPublishers = [];
         render();
       }
@@ -1453,7 +1583,11 @@
       }
       if (action === "copyShareLink") copyShareLink();
       if (action === "followPublisher") followPublisher(stockId);
-      if (action === "copySharedStock") copySharedStock(stockId);
+      if (action === "copySharedStock") copySharedStock(stockId, "copied");
+      if (action === "subscribeStock") copySharedStock(stockId, "subscribed");
+      if (action === "unsubscribeStock") unsubscribeStock(stockId);
+      if (action === "convertToOwn") convertToOwnStock(stockId);
+      if (action === "markSourceUpdatesRead") markSourceUpdatesRead();
       if (action === "edit") openDrawer(stockId);
       if (action === "pinTop") updatePin(stockId, "top");
       if (action === "pinBottom") updatePin(stockId, "bottom");
@@ -1484,16 +1618,17 @@
       state.nicknameNotice = "正在创建昵称...";
       renderProfileSetup();
       try {
-        const rows = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,created_at", {
+        const rows = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,share_visibility,created_at", {
           method: "POST",
           prefer: "return=representation",
           body: JSON.stringify({
             id: state.session.user.id,
             email: state.session.user.email,
-            nickname
+            nickname,
+            share_visibility: "private"
           })
         });
-        state.profile = rows?.[0] || { id: state.session.user.id, email: state.session.user.email, nickname };
+        state.profile = rows?.[0] || { id: state.session.user.id, email: state.session.user.email, nickname, share_visibility: "private" };
         state.profileRequired = false;
         state.nicknameNotice = "";
         await afterProfileReady();
@@ -1622,7 +1757,9 @@
         source_user_id: payload.sourceUserId || null,
         source_stock_id: payload.sourceStockId || null,
         source_nickname: payload.sourceNickname || null,
+        source_type: payload.sourceType || "self",
         last_source_updated_at: payload.lastSourceUpdatedAt || null,
+        source_seen_published_at: payload.sourceSeenPublishedAt || null,
         is_shared: Boolean(payload.isShared),
         last_published_at: payload.lastPublishedAt || null
       };
@@ -1665,6 +1802,11 @@
     }
 
     async function publishStock() {
+      if (state.form?.sourceType === "subscribed") {
+        state.drawerError = "订阅来的股票不能发布。如需发布自己的观点，请先转为我的股票。";
+        render();
+        return;
+      }
       const note = state.form?.publishNote?.trim() || "";
       const stock = await saveStock({ keepOpen: true });
       if (!stock?.id) return;
@@ -1750,7 +1892,7 @@
     async function loadStocks() {
       let data;
       try {
-        data = await supabaseRequest("/rest/v1/stock_records?select=id,payload,source_user_id,source_stock_id,source_nickname,last_source_updated_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc");
+        data = await supabaseRequest("/rest/v1/stock_records?select=id,payload,source_user_id,source_stock_id,source_nickname,source_type,last_source_updated_at,source_seen_published_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc");
       } catch (error) {
         state.lastError = error.message || String(error);
         state.stocks = [];
@@ -1767,21 +1909,30 @@
         sourceUserId: row.source_user_id || row.payload?.sourceUserId || "",
         sourceStockId: row.source_stock_id || row.payload?.sourceStockId || "",
         sourceNickname: row.source_nickname || row.payload?.sourceNickname || "",
+        sourceType: row.source_type || row.payload?.sourceType || (row.source_stock_id || row.payload?.sourceStockId ? "copied" : "self"),
         lastSourceUpdatedAt: row.last_source_updated_at || row.payload?.lastSourceUpdatedAt || "",
+        sourceSeenPublishedAt: row.source_seen_published_at || row.payload?.sourceSeenPublishedAt || "",
         isShared: Boolean(row.is_shared || row.payload?.isShared),
-        lastPublishedAt: row.last_published_at || row.payload?.lastPublishedAt || ""
+        lastPublishedAt: row.last_published_at || row.payload?.lastPublishedAt || "",
+        sourceStopped: Boolean(row.payload?.sourceStopped),
+        hasSourceUpdate: Boolean(row.payload?.hasSourceUpdate),
+        myNote: row.payload?.myNote || ""
       };
     }
 
     async function mergeLatestSourceStocks() {
-      const sourceIds = [...new Set(state.stocks.map((stock) => stock.sourceStockId).filter(Boolean))];
+      state.sourceUpdateCount = 0;
+      const sourceIds = [...new Set(state.stocks.filter((stock) => stock.sourceType === "subscribed").map((stock) => stock.sourceStockId).filter(Boolean))];
       if (!sourceIds.length) return;
       try {
-        const rows = await supabaseRequest(`/rest/v1/stock_records?id=in.(${sourceIds.map(encodeURIComponent).join(",")})&select=id,payload,source_nickname,last_published_at,updated_at`);
+        const rows = await supabaseRequest(`/rest/v1/stock_records?id=in.(${sourceIds.map(encodeURIComponent).join(",")})&is_shared=eq.true&select=id,payload,source_nickname,last_published_at,updated_at`);
         const sourceMap = new Map((rows || []).map((row) => [row.id, normalizeStockRow(row)]));
         state.stocks = state.stocks.map((stock) => {
           const source = sourceMap.get(stock.sourceStockId);
-          if (!source) return stock;
+          if (!source) return { ...stock, sourceStopped: true, hasSourceUpdate: false };
+          const sourcePublishedAt = source.lastPublishedAt || source.updatedAt || "";
+          const hasSourceUpdate = Boolean(sourcePublishedAt && stock.sourceSeenPublishedAt && sourcePublishedAt > stock.sourceSeenPublishedAt);
+          if (hasSourceUpdate) state.sourceUpdateCount += 1;
           return {
             ...source,
             id: stock.id,
@@ -1793,8 +1944,13 @@
             sourceUserId: stock.sourceUserId,
             sourceStockId: stock.sourceStockId,
             sourceNickname: stock.sourceNickname,
-            lastSourceUpdatedAt: source.lastPublishedAt || source.updatedAt || stock.lastSourceUpdatedAt,
-            updatedAt: source.updatedAt || stock.updatedAt
+            sourceType: stock.sourceType,
+            sourceSeenPublishedAt: stock.sourceSeenPublishedAt,
+            lastSourceUpdatedAt: sourcePublishedAt || stock.lastSourceUpdatedAt,
+            updatedAt: source.updatedAt || stock.updatedAt,
+            sourceStopped: false,
+            hasSourceUpdate,
+            myNote: stock.myNote || ""
           };
         });
       } catch (error) {
@@ -1804,10 +1960,12 @@
 
     async function loadPublisherStocks(publisherId) {
       state.publisherStocks = [];
+      state.publisherProfile = null;
       if (!publisherId || publisherId === "own") return;
       try {
         const rows = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(publisherId)}&is_shared=eq.true&select=id,user_id,payload,is_shared,last_published_at,updated_at&order=last_published_at.desc`);
         const profile = state.followedPublishers.find((item) => item.id === publisherId) || state.shareInviteProfile;
+        state.publisherProfile = profile || null;
         state.publisherStocks = (rows || []).map((row) => ({
           ...normalizeStockRow(row),
           publisherId: row.user_id,
@@ -1819,7 +1977,7 @@
     }
 
     async function loadProfile() {
-      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,created_at&limit=1`);
+      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,share_visibility,created_at&limit=1`);
       state.profile = rows?.[0] || null;
       state.profileRequired = !state.profile;
     }
@@ -1831,7 +1989,7 @@
         state.followedPublishers = [];
         return;
       }
-      const profiles = await supabaseRequest(`/rest/v1/profiles?id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,nickname,email`);
+      const profiles = await supabaseRequest(`/rest/v1/profiles?id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,nickname,email,share_visibility`);
       state.followedPublishers = profiles || [];
     }
 
@@ -1844,7 +2002,7 @@
         return;
       }
       try {
-        const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(publisherId)}&select=id,nickname,email&limit=1`);
+        const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(publisherId)}&select=id,nickname,email,share_visibility&limit=1`);
         state.shareInviteProfile = rows?.[0] || null;
       } catch (error) {
         state.shareInviteProfile = null;
@@ -1872,9 +2030,33 @@
         state.viewPublisherId = publisherId;
         await loadPublisherStocks(publisherId);
       } catch (error) {
-        if (!String(error.message || error).includes("duplicate")) alert(`关注失败：${error.message || String(error)}`);
+        if (!String(error.message || error).includes("duplicate")) {
+          alert(`关注失败：${error.message || String(error)}`);
+          return;
+        }
+        localStorage.removeItem(PENDING_SHARE_KEY);
+        await loadFollowedPublishers();
+        state.viewPublisherId = publisherId;
+        await loadPublisherStocks(publisherId);
       }
       render();
+    }
+
+    async function updateShareVisibility(value) {
+      const next = value === "public" ? "public" : "private";
+      const previous = state.profile?.share_visibility || "private";
+      state.profile = { ...state.profile, share_visibility: next };
+      render();
+      try {
+        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ share_visibility: next, updated_at: new Date().toISOString() })
+        });
+      } catch (error) {
+        state.profile = { ...state.profile, share_visibility: previous };
+        alert(`分享方式保存失败：${error.message || String(error)}`);
+        render();
+      }
     }
 
     async function copyShareLink() {
@@ -1888,9 +2070,14 @@
       }
     }
 
-    async function copySharedStock(stockId) {
+    async function copySharedStock(stockId, mode = "copied") {
       const source = state.publisherStocks.find((stock) => stock.id === stockId);
       if (!source) return;
+      const sourceType = mode === "subscribed" ? "subscribed" : "copied";
+      if (sourceType === "subscribed" && state.stocks.some((stock) => stock.sourceType === "subscribed" && stock.sourceStockId === source.id)) {
+        alert("你已经订阅过这只股票。");
+        return;
+      }
       const now = new Date().toISOString();
       const payload = {
         ...source,
@@ -1900,7 +2087,12 @@
         sourceUserId: source.publisherId,
         sourceStockId: source.id,
         sourceNickname: source.publisherNickname,
+        sourceType,
+        sourceSeenPublishedAt: source.lastPublishedAt || source.updatedAt || now,
         lastSourceUpdatedAt: source.lastPublishedAt || source.updatedAt || now,
+        sourceStopped: false,
+        hasSourceUpdate: false,
+        myNote: "",
         createdAt: now,
         updatedAt: now,
         pin: "normal",
@@ -1916,16 +2108,106 @@
             source_user_id: payload.sourceUserId,
             source_stock_id: payload.sourceStockId,
             source_nickname: payload.sourceNickname,
+            source_type: payload.sourceType,
             last_source_updated_at: payload.lastSourceUpdatedAt,
+            source_seen_published_at: payload.sourceSeenPublishedAt,
             is_shared: false
           })
         });
         payload.id = rows?.[0]?.id;
+        if (sourceType === "subscribed") {
+          await supabaseRequest("/rest/v1/stock_subscriptions", {
+            method: "POST",
+            body: JSON.stringify({
+              subscriber_id: state.session.user.id,
+              publisher_id: payload.sourceUserId,
+              source_stock_id: payload.sourceStockId,
+              target_stock_id: payload.id,
+              last_seen_published_at: payload.sourceSeenPublishedAt
+            })
+          });
+        }
         state.stocks.push(payload);
-        alert("已复制到你的股池。");
+        alert(sourceType === "subscribed" ? "已订阅到你的股池。" : "已复制到你的股池。");
       } catch (error) {
-        alert(`复制失败：${error.message || String(error)}`);
+        alert(`${sourceType === "subscribed" ? "订阅" : "复制"}失败：${error.message || String(error)}`);
       }
+    }
+
+    async function unsubscribeStock(stockId) {
+      const stock = state.stocks.find((item) => item.id === stockId);
+      if (!stock || stock.sourceType !== "subscribed") return;
+      if (!confirm(`取消订阅 ${stock.name}？取消后可删除或转为你的股票。`)) return;
+      try {
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
+        await supabaseRequest(`/rest/v1/stock_subscriptions?target_stock_id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
+        state.stocks = state.stocks.filter((item) => item.id !== stockId);
+        await mergeLatestSourceStocks();
+      } catch (error) {
+        alert(`取消订阅失败：${error.message || String(error)}`);
+      }
+      render();
+    }
+
+    async function convertToOwnStock(stockId) {
+      const stock = state.stocks.find((item) => item.id === stockId);
+      if (!stock || !stock.sourceStockId) return;
+      const now = new Date().toISOString();
+      const payload = {
+        ...stock,
+        sourceUserId: "",
+        sourceStockId: "",
+        sourceNickname: "",
+        sourceType: "self",
+        sourceSeenPublishedAt: "",
+        lastSourceUpdatedAt: "",
+        sourceStopped: false,
+        hasSourceUpdate: false,
+        updatedAt: now
+      };
+      try {
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            payload,
+            updated_at: now,
+            source_user_id: null,
+            source_stock_id: null,
+            source_nickname: null,
+            source_type: "self",
+            last_source_updated_at: null,
+            source_seen_published_at: null
+          })
+        });
+        await supabaseRequest(`/rest/v1/stock_subscriptions?target_stock_id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
+        state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
+      } catch (error) {
+        alert(`转为我的股票失败：${error.message || String(error)}`);
+      }
+      render();
+    }
+
+    async function markSourceUpdatesRead() {
+      const updated = state.stocks.filter((stock) => stock.sourceType === "subscribed" && stock.hasSourceUpdate);
+      if (!updated.length) return;
+      try {
+        await Promise.all(updated.map((stock) => {
+          const seenAt = stock.lastSourceUpdatedAt || new Date().toISOString();
+          const payload = { ...stock, sourceSeenPublishedAt: seenAt, hasSourceUpdate: false };
+          return supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              payload,
+              source_seen_published_at: seenAt,
+              last_source_updated_at: stock.lastSourceUpdatedAt || null
+            })
+          });
+        }));
+        await loadStocks();
+      } catch (error) {
+        alert(`标记已读失败：${error.message || String(error)}`);
+      }
+      render();
     }
 
     async function init() {
