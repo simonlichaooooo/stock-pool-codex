@@ -106,6 +106,17 @@
       align-items: center;
       margin-bottom: 16px;
     }
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .nav-tabs button.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
     .filters {
       display: flex;
       gap: 8px;
@@ -374,6 +385,69 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    .square-card, .admin-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 12px;
+    }
+    .square-card h3, .admin-card h3 { margin: 0; font-size: 17px; }
+    .mini-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .mini-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--soft);
+      padding-top: 8px;
+    }
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .admin-list {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .admin-user-row {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      min-height: 72px;
+      text-align: left;
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+    }
+    .admin-user-row.active { background: #e9f0fb; }
+    .admin-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .admin-actions input { width: min(360px, 100%); }
+    .private-row { background: #fffdf6; }
 
     .drawer {
       position: fixed;
@@ -533,6 +607,7 @@
       .topbar { padding: 0 16px; height: auto; min-height: 64px; flex-wrap: wrap; }
       .workspace { width: calc(100vw - 24px); margin-top: 16px; }
       .toolbar { grid-template-columns: 1fr; }
+      .admin-layout { grid-template-columns: 1fr; }
       .share-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .valuation-layout { grid-template-columns: 1fr; }
@@ -588,6 +663,13 @@
       publisherStocks: [],
       publisherProfile: null,
       sourceUpdateCount: 0,
+      mainView: "pool",
+      isAdmin: false,
+      squareProfiles: [],
+      squareSort: "recent",
+      adminUsers: [],
+      adminStocks: [],
+      adminSelectedUserId: "",
       viewPublisherId: "own",
       shareFilter: "ALL",
       route: location.hash || "#/",
@@ -645,8 +727,11 @@
         expires_at: expiresAt,
         user: {
           id: claims.sub,
-          email: claims.email || claims.user_metadata?.email || ""
-        }
+          email: claims.email || claims.user_metadata?.email || "",
+          user_metadata: claims.user_metadata || {},
+          app_metadata: claims.app_metadata || {}
+        },
+        claims
       };
       writeJson(AUTH_STORAGE_KEY, session);
       history.replaceState(null, "", AUTH_REDIRECT_URL);
@@ -658,6 +743,15 @@
       if (hashSession) return hashSession;
       const saved = readJson(AUTH_STORAGE_KEY, null);
       if (!saved?.access_token) return null;
+      const claims = decodeJwt(saved.access_token);
+      saved.claims = saved.claims || claims;
+      saved.user = {
+        ...(saved.user || {}),
+        id: saved.user?.id || claims.sub,
+        email: saved.user?.email || claims.email || claims.user_metadata?.email || "",
+        user_metadata: saved.user?.user_metadata || claims.user_metadata || {},
+        app_metadata: saved.user?.app_metadata || claims.app_metadata || {}
+      };
       return saved;
     }
 
@@ -1040,16 +1134,35 @@
             </div>
           </header>
           <main class="workspace">
+            ${renderNavTabs()}
             ${renderShareInvite()}
-            ${renderUpdateBanner()}
-            ${renderPublisherPanel()}
-            ${renderToolbar()}
-            ${renderTable()}
+            ${renderCurrentView()}
           </main>
           ${renderDrawer()}
         </div>
       `;
       bindEvents();
+    }
+
+    function renderNavTabs() {
+      return `
+        <nav class="nav-tabs">
+          <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
+          <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
+          ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
+        </nav>
+      `;
+    }
+
+    function renderCurrentView() {
+      if (state.mainView === "square") return renderSquare();
+      if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
+      return `
+        ${renderUpdateBanner()}
+        ${renderPublisherPanel()}
+        ${renderToolbar()}
+        ${renderTable()}
+      `;
     }
 
     function renderProfileSetup() {
@@ -1114,6 +1227,125 @@
       `;
     }
 
+    function renderSquare() {
+      const query = state.query.trim().toLowerCase();
+      let profiles = [...state.squareProfiles];
+      if (query) profiles = profiles.filter((item) => `${item.nickname} ${item.email || ""}`.toLowerCase().includes(query));
+      profiles.sort((a, b) => {
+        if (state.squareSort === "count") return (b.stockCount || 0) - (a.stockCount || 0);
+        return String(b.latestPublishedAt || "").localeCompare(String(a.latestPublishedAt || ""));
+      });
+      return `
+        <div class="toolbar">
+          <input data-input="searchList" placeholder="搜索发布者昵称" value="${escapeHtml(state.query)}">
+          <select data-input="squareSort">
+            <option value="recent" ${state.squareSort === "recent" ? "selected" : ""}>最近发布</option>
+            <option value="count" ${state.squareSort === "count" ? "selected" : ""}>发布数量</option>
+          </select>
+        </div>
+        ${profiles.length ? `
+          <div class="card-grid">
+            ${profiles.map(renderSquareCard).join("")}
+          </div>
+        ` : `<section class="table-panel"><div class="empty">暂无公开分享股池。</div></section>`}
+      `;
+    }
+
+    function renderSquareCard(profile) {
+      const stocks = (profile.stocks || []).slice(0, 3);
+      return `
+        <section class="square-card">
+          <div>
+            <h3>${escapeHtml(profile.nickname || "--")}</h3>
+            <div class="publisher-meta">
+              <span>${profile.stockCount || 0} 只已发布</span>
+              <span>最近：${formatDateTime(profile.latestPublishedAt)}</span>
+            </div>
+          </div>
+          <ul class="mini-list">
+            ${stocks.length ? stocks.map((stock) => {
+              const c = calc(stock);
+              return `<li><span>${escapeHtml(stock.name)} <span class="stock-code">${escapeHtml(stock.code)}</span></span><span>${percent(c.upside)} · ${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</span></li>`;
+            }).join("") : `<li><span>暂无代表股票</span><span></span></li>`}
+          </ul>
+          <button class="primary" data-action="openPublisherFromSquare" data-id="${profile.id}">进入股池</button>
+        </section>
+      `;
+    }
+
+    function renderAdmin() {
+      const selected = state.adminUsers.find((item) => item.id === state.adminSelectedUserId);
+      return `
+        <div class="admin-layout">
+          <aside class="admin-list">
+            ${state.adminUsers.length ? state.adminUsers.map((user) => `
+              <button class="admin-user-row ${state.adminSelectedUserId === user.id ? "active" : ""}" data-action="selectAdminUser" data-id="${user.id}">
+                <strong>${escapeHtml(user.nickname || "--")}</strong>
+                <span class="stock-code">${escapeHtml(user.email || "")}</span>
+                <span class="publisher-meta">
+                  <span>${user.share_visibility === "public" ? "公开" : "私密"}</span>
+                  ${user.square_hidden ? "<span>广场隐藏</span>" : ""}
+                  ${user.share_banned ? "<span>禁用分享</span>" : ""}
+                </span>
+              </button>
+            `).join("") : `<div class="empty">暂无用户</div>`}
+          </aside>
+          <section>
+            ${selected ? renderAdminUserDetail(selected) : `<div class="table-panel"><div class="empty">选择左侧用户查看股池。</div></div>`}
+          </section>
+        </div>
+      `;
+    }
+
+    function renderAdminUserDetail(user) {
+      const stocks = state.adminStocks.filter((stock) => stock.userId === user.id);
+      return `
+        <div class="admin-card">
+          <h3>${escapeHtml(user.nickname || "--")}</h3>
+          <div class="publisher-meta">
+            <span>${escapeHtml(user.email || "")}</span>
+            <span>${user.share_visibility === "public" ? "公开分享" : "私密分享"}</span>
+            <span>${stocks.length} 条股池记录</span>
+          </div>
+          <div class="admin-actions">
+            <button data-action="adminToggleSquare" data-id="${user.id}">${user.square_hidden ? "恢复广场展示" : "从广场隐藏"}</button>
+            <button data-action="adminToggleShareBan" data-id="${user.id}">${user.share_banned ? "恢复分享能力" : "禁用分享能力"}</button>
+            <input data-input="adminNote" value="${escapeHtml(user.admin_note || "")}" placeholder="管理员备注">
+            <button data-action="adminSaveNote" data-id="${user.id}">保存备注</button>
+          </div>
+        </div>
+        <section class="table-panel" style="margin-top:16px">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>标的</th><th>可见性</th><th>最新市值<br><span class="stock-code">CNY 亿</span></th><th>upside</th><th>Forward PE</th><th>发布</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${stocks.length ? stocks.map(renderAdminStockRow).join("") : `<tr><td colspan="7" class="empty">这个用户还没有股票。</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderAdminStockRow(stock) {
+      const c = calc(stock);
+      return `
+        <tr class="${stock.isShared ? "" : "private-row"}">
+          <td><div class="stock-name">${escapeHtml(stock.name || "--")}</div><div class="stock-code">${escapeHtml(stock.code || "--")}</div></td>
+          <td>${stock.isShared ? "公开发布" : "私有记录"}${stock.adminHidden ? `<br><span class="badge warn">已隐藏</span>` : ""}</td>
+          <td>${moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td>${percent(c.upside)}</td>
+          <td>${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td>${formatDateTime(stock.lastPublishedAt)}</td>
+          <td><button data-action="adminToggleStockHidden" data-id="${stock.id}">${stock.adminHidden ? "恢复公开" : "隐藏股票"}</button></td>
+        </tr>
+      `;
+    }
+
     function renderLogin() {
       document.getElementById("app").innerHTML = `
         <main class="login-wrap">
@@ -1164,7 +1396,7 @@
               分享方式
               <select data-input="shareVisibility">
                 <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密</option>
-                <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""}>公开</option>
+                <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开</option>
               </select>
             </label>
             <button data-action="copyShareLink">复制分享链接</button>
@@ -1554,6 +1786,8 @@
       });
       const shareVisibility = document.querySelector("[data-input='shareVisibility']");
       if (shareVisibility) shareVisibility.addEventListener("change", (event) => updateShareVisibility(event.target.value));
+      const squareSort = document.querySelector("[data-input='squareSort']");
+      if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
     }
@@ -1573,6 +1807,7 @@
         render();
       }
       if (action === "githubLogin") loginWithGithub();
+      if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
@@ -1588,10 +1823,24 @@
       if (action === "unsubscribeStock") unsubscribeStock(stockId);
       if (action === "convertToOwn") convertToOwnStock(stockId);
       if (action === "markSourceUpdatesRead") markSourceUpdatesRead();
+      if (action === "openPublisherFromSquare") openPublisherFromSquare(stockId);
+      if (action === "selectAdminUser") selectAdminUser(stockId);
+      if (action === "adminToggleSquare") adminToggleUser(stockId, "square_hidden");
+      if (action === "adminToggleShareBan") adminToggleUser(stockId, "share_banned");
+      if (action === "adminSaveNote") adminSaveNote(stockId);
+      if (action === "adminToggleStockHidden") adminToggleStockHidden(stockId);
       if (action === "edit") openDrawer(stockId);
       if (action === "pinTop") updatePin(stockId, "top");
       if (action === "pinBottom") updatePin(stockId, "bottom");
       if (action === "delete") deleteStock(stockId);
+    }
+
+    async function switchMainView(view) {
+      state.mainView = view || "pool";
+      state.query = "";
+      if (state.mainView === "square") await loadSquare();
+      if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
+      render();
     }
 
     async function onLogin(event) {
@@ -1807,6 +2056,11 @@
         render();
         return;
       }
+      if (state.profile?.share_banned) {
+        state.drawerError = "你的分享能力当前已被管理员禁用，暂时不能发布。";
+        render();
+        return;
+      }
       const note = state.form?.publishNote?.trim() || "";
       const stock = await saveStock({ keepOpen: true });
       if (!stock?.id) return;
@@ -1906,6 +2160,7 @@
       return {
         ...row.payload,
         id: row.id,
+        userId: row.user_id || row.payload?.userId || "",
         sourceUserId: row.source_user_id || row.payload?.sourceUserId || "",
         sourceStockId: row.source_stock_id || row.payload?.sourceStockId || "",
         sourceNickname: row.source_nickname || row.payload?.sourceNickname || "",
@@ -1914,6 +2169,7 @@
         sourceSeenPublishedAt: row.source_seen_published_at || row.payload?.sourceSeenPublishedAt || "",
         isShared: Boolean(row.is_shared || row.payload?.isShared),
         lastPublishedAt: row.last_published_at || row.payload?.lastPublishedAt || "",
+        adminHidden: Boolean(row.admin_hidden || row.payload?.adminHidden),
         sourceStopped: Boolean(row.payload?.sourceStopped),
         hasSourceUpdate: Boolean(row.payload?.hasSourceUpdate),
         myNote: row.payload?.myNote || ""
@@ -1963,8 +2219,8 @@
       state.publisherProfile = null;
       if (!publisherId || publisherId === "own") return;
       try {
-        const rows = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(publisherId)}&is_shared=eq.true&select=id,user_id,payload,is_shared,last_published_at,updated_at&order=last_published_at.desc`);
-        const profile = state.followedPublishers.find((item) => item.id === publisherId) || state.shareInviteProfile;
+        const rows = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(publisherId)}&is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,is_shared,last_published_at,updated_at&order=last_published_at.desc`);
+        const profile = state.followedPublishers.find((item) => item.id === publisherId) || state.shareInviteProfile || state.publisherProfile;
         state.publisherProfile = profile || null;
         state.publisherStocks = (rows || []).map((row) => ({
           ...normalizeStockRow(row),
@@ -1976,10 +2232,138 @@
       }
     }
 
+    async function loadSquare() {
+      try {
+        const profiles = await supabaseRequest("/rest/v1/profiles?share_visibility=eq.public&square_hidden=eq.false&share_banned=eq.false&select=id,email,nickname,share_visibility,created_at");
+        const rows = await supabaseRequest("/rest/v1/stock_records?is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,last_published_at,updated_at&order=last_published_at.desc");
+        const byUser = new Map();
+        (rows || []).forEach((row) => {
+          const stock = normalizeStockRow(row);
+          const list = byUser.get(row.user_id) || [];
+          list.push({ ...stock, userId: row.user_id });
+          byUser.set(row.user_id, list);
+        });
+        state.squareProfiles = (profiles || [])
+          .map((profile) => {
+            const stocks = byUser.get(profile.id) || [];
+            const latestPublishedAt = stocks.map((stock) => stock.lastPublishedAt).filter(Boolean).sort().at(-1);
+            return { ...profile, stocks, stockCount: stocks.length, latestPublishedAt };
+          })
+          .filter((profile) => profile.stockCount > 0);
+      } catch (error) {
+        alert(`读取广场失败：${error.message || String(error)}`);
+      }
+    }
+
+    async function loadAdmin() {
+      if (!state.isAdmin) return;
+      try {
+        state.adminUsers = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,share_visibility,square_hidden,share_banned,admin_note,created_at&order=created_at.desc") || [];
+        state.adminStocks = (await supabaseRequest("/rest/v1/stock_records?select=id,user_id,payload,is_shared,last_published_at,admin_hidden,created_at,updated_at&order=created_at.desc") || []).map((row) => normalizeStockRow(row));
+        if (!state.adminSelectedUserId && state.adminUsers[0]) state.adminSelectedUserId = state.adminUsers[0].id;
+      } catch (error) {
+        alert(`读取管理后台失败：${error.message || String(error)}`);
+      }
+    }
+
+    async function openPublisherFromSquare(publisherId) {
+      const profile = state.squareProfiles.find((item) => item.id === publisherId);
+      if (!profile) return;
+      state.mainView = "pool";
+      state.viewPublisherId = publisherId;
+      state.publisherProfile = profile;
+      await loadPublisherStocks(publisherId);
+      render();
+    }
+
+    async function selectAdminUser(userId) {
+      state.adminSelectedUserId = userId;
+      render();
+    }
+
+    async function adminToggleUser(userId, key) {
+      const user = state.adminUsers.find((item) => item.id === userId);
+      if (!user || !state.isAdmin) return;
+      const next = !Boolean(user[key]);
+      try {
+        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ [key]: next, updated_at: new Date().toISOString() })
+        });
+        await logModeration(key === "square_hidden" ? (next ? "hide_from_square" : "restore_to_square") : (next ? "ban_share" : "restore_share"), userId, null);
+        state.adminUsers = state.adminUsers.map((item) => item.id === userId ? { ...item, [key]: next } : item);
+      } catch (error) {
+        alert(`管理操作失败：${error.message || String(error)}`);
+      }
+      render();
+    }
+
+    async function adminSaveNote(userId) {
+      const input = document.querySelector("[data-input='adminNote']");
+      const note = input?.value || "";
+      try {
+        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ admin_note: note, updated_at: new Date().toISOString() })
+        });
+        await logModeration("admin_note", userId, null, note);
+        state.adminUsers = state.adminUsers.map((item) => item.id === userId ? { ...item, admin_note: note } : item);
+      } catch (error) {
+        alert(`保存管理员备注失败：${error.message || String(error)}`);
+      }
+      render();
+    }
+
+    async function adminToggleStockHidden(stockId) {
+      const stock = state.adminStocks.find((item) => item.id === stockId);
+      if (!stock || !state.isAdmin) return;
+      const next = !stock.adminHidden;
+      const payload = { ...stock, adminHidden: next };
+      try {
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ payload, admin_hidden: next, updated_at: new Date().toISOString() })
+        });
+        await logModeration(next ? "hide_stock" : "restore_stock", stock.userId || null, stockId);
+        state.adminStocks = state.adminStocks.map((item) => item.id === stockId ? { ...item, adminHidden: next } : item);
+      } catch (error) {
+        alert(`股票隐藏操作失败：${error.message || String(error)}`);
+      }
+      render();
+    }
+
+    async function logModeration(actionType, userId, stockId, reason = "") {
+      const username = state.session.user.user_metadata?.user_name || state.session.user.user_metadata?.preferred_username || state.session.user.user_metadata?.name || "admin";
+      try {
+        await supabaseRequest("/rest/v1/moderation_actions", {
+          method: "POST",
+          body: JSON.stringify({
+            admin_github_username: username,
+            action_type: actionType,
+            target_user_id: userId,
+            target_stock_id: stockId,
+            reason
+          })
+        });
+      } catch (error) {
+        console.warn("管理员操作日志记录失败。", error);
+      }
+    }
+
     async function loadProfile() {
-      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,share_visibility,created_at&limit=1`);
+      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,share_visibility,square_hidden,share_banned,admin_note,created_at&limit=1`);
       state.profile = rows?.[0] || null;
       state.profileRequired = !state.profile;
+    }
+
+    async function loadAdminMarker() {
+      state.isAdmin = false;
+      try {
+        const rows = await supabaseRequest("/rest/v1/admin_users?select=github_username&limit=1");
+        state.isAdmin = Boolean(rows?.length);
+      } catch {
+        state.isAdmin = false;
+      }
     }
 
     async function loadFollowedPublishers() {
@@ -2010,6 +2394,7 @@
     }
 
     async function afterProfileReady() {
+      await loadAdminMarker();
       await loadFollowedPublishers();
       await loadShareInvite();
       await loadStocks();
