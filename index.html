@@ -594,7 +594,7 @@
 
     function moneyYiCny(cny) {
       if (cny === null || cny === undefined || Number.isNaN(Number(cny))) return "--";
-      return `${trimNumber(cny)}亿`;
+      return trimNumber(cny);
     }
 
     function trimNumber(value) {
@@ -969,16 +969,16 @@
               <thead>
                 <tr>
                   <th>标的</th>
-                  <th>最新市值<br><span class="stock-code">CNY</span></th>
+                  <th>最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "upside")}
                   ${sortTh("forwardPE", "Forward PE")}
                   ${sortTh("shareholderReturnRate", `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}>港股通口径</label><div>前瞻股东回报率</div>`)}
-                  <th>前瞻市值<br><span class="stock-code">CNY</span></th>
-                  <th>前瞻利润<br><span class="stock-code">CNY</span></th>
+                  <th>前瞻市值<br><span class="stock-code">CNY 亿</span></th>
+                  <th>前瞻利润<br><span class="stock-code">CNY 亿</span></th>
                   <th>前瞻 PE</th>
-                  <th>净现金<br><span class="stock-code">CNY</span></th>
+                  <th>净现金<br><span class="stock-code">CNY 亿</span></th>
                   <th>现金折扣</th>
-                  <th>前瞻股东回报<br><span class="stock-code">CNY</span></th>
+                  <th>前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
                   <th>更新</th>
                   <th>操作</th>
                 </tr>
