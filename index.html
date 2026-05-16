@@ -446,6 +446,7 @@
       filter: "ALL",
       query: "",
       sort: { key: "manual", dir: "asc" },
+      stockConnectDividendTax: false,
       drawerOpen: false,
       editingId: null,
       form: null,
@@ -589,6 +590,11 @@
       if (cny === null || cny === undefined || Number.isNaN(Number(cny))) return "--";
       const value = toDisplay(cny, currency);
       return `${trimNumber(value)} ${currency}`;
+    }
+
+    function moneyYiCny(cny) {
+      if (cny === null || cny === undefined || Number.isNaN(Number(cny))) return "--";
+      return `${trimNumber(cny)}亿`;
     }
 
     function trimNumber(value) {
@@ -828,6 +834,13 @@
       };
     }
 
+    function shareholderReturnRateForList(stock, computed) {
+      const rate = computed.shareholderReturnRate;
+      if (rate === null || rate === undefined) return rate;
+      if (!state.stockConnectDividendTax || stock.market !== "HK") return rate;
+      return rate * 0.8;
+    }
+
     function ensureAuth() {
       if (state.loading) {
         renderLoading();
@@ -933,8 +946,12 @@
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
         const ca = calc(a);
         const cb = calc(b);
-        const va = ca[state.sort.key] ?? -Infinity;
-        const vb = cb[state.sort.key] ?? -Infinity;
+        const va = state.sort.key === "shareholderReturnRate"
+          ? shareholderReturnRateForList(a, ca) ?? -Infinity
+          : ca[state.sort.key] ?? -Infinity;
+        const vb = state.sort.key === "shareholderReturnRate"
+          ? shareholderReturnRateForList(b, cb) ?? -Infinity
+          : cb[state.sort.key] ?? -Infinity;
         return state.sort.dir === "asc" ? va - vb : vb - va;
       });
       return rows;
@@ -952,18 +969,16 @@
               <thead>
                 <tr>
                   <th>标的</th>
-                  <th>市场</th>
-                  <th>金额单位</th>
-                  <th>最新市值</th>
+                  <th>最新市值<br><span class="stock-code">CNY</span></th>
                   ${sortTh("upside", "upside")}
                   ${sortTh("forwardPE", "Forward PE")}
-                  ${sortTh("shareholderReturnRate", "前瞻股东回报率")}
-                  <th>前瞻市值</th>
-                  <th>前瞻利润</th>
+                  ${sortTh("shareholderReturnRate", `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}>港股通口径</label><div>前瞻股东回报率</div>`)}
+                  <th>前瞻市值<br><span class="stock-code">CNY</span></th>
+                  <th>前瞻利润<br><span class="stock-code">CNY</span></th>
                   <th>前瞻 PE</th>
-                  <th>净现金</th>
+                  <th>净现金<br><span class="stock-code">CNY</span></th>
                   <th>现金折扣</th>
-                  <th>前瞻股东回报</th>
+                  <th>前瞻股东回报<br><span class="stock-code">CNY</span></th>
                   <th>更新</th>
                   <th>操作</th>
                 </tr>
@@ -985,25 +1000,23 @@
 
     function renderRow(stock) {
       const c = calc(stock);
-      const currency = stock.displayCurrency || "CNY";
+      const shareholderRate = shareholderReturnRateForList(stock, c);
       return `
         <tr>
           <td>
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
-          <td><span class="badge">${marketLabel(stock.market)}</span></td>
-          <td>${currency}<div class="stock-code">${currencies[currency]?.unit || ""}</div></td>
-          <td>${money(stock.latestMarketCapCny, currency)}</td>
+          <td>${moneyYiCny(stock.latestMarketCapCny)}</td>
           <td class="${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
           <td>${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td class="${Number(c.shareholderReturnRate) >= 0 ? "gain" : "loss"}">${percent(c.shareholderReturnRate)}</td>
-          <td>${money(c.expectedMarketCapCny, currency)}</td>
-          <td>${money(stock.expectedProfitCny, currency)}</td>
+          <td class="${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
+          <td>${moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td>${moneyYiCny(stock.expectedProfitCny)}</td>
           <td>${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
-          <td>${money(stock.netCashCny, currency)}</td>
+          <td>${moneyYiCny(stock.netCashCny)}</td>
           <td>${stock.netCashDiscountRate ?? "--"}</td>
-          <td>${money(stock.expectedShareholderReturnCny, currency)}</td>
+          <td>${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           <td><span class="muted">${escapeHtml(stock.marketCapUpdatedAt || "--")}</span></td>
           <td>
             <div class="actions">
@@ -1199,6 +1212,14 @@
       document.querySelectorAll("[data-sort]").forEach((el) => {
         el.addEventListener("click", () => toggleSort(el.dataset.sort));
       });
+      const stockConnectTax = document.querySelector("[data-input='stockConnectTax']");
+      if (stockConnectTax) {
+        stockConnectTax.addEventListener("click", (event) => event.stopPropagation());
+        stockConnectTax.addEventListener("change", (event) => {
+          state.stockConnectDividendTax = event.target.checked;
+          render();
+        });
+      }
       document.querySelectorAll("[data-field]").forEach((el) => {
         el.addEventListener("input", () => updateFormField(el.dataset.field, el.value));
         el.addEventListener("change", () => updateFormField(el.dataset.field, el.value));
