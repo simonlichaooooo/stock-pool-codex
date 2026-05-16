@@ -1,3 +1,28 @@
+create table if not exists public.admin_users (
+  github_username text primary key,
+  created_at timestamptz not null default now()
+);
+
+insert into public.admin_users (github_username)
+values ('simonlichaooooo')
+on conflict (github_username) do nothing;
+
+alter table public.admin_users enable row level security;
+
+grant select on public.admin_users to authenticated;
+
+drop policy if exists "Admins can read own admin marker" on public.admin_users;
+create policy "Admins can read own admin marker"
+on public.admin_users for select
+to authenticated
+using (
+  github_username = coalesce(
+    auth.jwt() -> 'user_metadata' ->> 'user_name',
+    auth.jwt() -> 'user_metadata' ->> 'preferred_username',
+    auth.jwt() -> 'user_metadata' ->> 'name'
+  )
+);
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
@@ -48,31 +73,6 @@ alter table public.stock_records
   add column if not exists is_shared boolean not null default false,
   add column if not exists last_published_at timestamptz,
   add column if not exists admin_hidden boolean not null default false;
-
-create table if not exists public.admin_users (
-  github_username text primary key,
-  created_at timestamptz not null default now()
-);
-
-insert into public.admin_users (github_username)
-values ('simonlichaooooo')
-on conflict (github_username) do nothing;
-
-alter table public.admin_users enable row level security;
-
-grant select on public.admin_users to authenticated;
-
-drop policy if exists "Admins can read own admin marker" on public.admin_users;
-create policy "Admins can read own admin marker"
-on public.admin_users for select
-to authenticated
-using (
-  github_username = coalesce(
-    auth.jwt() -> 'user_metadata' ->> 'user_name',
-    auth.jwt() -> 'user_metadata' ->> 'preferred_username',
-    auth.jwt() -> 'user_metadata' ->> 'name'
-  )
-);
 
 drop policy if exists "Admins can update profiles" on public.profiles;
 create policy "Admins can update profiles"
