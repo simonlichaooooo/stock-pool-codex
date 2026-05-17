@@ -831,7 +831,7 @@
       box-shadow: 0 -8px 18px rgba(16, 24, 40, 0.05);
     }
     .drawer-foot .foot-actions { display: flex; gap: 10px; align-items: center; }
-    .valuation-layout { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
+    .valuation-layout { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
     .valuation-form { display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
       background: white;
@@ -845,6 +845,7 @@
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
     .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .form-grid.single { grid-template-columns: 1fr; }
+    .form-grid.market-cap-row { margin-top: 12px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
       color: #344054;
@@ -855,7 +856,15 @@
     .form-field label.required::after { content: " *"; color: var(--gain); }
     .form-field .field-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .inline-error { color: #912018; font-size: 12px; line-height: 1.45; }
-    .currency-select { width: calc(100% - 28px); }
+    .form-field.input-short input,
+    .form-field.input-short select,
+    .form-field.input-short .amount-field,
+    .form-field.input-short .readonly-value { max-width: 320px; }
+    .form-field.input-medium input,
+    .form-field.input-medium select,
+    .form-field.input-medium .search-combobox,
+    .form-field.input-medium .readonly-value { max-width: 520px; }
+    .currency-select { width: min(360px, calc(100% - 28px)); }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -879,6 +888,7 @@
       background: #f7fbfa;
     }
     .amount-field input { padding-right: 70px; }
+    .amount-field { width: 100%; }
     .readonly-value {
       min-height: 34px;
       display: flex;
@@ -892,22 +902,10 @@
       color: #172033;
       font-size: 13px;
     }
-    .selected-stock {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-top: 8px;
-      border: 1px solid #cfe2dd;
-      background: #f0f7f6;
-      color: #174c44;
-      border-radius: 4px;
-      padding: 8px 10px;
-      font-size: 12px;
-    }
     .result-panel {
       padding: 14px;
       box-shadow: var(--shadow-soft);
+      margin-top: 0;
     }
     .result-panel h3 { font-size: 16px; }
     .result-metric {
@@ -2126,23 +2124,23 @@
                           <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
                           <div class="search-results" id="searchResults"></div>
                         </div>
-                      `, { required: true, error: stockError })}
+                      `, { required: true, error: stockError, className: "input-medium" })}
                       ${formField("货币单位", `
                         <select class="currency-select" data-field="displayCurrency" ${locked}>
                           ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key} · ${currencies[key].label}</option>`).join("")}
                         </select>
                       `)}
                     </div>
-                    <div class="form-grid">
-                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`)}
+                    <div class="form-grid market-cap-row">
+                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`, { className: "input-medium" })}
                     </div>
                   `)}
 
                   ${sectionCard("盈利与估值假设", "维护前瞻利润、目标 PE 和利润口径说明，用于计算前瞻市值与 Upside。", `
                     <div class="form-grid three">
-                      ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true })}
-                      ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked))}
-                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="例如：18" ${locked}>`)}
+                      ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true, className: "input-short" })}
+                      ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
+                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" ${locked}>`, { className: "input-short" })}
                     </div>
                     <div class="form-grid single">
                       ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`)}
@@ -2151,16 +2149,16 @@
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
                     <div class="form-grid">
-                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked))}
-                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`)}
+                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked), { className: "input-short" })}
+                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-medium" })}
                     </div>
                   `)}
 
                   ${sectionCard("净现金调整", "净现金可按折扣系数计入估值，适合处理现金、投资资产或净负债。", `
                     <div class="form-grid three">
-                      ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked))}
-                      ${formField("现金折扣", `<input class="numeric-input" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="0-1" ${locked}>`, { help: "1 表示全额计入，0 表示不计入。" })}
-                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`)}
+                      ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked), { className: "input-short" })}
+                      ${formField("现金折扣", `<input class="numeric-input" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" ${locked}>`, { help: "1 表示全额计入，0 表示不计入。", className: "input-short" })}
+                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-medium" })}
                     </div>
                   `)}
 
@@ -2218,7 +2216,7 @@
 
     function formField(label, control, options = {}) {
       return `
-        <div class="form-field">
+        <div class="form-field ${options.className || ""}">
           <label class="${options.required ? "required" : ""}">${escapeHtml(label)}</label>
           ${control}
           ${options.help ? `<div class="field-help">${escapeHtml(options.help)}</div>` : ""}
@@ -2444,7 +2442,6 @@
     }
 
     function closeDrawer() {
-      if (state.formDirty && !confirm("有未保存修改，确定要关闭吗？")) return;
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
