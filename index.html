@@ -188,7 +188,7 @@
       border-bottom: 1px solid var(--line);
       padding: 13px 12px;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
       font-size: 14px;
       white-space: nowrap;
     }
@@ -221,23 +221,27 @@
     .muted { color: var(--muted); }
     .actions { display: flex; gap: 6px; align-items: center; }
     .tax-header {
-      display: grid;
-      gap: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .tax-header label {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       color: var(--muted);
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
+      white-space: nowrap;
     }
     .tax-header input {
       width: 14px;
       height: 14px;
       padding: 0;
       box-shadow: none;
+      order: 2;
     }
     .empty {
       padding: 54px 24px;
@@ -1587,7 +1591,7 @@
                   <th>最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "upside")}
                   ${sortTh("forwardPE", "Forward PE")}
-                  ${sortTh("shareholderReturnRate", `<div class="tax-header"><div>前瞻股东回报率</div><label><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}>20%股息税后</label></div>`)}
+                  ${sortTh("shareholderReturnRate", `<div class="tax-header"><span>前瞻股东回报率</span><label><span>20%股息税后</span><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}></label></div>`)}
                   <th>前瞻市值<br><span class="stock-code">CNY 亿</span></th>
                   <th>前瞻利润<br><span class="stock-code">CNY 亿</span></th>
                   <th>前瞻 PE</th>
