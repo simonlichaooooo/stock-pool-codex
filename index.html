@@ -788,36 +788,6 @@
     .toolbar-filters { flex-wrap: wrap; }
     .toolbar-actions { justify-content: flex-end; flex-wrap: wrap; }
     .toolbar select { width: auto; min-width: 128px; }
-    .summary-strip {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .metric-card {
-      min-height: 74px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      box-shadow: var(--shadow-soft);
-      padding: 12px 13px;
-    }
-    .metric-card span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 7px;
-    }
-    .metric-card strong {
-      display: block;
-      font-size: 21px;
-      line-height: 1.15;
-      color: #162033;
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: "tnum";
-    }
-    .metric-card strong.gain { color: var(--gain); }
-    .metric-card strong.loss { color: var(--loss); }
     table { min-width: 1360px; }
     th {
       background: #f3f6f8;
@@ -972,7 +942,6 @@
       .userbar { width: 100%; justify-content: flex-start; }
       .workspace { width: calc(100vw - 20px); margin-top: 12px; }
       .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
-      .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
@@ -1930,23 +1899,6 @@
       `;
     }
 
-    function renderPoolSummary() {
-      const rows = userStocks();
-      const viewingOwn = state.viewPublisherId === "own";
-      const upsides = rows.map((stock) => calc(stock).upside).filter((value) => Number.isFinite(value));
-      const averageUpside = upsides.length ? upsides.reduce((sum, value) => sum + value, 0) / upsides.length : null;
-      const sharedCount = rows.filter((stock) => stock.isShared).length;
-      const marketCount = new Set(rows.map((stock) => stock.market).filter(Boolean)).size;
-      return `
-        <section class="summary-strip">
-          ${metricCard("股票数量", `${rows.length} 只`)}
-          ${metricCard("平均 Upside", percent(averageUpside), Number(averageUpside) >= 0 ? "gain" : "loss")}
-          ${metricCard(viewingOwn ? "已分享数量" : "可复制股票", `${viewingOwn ? sharedCount : rows.length} 只`)}
-          ${metricCard("覆盖市场", `${marketCount || 0} 个`)}
-        </section>
-      `;
-    }
-
     function userStocks() {
       const query = state.query.trim().toLowerCase();
       const viewingOwn = state.viewPublisherId === "own";
@@ -2313,10 +2265,6 @@
 
     function metric(label, value, cls = "") {
       return `<div class="metric"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
-    }
-
-    function metricCard(label, value, cls = "") {
-      return `<div class="metric-card"><span>${label}</span><strong class="${cls}">${value || "—"}</strong></div>`;
     }
 
     function resultItem(label, value) {
