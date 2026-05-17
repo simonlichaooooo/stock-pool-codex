@@ -377,10 +377,8 @@
     .badge.warn { background: #fff4cc; color: #805400; }
     .publish-box {
       margin-top: 14px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #fbfcff;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
     }
     .publish-box label {
       display: block;
@@ -389,7 +387,7 @@
       margin-bottom: 7px;
       font-size: 13px;
     }
-    .publish-box textarea { min-height: 84px; }
+    .publish-box textarea { min-height: 82px; }
     .publish-actions {
       display: flex;
       justify-content: flex-end;
@@ -509,7 +507,7 @@
     }
     .drawer.open { display: block; }
     .drawer-panel {
-      width: min(1220px, 100vw);
+      width: min(1320px, 100vw);
       height: 100%;
       margin-left: auto;
       background: var(--panel);
@@ -555,8 +553,8 @@
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .valuation-layout {
       display: grid;
-      grid-template-columns: minmax(780px, 1fr) minmax(340px, 380px);
-      gap: 16px;
+      grid-template-columns: minmax(760px, 1fr) 360px;
+      gap: 18px;
       align-items: start;
     }
     .valuation-form {
@@ -583,26 +581,25 @@
     }
     .compact-row {
       display: grid;
-      grid-template-columns: 106px minmax(0, 1fr) 70px;
+      grid-template-columns: 96px minmax(0, 1fr);
       gap: 8px 10px;
       align-items: center;
       min-height: 34px;
       margin-bottom: 8px;
     }
     .compact-row.two {
-      grid-template-columns: 106px 260px 118px 260px;
-      column-gap: 12px;
+      grid-template-columns: 96px 240px 108px 240px;
+      column-gap: 14px;
       row-gap: 10px;
     }
-    .compact-row.stock-search-row,
-    .compact-row.currency-row {
-      grid-template-columns: 106px 420px minmax(0, 1fr);
+    .compact-row.stock-search-row {
+      grid-template-columns: 96px 360px minmax(0, 1fr);
     }
-    .compact-row.market-cap-row {
-      grid-template-columns: 106px minmax(160px, 260px) minmax(0, 1fr);
+    .compact-row.basic-row {
+      grid-template-columns: 96px 240px 108px 180px;
     }
     .compact-row.amount-row {
-      grid-template-columns: 106px 260px minmax(0, 1fr);
+      grid-template-columns: 96px 240px minmax(0, 1fr);
     }
     .compact-row label,
     .inline-label {
@@ -618,6 +615,8 @@
       line-height: 1.4;
       font-weight: 500;
     }
+    .form-control-sm { max-width: 180px; }
+    .form-control-md { max-width: 240px; }
     .amount-field {
       position: relative;
     }
@@ -657,14 +656,28 @@
     .result-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 8px;
       font-size: 13px;
     }
-    .result-grid strong {
+    .result-metric {
+      min-height: 66px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #f8fafc;
+    }
+    .result-metric strong {
       font-weight: 700;
       display: block;
       margin-bottom: 4px;
       color: #344054;
+      font-size: 12px;
+    }
+    .result-metric span {
+      display: block;
+      color: #111827;
+      font-size: 15px;
+      line-height: 1.35;
     }
     .search-results {
       border: 1px solid var(--line);
@@ -731,6 +744,7 @@
       .compact-row.two,
       .compact-row.stock-search-row,
       .compact-row.currency-row,
+      .compact-row.basic-row,
       .compact-row.market-cap-row,
       .compact-row.amount-row { grid-template-columns: 1fr; }
       .amount-field input { padding-right: 62px; }
@@ -1835,43 +1849,37 @@
                     </div>
                     <span></span>
                   </div>
-                  <div class="compact-row market-cap-row">
+                  <div class="compact-row two basic-row">
                     <label>股票市值:</label>
                     <span class="market-cap-value">${trimNumber(toDisplay(form.latestMarketCapCny, currency))}亿 ${currency}</span>
-                    <span></span>
-                  </div>
-                  <div class="compact-row currency-row">
-                    <label>货币单位:</label>
-                    <select data-field="displayCurrency" ${locked}>
+                    <label class="inline-label">货币单位:</label>
+                    <select class="form-control-sm" data-field="displayCurrency" ${locked}>
                       ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key}</option>`).join("")}
                     </select>
-                    <span></span>
                   </div>
 
                   <div class="form-divider">前瞻利润&股东回报</div>
-                  <div class="compact-row two amount-row">
+                  <div class="compact-row two">
                     <label>前瞻利润:</label>
                     <div class="amount-field">
                       <input type="number" step="any" data-amount="expectedProfitCny" value="${escapeHtml(toDisplay(form.expectedProfitCny, currency))}" ${locked}>
                       <span class="amount-suffix">亿 ${currency}</span>
                     </div>
-                    <span></span>
-                  </div>
-                  <div class="compact-row two">
-                    <label>前瞻PE:</label>
-                    <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">前瞻年份:</label>
                     ${forecastYearSelect(form.forecastYear, locked)}
                   </div>
                   <div class="compact-row two">
-                    <label>利润备注:</label>
-                    <input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="请输入内容" ${locked}>
+                    <label>前瞻PE:</label>
+                    <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">前瞻股东回报:</label>
-                    <div><input type="number" step="any" data-amount="expectedShareholderReturnCny" value="${escapeHtml(toDisplay(form.expectedShareholderReturnCny, currency))}" placeholder="请输入" ${locked}></div>
+                    <div class="amount-field">
+                      <input type="number" step="any" data-amount="expectedShareholderReturnCny" value="${escapeHtml(toDisplay(form.expectedShareholderReturnCny, currency))}" placeholder="请输入" ${locked}>
+                      <span class="amount-suffix">亿 ${currency}</span>
+                    </div>
                   </div>
                   <div class="compact-row two">
-                    <span></span>
-                    <span></span>
+                    <label>利润备注:</label>
+                    <input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">股东回报政策</label>
                     <input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="请输入内容" ${locked}>
                   </div>
@@ -1883,13 +1891,14 @@
                       <input type="number" step="any" data-amount="netCashCny" value="${escapeHtml(toDisplay(form.netCashCny, currency))}" placeholder="请输入" ${locked}>
                       <span class="amount-suffix">亿 ${currency}</span>
                     </div>
-                    <span></span>
+                    <label class="inline-label">净现金打折系数:</label>
+                    <input class="form-control-sm" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="0-1" ${locked}>
                   </div>
                   <div class="compact-row two">
                     <label>净现金口径:</label>
                     <input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="请输入" ${locked}>
-                    <label class="inline-label">净现金打折系数:</label>
-                    <input type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="输入0-1之间数字" ${locked}>
+                    <span></span>
+                    <span></span>
                   </div>
 
                   <div class="form-divider">我的备注</div>
@@ -1910,11 +1919,10 @@
                     ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
                     ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                   </div>
-                  <div class="hint" style="margin-top:14px">股票匹配优先使用公开行情接口；市值会按所选货币实时换算，可手动调整估值假设。</div>
                   <div class="publish-box">
-                    <label>发布变更说明</label>
+                    <label>发布观点</label>
                     <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
-                    <div class="hint">发布会先保存当前内容，再进入分享股池并记录版本。未发布内容仅自己可见。</div>
+                    <div class="hint">发布会先保存当前内容，并记录为一个公开版本。</div>
                     <div class="publish-actions">
                       <button data-action="publishStock" ${isSubscribed ? "disabled" : ""}>发布</button>
                     </div>
@@ -1964,7 +1972,7 @@
     }
 
     function resultItem(label, value) {
-      return `<div><strong>${label}:</strong> ${value}</div>`;
+      return `<div class="result-metric"><strong>${label}</strong><span>${value}</span></div>`;
     }
 
     function forecastYearSelect(value, attrs = "") {
