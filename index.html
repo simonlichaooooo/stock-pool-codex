@@ -373,7 +373,7 @@
     .badge.soft { font-weight: 500; color: var(--muted); background: #f4f6fa; }
     .badge.warn { background: #fff4cc; color: #805400; }
     .publish-box {
-      margin-top: 22px;
+      margin-top: 16px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -385,13 +385,24 @@
       color: #344054;
       margin-bottom: 8px;
     }
-    .publish-box textarea { min-height: 112px; }
+    .publish-box textarea { min-height: 92px; }
     .publish-actions {
       display: flex;
       justify-content: flex-end;
-      margin-top: 12px;
+      margin-top: 10px;
     }
-    .publish-actions button { min-width: 96px; }
+    .publish-actions button {
+      min-width: 112px;
+      border-color: #c2410c;
+      background: #c2410c;
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(194, 65, 12, 0.2);
+    }
+    .publish-actions button:hover:not(:disabled) {
+      border-color: #9a3412;
+      background: #9a3412;
+    }
     .form-error {
       margin-top: 18px;
       padding: 12px 14px;
@@ -494,7 +505,7 @@
     }
     .drawer.open { display: block; }
     .drawer-panel {
-      width: min(1180px, 100vw);
+      width: min(1220px, 100vw);
       height: 100%;
       margin-left: auto;
       background: var(--panel);
@@ -503,7 +514,7 @@
       flex-direction: column;
     }
     .drawer-head {
-      padding: 18px 24px;
+      padding: 14px 22px;
       border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
@@ -512,12 +523,12 @@
     }
     .drawer-head h2 { margin: 0; font-size: 18px; }
     .drawer-body {
-      padding: 20px 24px 26px;
+      padding: 16px 22px 22px;
       overflow: auto;
       background: #f8fafc;
     }
     .drawer-foot {
-      padding: 14px 24px;
+      padding: 12px 22px;
       border-top: 1px solid var(--line);
       display: flex;
       justify-content: flex-end;
@@ -540,71 +551,110 @@
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .valuation-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
-      gap: 20px;
+      grid-template-columns: minmax(620px, 1fr) minmax(340px, 380px);
+      gap: 16px;
       align-items: start;
     }
     .valuation-form {
       background: white;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px 16px 18px;
       box-shadow: var(--shadow-soft);
+    }
+    .drawer input,
+    .drawer select {
+      min-height: 38px;
+      padding: 7px 10px;
+      font-size: 14px;
+      line-height: 1.35;
+      border-radius: 8px;
+    }
+    .drawer textarea {
+      min-height: 78px;
+      padding: 9px 10px;
+      font-size: 14px;
+      line-height: 1.55;
+      border-radius: 8px;
     }
     .compact-row {
       display: grid;
-      grid-template-columns: 108px minmax(0, 1fr) auto;
-      gap: 12px;
+      grid-template-columns: 106px minmax(0, 1fr) 70px;
+      gap: 10px;
       align-items: center;
-      margin-bottom: 14px;
+      min-height: 38px;
+      margin-bottom: 10px;
     }
     .compact-row.two {
-      grid-template-columns: 108px minmax(0, 1fr) 112px minmax(0, 1fr);
+      grid-template-columns: 106px minmax(0, 1fr) 118px minmax(0, 1fr);
+      column-gap: 12px;
+      row-gap: 10px;
+    }
+    .compact-row.stock-search-row,
+    .compact-row.currency-row {
+      grid-template-columns: 106px minmax(280px, 520px) minmax(0, 1fr);
+    }
+    .compact-row.market-cap-row {
+      grid-template-columns: 106px minmax(160px, 260px) minmax(0, 1fr);
+    }
+    .compact-row.amount-row {
+      grid-template-columns: 106px minmax(180px, 260px) auto minmax(0, 1fr);
     }
     .compact-row label,
     .inline-label {
       font-weight: 700;
-      color: #1f2937;
+      color: #344054;
+      font-size: 14px;
+      line-height: 1.35;
+      align-self: center;
+    }
+    .compact-row > strong {
+      color: #111827;
+      font-size: 15px;
+      line-height: 1.4;
     }
     .amount-suffix {
-      color: #111827;
+      color: var(--muted);
       white-space: nowrap;
+      font-size: 14px;
     }
     .form-divider {
-      margin: 18px 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #98a2b3;
+      margin: 14px 0 10px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #d6deea;
       font-weight: 700;
+      color: #172033;
+      font-size: 14px;
     }
     .result-panel {
       background: white;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
       position: sticky;
-      top: 82px;
+      top: 72px;
     }
     .result-panel h3 {
-      margin: 0 0 22px;
+      margin: 0 0 14px;
       font-size: 16px;
     }
     .result-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      font-size: 15px;
+      gap: 10px;
+      font-size: 14px;
     }
     .result-grid strong {
       font-weight: 700;
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       color: #344054;
     }
     .search-results {
       border: 1px solid var(--line);
       border-radius: 6px;
       overflow: hidden;
-      margin-top: 10px;
+      margin-top: 8px;
       display: none;
     }
     .search-results.show { display: block; }
@@ -629,15 +679,16 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
+    .result-panel .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .metric {
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 12px;
-      background: #fbfcff;
-      min-height: 78px;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fafc;
+      min-height: 70px;
     }
     .metric span { display: block; color: var(--muted); font-size: 12px; }
-    .metric strong { display: block; margin-top: 8px; font-size: 18px; }
+    .metric strong { display: block; margin-top: 6px; font-size: 17px; line-height: 1.3; }
     .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
 
     @media (max-width: 860px) {
@@ -661,7 +712,11 @@
       .valuation-form { padding: 14px; }
       .result-panel { position: static; }
       .compact-row,
-      .compact-row.two { grid-template-columns: 1fr; }
+      .compact-row.two,
+      .compact-row.stock-search-row,
+      .compact-row.currency-row,
+      .compact-row.market-cap-row,
+      .compact-row.amount-row { grid-template-columns: 1fr; }
       .drawer-panel { width: 100vw; }
       .drawer-head, .drawer-body, .drawer-foot { padding-left: 14px; padding-right: 14px; }
       .drawer-foot { justify-content: stretch; }
@@ -1739,7 +1794,7 @@
               <div class="valuation-layout">
                 <div class="valuation-form">
                   ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
-                  <div class="compact-row">
+                  <div class="compact-row stock-search-row">
                     <label>股票名称:</label>
                     <div>
                       <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入名称或股票代码搜索" ${locked}>
@@ -1747,12 +1802,12 @@
                     </div>
                     <span></span>
                   </div>
-                  <div class="compact-row">
+                  <div class="compact-row market-cap-row">
                     <label>股票市值:</label>
                     <strong>${trimNumber(toDisplay(form.latestMarketCapCny, currency))}亿 ${currency}</strong>
                     <span></span>
                   </div>
-                  <div class="compact-row">
+                  <div class="compact-row currency-row">
                     <label>货币单位:</label>
                     <select data-field="displayCurrency" ${locked}>
                       ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key}</option>`).join("")}
@@ -1762,13 +1817,13 @@
                   <div class="hint">行情来源：东方财富公开行情接口；汇率来源：${escapeHtml(exchangeRateState.source)}，更新时间：${escapeHtml(exchangeRateState.updatedAt)}。</div>
 
                   <div class="form-divider">前瞻利润&股东回报</div>
-                  <div class="compact-row two">
+                  <div class="compact-row two amount-row">
                     <label>前瞻利润:</label>
                     <div><input type="number" step="any" data-amount="expectedProfitCny" value="${escapeHtml(toDisplay(form.expectedProfitCny, currency))}" ${locked}></div>
                     <span class="amount-suffix">亿 ${currency}</span>
                     <span></span>
                   </div>
-                  <div class="compact-row two">
+                  <div class="compact-row two amount-row">
                     <label>前瞻PE:</label>
                     <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容" ${locked}>
                     <label class="inline-label">前瞻年份:</label>
@@ -1819,7 +1874,7 @@
                     ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
                     ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                   </div>
-                  <div class="hint" style="margin-top:24px">股票匹配优先使用公开行情接口；市值会按所选货币实时换算，可手动调整估值假设。</div>
+                  <div class="hint" style="margin-top:14px">股票匹配优先使用公开行情接口；市值会按所选货币实时换算，可手动调整估值假设。</div>
                   <div class="publish-box">
                     <label>发布变更说明</label>
                     <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
