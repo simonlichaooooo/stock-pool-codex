@@ -842,9 +842,9 @@
     }
     .section-card h3 { margin: 0 0 12px; font-size: 15px; color: #172033; }
     .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-    .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .form-grid.single { grid-template-columns: 1fr; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 360px)); gap: 12px 16px; align-items: start; justify-content: start; }
+    .form-grid.three { grid-template-columns: repeat(3, minmax(160px, 220px)); }
+    .form-grid.single { grid-template-columns: minmax(0, 640px); }
     .form-grid.market-cap-row { margin-top: 12px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
@@ -856,15 +856,25 @@
     .form-field label.required::after { content: " *"; color: var(--gain); }
     .form-field .field-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .inline-error { color: #912018; font-size: 12px; line-height: 1.45; }
+    .valuation-form .form-field > input,
+    .valuation-form .form-field > select,
+    .valuation-form .form-field > textarea,
+    .valuation-form .form-field .search-combobox,
+    .valuation-form .form-field .amount-field,
+    .valuation-form .form-field .readonly-value {
+      width: 100%;
+      max-width: 360px;
+    }
+    .valuation-form .form-field > textarea { max-width: 640px; }
     .form-field.input-short input,
     .form-field.input-short select,
     .form-field.input-short .amount-field,
-    .form-field.input-short .readonly-value { max-width: 320px; }
+    .form-field.input-short .readonly-value { max-width: 180px; }
     .form-field.input-medium input,
     .form-field.input-medium select,
     .form-field.input-medium .search-combobox,
-    .form-field.input-medium .readonly-value { max-width: 520px; }
-    .currency-select { width: min(360px, calc(100% - 28px)); }
+    .form-field.input-medium .readonly-value { max-width: 360px; }
+    .currency-select { width: min(320px, calc(100% - 28px)); }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -905,7 +915,9 @@
     .result-panel {
       padding: 14px;
       box-shadow: var(--shadow-soft);
-      margin-top: 0;
+      align-self: start;
+      margin-top: -16px !important;
+      top: 16px;
     }
     .result-panel h3 { font-size: 16px; }
     .result-metric {
@@ -954,9 +966,23 @@
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .form-grid, .form-grid.three, .form-grid.single { grid-template-columns: 1fr; }
+      .valuation-form .form-field > input,
+      .valuation-form .form-field > select,
+      .valuation-form .form-field > textarea,
+      .valuation-form .form-field .search-combobox,
+      .valuation-form .form-field .amount-field,
+      .valuation-form .form-field .readonly-value,
+      .form-field.input-short input,
+      .form-field.input-short select,
+      .form-field.input-short .amount-field,
+      .form-field.input-short .readonly-value,
+      .form-field.input-medium input,
+      .form-field.input-medium select,
+      .form-field.input-medium .search-combobox,
+      .form-field.input-medium .readonly-value { max-width: none; }
       .valuation-layout { grid-template-columns: 1fr; }
       .valuation-form { padding: 12px; }
-      .result-panel { position: static; }
+      .result-panel { position: static; margin-top: 0 !important; }
       .compact-row,
       .compact-row.two,
       .compact-row.stock-search-row,
