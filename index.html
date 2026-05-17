@@ -683,8 +683,8 @@
       border: 1px solid var(--line);
       border-radius: 4px;
       overflow: hidden;
-      margin-top: 8px;
       display: none;
+      margin-top: 0;
     }
     .search-results.show { display: block; }
     .result-item {
@@ -885,6 +885,28 @@
     .form-field label.required::after { content: " *"; color: var(--gain); }
     .form-field .field-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .inline-error { color: #912018; font-size: 12px; line-height: 1.45; }
+    .search-combobox {
+      position: relative;
+      z-index: 12;
+    }
+    .search-combobox .search-results {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 40;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      box-shadow: 0 18px 34px rgba(16, 24, 40, 0.16);
+    }
+    .search-combobox .result-item {
+      background: #fff;
+      min-height: 54px;
+    }
+    .search-combobox .result-item:hover {
+      background: #f7fbfa;
+    }
     .amount-field input { padding-right: 70px; }
     .readonly-value {
       min-height: 34px;
@@ -2149,8 +2171,10 @@
                   ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
                     <div class="form-grid">
                       ${formField("股票名称/代码搜索", `
-                        <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
-                        <div class="search-results" id="searchResults"></div>
+                        <div class="search-combobox">
+                          <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
+                          <div class="search-results" id="searchResults"></div>
+                        </div>
                         ${form.name ? `<div class="selected-stock"><span>${escapeHtml(form.name)} · ${escapeHtml(form.code)} · ${marketLabel(form.market)} · ${escapeHtml(form.exchange || "--")}</span><span>已选择</span></div>` : ""}
                       `, { required: true, error: stockError })}
                       ${formField("货币单位", `
