@@ -6,25 +6,31 @@
   <title>股池管理</title>
   <style>
     :root {
-      --bg: #f5f7fa;
+      --bg: #f3f6f8;
       --panel: #ffffff;
-      --text: #172033;
+      --panel-2: #f8fafb;
+      --text: #111827;
       --muted: #667085;
-      --line: #d9dee8;
-      --soft: #eef2f7;
-      --brand: #2454a6;
-      --brand-strong: #173f82;
-      --gain: #c83232;
-      --loss: #16835b;
+      --line: #d7dde7;
+      --soft: #eef3f6;
+      --brand: #0f766e;
+      --brand-strong: #115e59;
+      --brand-soft: #e8f5f3;
+      --accent: #355c9c;
+      --gain: #b42318;
+      --loss: #067647;
       --warn: #9a6700;
-      --shadow: 0 10px 30px rgba(24, 36, 66, 0.08);
+      --shadow: 0 18px 48px rgba(17, 24, 39, 0.08);
+      --shadow-soft: 0 8px 22px rgba(17, 24, 39, 0.05);
     }
 
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: var(--bg);
+      background:
+        linear-gradient(180deg, #eef5f3 0, rgba(238, 245, 243, 0) 260px),
+        var(--bg);
       color: var(--text);
       letter-spacing: 0;
     }
@@ -34,19 +40,21 @@
       border: 1px solid var(--line);
       background: var(--panel);
       color: var(--text);
-      min-height: 36px;
-      padding: 0 12px;
-      border-radius: 6px;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
       cursor: pointer;
+      transition: border-color .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease;
     }
-    button:hover { border-color: #aab5c8; }
+    button:hover { border-color: #9aa8bb; box-shadow: var(--shadow-soft); }
+    button:active { transform: translateY(1px); }
     button.primary {
       background: var(--brand);
       border-color: var(--brand);
       color: white;
     }
     button.primary:hover { background: var(--brand-strong); }
-    button.icon { width: 36px; padding: 0; }
+    button.icon { width: 38px; padding: 0; }
     button.danger { color: #b42318; }
     button.ghost { background: transparent; }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -54,27 +62,28 @@
     input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 9px 10px;
+      border-radius: 8px;
+      padding: 10px 12px;
       background: white;
       color: var(--text);
       outline: none;
     }
     input:focus, select:focus, textarea:focus {
       border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(36, 84, 166, 0.12);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
     }
     textarea { min-height: 84px; resize: vertical; }
 
     .shell { min-height: 100vh; }
     .topbar {
-      height: 64px;
+      min-height: 68px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 20px;
-      padding: 0 28px;
-      background: var(--panel);
+      padding: 0 32px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--line);
       position: sticky;
       top: 0;
@@ -88,34 +97,52 @@
     }
     .brand h1 {
       margin: 0;
-      font-size: 19px;
-      font-weight: 700;
+      font-size: 20px;
+      font-weight: 800;
       white-space: nowrap;
     }
     .brand span { color: var(--muted); font-size: 13px; }
-    .userbar { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; }
+    .userbar { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; flex-wrap: wrap; justify-content: flex-end; }
 
     .workspace {
-      width: min(1480px, calc(100vw - 40px));
-      margin: 24px auto 48px;
+      width: min(1500px, calc(100vw - 48px));
+      margin: 22px auto 52px;
     }
     .toolbar {
       display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto auto auto auto auto;
-      gap: 12px;
+      grid-template-columns: minmax(240px, 1fr) repeat(6, auto);
+      gap: 10px;
       align-items: center;
       margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: var(--shadow-soft);
     }
     .nav-tabs {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 16px;
       flex-wrap: wrap;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 6px;
+      width: fit-content;
+      box-shadow: var(--shadow-soft);
+    }
+    .nav-tabs button {
+      border: 0;
+      background: transparent;
+      min-width: 78px;
+      font-weight: 700;
     }
     .nav-tabs button.active {
       background: var(--brand);
       border-color: var(--brand);
       color: white;
+      box-shadow: none;
     }
     .filters {
       display: flex;
@@ -126,7 +153,7 @@
     .segmented {
       display: inline-flex;
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
       background: var(--panel);
     }
@@ -138,7 +165,7 @@
     }
     .segmented button:last-child { border-right: 0; }
     .segmented button.active {
-      background: #e9f0fb;
+      background: var(--brand-soft);
       color: var(--brand-strong);
       font-weight: 700;
     }
@@ -146,33 +173,37 @@
     .table-panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: var(--shadow);
       overflow: hidden;
     }
     .table-scroll { overflow-x: auto; }
     table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       min-width: 1320px;
     }
     th, td {
       border-bottom: 1px solid var(--line);
-      padding: 11px 10px;
+      padding: 13px 12px;
       text-align: left;
       vertical-align: top;
       font-size: 14px;
       white-space: nowrap;
     }
     th {
-      background: #f8fafc;
+      background: var(--panel-2);
       color: #344054;
       font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { color: var(--brand); }
-    tbody tr:hover { background: #fbfcff; }
-    .stock-name { font-weight: 700; }
+    tbody tr:hover { background: #f8fbfb; }
+    .stock-name { font-weight: 800; }
     .stock-code { color: var(--muted); font-size: 13px; margin-top: 3px; }
     .badge {
       display: inline-flex;
@@ -224,7 +255,7 @@
       width: min(460px, 100%);
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 14px;
       box-shadow: var(--shadow);
       padding: 28px;
     }
@@ -264,7 +295,7 @@
       border: 1px solid #b8d3ff;
       background: #eef5ff;
       color: #163b76;
-      border-radius: 6px;
+      border-radius: 10px;
       line-height: 1.6;
       font-size: 14px;
     }
@@ -274,7 +305,7 @@
       border: 1px solid #b8d3ff;
       background: #eef5ff;
       color: #163b76;
-      border-radius: 8px;
+      border-radius: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -286,7 +317,7 @@
       border: 1px solid #f1d28a;
       background: #fff8e5;
       color: #7a4b00;
-      border-radius: 8px;
+      border-radius: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -297,7 +328,8 @@
       padding: 14px 16px;
       border: 1px solid var(--line);
       background: var(--panel);
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-soft);
       display: flex;
       justify-content: space-between;
       gap: 16px;
@@ -340,7 +372,7 @@
       margin-top: 22px;
       padding: 14px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 10px;
       background: #fbfcff;
     }
     .publish-box label {
@@ -387,13 +419,13 @@
     }
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 16px;
     }
     .square-card, .admin-card {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       padding: 16px;
       box-shadow: var(--shadow);
       display: grid;
@@ -425,7 +457,7 @@
     .admin-list {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
     }
     .admin-user-row {
@@ -452,13 +484,13 @@
     .drawer {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.34);
+      background: rgba(15, 23, 42, 0.42);
       display: none;
       z-index: 20;
     }
     .drawer.open { display: block; }
     .drawer-panel {
-      width: min(1120px, 100vw);
+      width: min(1180px, 100vw);
       height: 100%;
       margin-left: auto;
       background: var(--panel);
@@ -467,7 +499,7 @@
       flex-direction: column;
     }
     .drawer-head {
-      padding: 18px 22px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
@@ -476,12 +508,12 @@
     }
     .drawer-head h2 { margin: 0; font-size: 18px; }
     .drawer-body {
-      padding: 18px 22px 24px;
+      padding: 20px 24px 26px;
       overflow: auto;
       background: #f8fafc;
     }
     .drawer-foot {
-      padding: 14px 22px;
+      padding: 14px 24px;
       border-top: 1px solid var(--line);
       display: flex;
       justify-content: flex-end;
@@ -504,15 +536,16 @@
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .valuation-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+      gap: 20px;
       align-items: start;
     }
     .valuation-form {
       background: white;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 18px;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow-soft);
     }
     .compact-row {
       display: grid;
@@ -542,8 +575,8 @@
     .result-panel {
       background: white;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 18px;
+      border-radius: 12px;
+      padding: 20px;
       position: sticky;
       top: 82px;
     }
@@ -604,19 +637,65 @@
     .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
 
     @media (max-width: 860px) {
-      .topbar { padding: 0 16px; height: auto; min-height: 64px; flex-wrap: wrap; }
-      .workspace { width: calc(100vw - 24px); margin-top: 16px; }
-      .toolbar { grid-template-columns: 1fr; }
+      .topbar { padding: 12px 14px; height: auto; min-height: 64px; flex-wrap: wrap; align-items: flex-start; }
+      .brand { width: 100%; justify-content: space-between; }
+      .brand span { display: none; }
+      .userbar { width: 100%; justify-content: flex-start; }
+      .workspace { width: calc(100vw - 24px); margin-top: 14px; }
+      .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .nav-tabs button { min-width: 0; }
+      .toolbar { grid-template-columns: 1fr; padding: 10px; }
+      .segmented { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+      .segmented button { min-width: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .segmented button:nth-last-child(-n+4) { border-bottom: 0; }
+      .share-settings { justify-content: space-between; }
+      .share-settings select { width: 160px; }
       .admin-layout { grid-template-columns: 1fr; }
-      .share-banner { align-items: flex-start; flex-direction: column; }
+      .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .valuation-layout { grid-template-columns: 1fr; }
       .valuation-form { padding: 14px; }
       .result-panel { position: static; }
       .compact-row,
       .compact-row.two { grid-template-columns: 1fr; }
-      .brand span { display: none; }
       .drawer-panel { width: 100vw; }
+      .drawer-head, .drawer-body, .drawer-foot { padding-left: 14px; padding-right: 14px; }
+      .drawer-foot { justify-content: stretch; }
+      .drawer-foot button { flex: 1; }
+      .card-grid { grid-template-columns: 1fr; }
+      .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+      .table-scroll { overflow: visible; }
+      table, thead, tbody, tr, th, td { display: block; width: 100%; min-width: 0; }
+      table { border-collapse: separate; }
+      thead { display: none; }
+      tbody { display: grid; gap: 12px; }
+      tr {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow-soft);
+        overflow: hidden;
+      }
+      td {
+        display: grid;
+        grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        border-bottom: 1px solid var(--soft);
+        white-space: normal;
+        padding: 10px 12px;
+      }
+      td:last-child { border-bottom: 0; }
+      td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      td[data-label="标的"]::before { content: ""; display: none; }
+      td[data-label="标的"] { grid-template-columns: 1fr; padding-top: 14px; }
+      .actions { flex-wrap: wrap; justify-content: flex-start; }
+      .actions button { min-height: 36px; }
     }
   </style>
 </head>
@@ -1393,13 +1472,13 @@
       const c = calc(stock);
       return `
         <tr class="${stock.isShared ? "" : "private-row"}">
-          <td><div class="stock-name">${escapeHtml(stock.name || "--")}</div><div class="stock-code">${escapeHtml(stock.code || "--")}</div></td>
-          <td>${stock.isShared ? "公开发布" : "私有记录"}${stock.adminHidden ? `<br><span class="badge warn">已隐藏</span>` : ""}</td>
-          <td>${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td>${percent(c.upside)}</td>
-          <td>${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td>${formatDateTime(stock.lastPublishedAt)}</td>
-          <td><button data-action="adminToggleStockHidden" data-id="${stock.id}">${stock.adminHidden ? "恢复公开" : "隐藏股票"}</button></td>
+          <td data-label="标的"><div class="stock-name">${escapeHtml(stock.name || "--")}</div><div class="stock-code">${escapeHtml(stock.code || "--")}</div></td>
+          <td data-label="可见性">${stock.isShared ? "公开发布" : "私有记录"}${stock.adminHidden ? `<br><span class="badge warn">已隐藏</span>` : ""}</td>
+          <td data-label="最新市值">${moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td data-label="upside">${percent(c.upside)}</td>
+          <td data-label="Forward PE">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td data-label="发布">${formatDateTime(stock.lastPublishedAt)}</td>
+          <td data-label="操作"><button data-action="adminToggleStockHidden" data-id="${stock.id}">${stock.adminHidden ? "恢复公开" : "隐藏股票"}</button></td>
         </tr>
       `;
     }
@@ -1539,25 +1618,25 @@
       const shareholderRate = shareholderReturnRateForList(stock, c);
       return `
         <tr>
-          <td>
+          <td data-label="标的">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
-          <td>${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td class="${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
-          <td>${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td class="${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
-          <td>${moneyYiCny(c.expectedMarketCapCny)}</td>
-          <td>${moneyYiCny(stock.expectedProfitCny)}</td>
-          <td>${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
-          <td>${moneyYiCny(stock.netCashCny)}</td>
-          <td>${stock.netCashDiscountRate ?? "--"}</td>
-          <td>${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
+          <td data-label="最新市值">${moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td data-label="upside" class="${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
+          <td data-label="Forward PE">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td data-label="前瞻股东回报率" class="${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
+          <td data-label="前瞻市值">${moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td data-label="前瞻利润">${moneyYiCny(stock.expectedProfitCny)}</td>
+          <td data-label="前瞻 PE">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
+          <td data-label="净现金">${moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣">${stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
-            <td>${renderShareState(stock)}</td>
-            <td>${renderSourceCell(stock)}</td>
+            <td data-label="分享">${renderShareState(stock)}</td>
+            <td data-label="来源">${renderSourceCell(stock)}</td>
           ` : ""}
-          <td>
+          <td data-label="操作">
             <div class="actions">
               ${viewingOwn ? `
                 <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
