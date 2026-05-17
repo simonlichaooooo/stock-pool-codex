@@ -781,7 +781,8 @@
   <script>
     const SUPABASE_URL = "https://woywnriyagjlfphezlnx.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndveXducml5YWdqbGZwaGV6bG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjA0MDAsImV4cCI6MjA5NDQzNjQwMH0.fQRfiZBOYjxSGKANEMD0HZKg7jKJGwGtR-vUx5ULt2s";
-    const AUTH_REDIRECT_URL = `${location.origin}${location.pathname}`;
+    const APP_GITHUB_PAGES_PATH = "/stock-pool-codex/";
+    const AUTH_REDIRECT_URL = appBaseUrl();
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
 
@@ -857,6 +858,21 @@
     function writeJson(key, value) {
       if (value === null) localStorage.removeItem(key);
       else localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function appBaseUrl() {
+      if (location.hostname.endsWith("github.io")) {
+        return `${location.origin}${APP_GITHUB_PAGES_PATH}`;
+      }
+      const path = location.pathname.endsWith("/")
+        ? location.pathname
+        : location.pathname.replace(/[^/]*$/, "");
+      return `${location.origin}${path || "/"}`;
+    }
+
+    function rememberPendingShareFromUrl() {
+      const publisherId = new URLSearchParams(location.search).get("share");
+      if (publisherId) localStorage.setItem(PENDING_SHARE_KEY, publisherId);
     }
 
     function decodeJwt(token) {
@@ -2594,8 +2610,7 @@
     }
 
     async function loadShareInvite() {
-      const urlPublisher = new URLSearchParams(location.search).get("share");
-      if (urlPublisher) localStorage.setItem(PENDING_SHARE_KEY, urlPublisher);
+      rememberPendingShareFromUrl();
       const publisherId = localStorage.getItem(PENDING_SHARE_KEY);
       if (!publisherId || publisherId === state.session.user.id) {
         state.shareInviteProfile = null;
@@ -2661,8 +2676,7 @@
     }
 
     async function copyShareLink() {
-      const base = `${location.origin}${location.pathname}`;
-      const shareUrl = `${base}?share=${encodeURIComponent(state.profile.id)}`;
+      const shareUrl = `${AUTH_REDIRECT_URL}?share=${encodeURIComponent(state.profile.id)}`;
       try {
         await navigator.clipboard.writeText(shareUrl);
         alert("分享链接已复制。");
@@ -2812,6 +2826,7 @@
     }
 
     async function init() {
+      rememberPendingShareFromUrl();
       state.session = currentSession();
       if (state.session) {
         try {
