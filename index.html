@@ -720,15 +720,241 @@
     .metric strong { display: block; margin-top: 5px; font-size: 16px; line-height: 1.3; }
     .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
 
+    .num, .kpi, .numeric-input {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    input[type="number"], .numeric-input { text-align: right; }
+    button.secondary { background: #f8fafc; color: #344054; }
+    button.icon {
+      width: 30px;
+      min-width: 30px;
+      height: 30px;
+      min-height: 30px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      color: #475467;
+      font-size: 14px;
+      line-height: 1;
+    }
+    button.icon:hover { background: #eef3f6; color: var(--brand-strong); }
+    button.danger { color: #475467; }
+    button.danger:hover { color: #b42318; border-color: #f3b6ad; background: #fff3f0; }
+    .userbar { color: #7a8699; font-size: 12px; }
+    .userbar .badge { background: #f4f6f8; color: #5d6678; font-weight: 600; }
+    .userbar button { min-height: 28px; font-size: 12px; color: #5d6678; }
+    .workspace {
+      width: min(1480px, calc(100vw - 48px));
+      margin-top: 16px;
+    }
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 12px;
+    }
+    .page-title h2 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+    .page-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .nav-tabs button.active {
+      background: var(--brand-soft);
+      border-color: transparent;
+      color: var(--brand-strong);
+    }
+    .toolbar {
+      grid-template-columns: minmax(320px, 1fr) auto auto;
+      padding: 10px;
+      position: sticky;
+      top: 68px;
+      z-index: 4;
+    }
+    .toolbar-left, .toolbar-filters, .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .toolbar-left input { min-width: 260px; }
+    .toolbar-filters { flex-wrap: wrap; }
+    .toolbar-actions { justify-content: flex-end; flex-wrap: wrap; }
+    .toolbar select { width: auto; min-width: 128px; }
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .metric-card {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      padding: 12px 13px;
+    }
+    .metric-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+    .metric-card strong {
+      display: block;
+      font-size: 21px;
+      line-height: 1.15;
+      color: #162033;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .metric-card strong.gain { color: var(--gain); }
+    .metric-card strong.loss { color: var(--loss); }
+    table { min-width: 1360px; }
+    th {
+      background: #f3f6f8;
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+    th.num, td.num { text-align: right; }
+    td.kpi { text-align: right; font-weight: 760; font-size: 14px; }
+    td.num { color: #243145; }
+    tbody tr:hover { background: #f7fbfa; }
+    .stock-name { font-weight: 780; color: #111827; }
+    .stock-code { margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .badge.shared { background: #e6f1ef; color: var(--brand-strong); }
+    .badge.unshared { background: #eef1f4; color: #667085; }
+    .badge.source { background: #eef5ff; color: #234876; }
+    .actions .text-action { padding: 0 9px; min-height: 30px; }
+    .empty {
+      padding: 48px 22px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .empty strong {
+      display: block;
+      color: #1d2939;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .empty p { margin: 0 auto 14px; max-width: 460px; }
+    .drawer-panel { width: min(1280px, calc(100vw - 28px)); }
+    .drawer-head {
+      padding: 16px 22px;
+      align-items: flex-start;
+      background: #fff;
+    }
+    .drawer-title h2 { margin: 0; font-size: 20px; line-height: 1.25; }
+    .drawer-title p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .drawer-body { padding: 16px 22px 92px; }
+    .drawer-foot {
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 -8px 18px rgba(16, 24, 40, 0.05);
+    }
+    .drawer-foot .foot-actions { display: flex; gap: 10px; align-items: center; }
+    .valuation-layout { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
+    .valuation-form { display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
+    .section-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow-soft);
+      padding: 14px;
+    }
+    .section-card h3 { margin: 0; font-size: 15px; color: #172033; }
+    .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+    .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .form-grid.single { grid-template-columns: 1fr; }
+    .form-field { display: grid; gap: 6px; min-width: 0; }
+    .form-field label {
+      color: #344054;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+    .form-field label.required::after { content: " *"; color: var(--gain); }
+    .form-field .field-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .inline-error { color: #912018; font-size: 12px; line-height: 1.45; }
+    .amount-field input { padding-right: 70px; }
+    .readonly-value {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #f8fafc;
+      padding: 6px 9px;
+      color: #172033;
+      font-size: 13px;
+    }
+    .selected-stock {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+      border: 1px solid #cfe2dd;
+      background: #f0f7f6;
+      color: #174c44;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .result-panel {
+      padding: 14px;
+      box-shadow: var(--shadow-soft);
+    }
+    .result-panel h3 { font-size: 16px; }
+    .result-metric {
+      background: #f8fafc;
+      min-height: 74px;
+    }
+    .result-metric span {
+      font-size: 17px;
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .result-metric span.gain { color: var(--gain); }
+    .result-metric span.loss { color: var(--loss); }
+    .publish-box label { font-size: 14px; }
+    .publish-actions button { min-width: 118px; }
+    .skeleton-row {
+      height: 44px;
+      background: linear-gradient(90deg, #f2f5f8 25%, #e8eef3 38%, #f2f5f8 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.25s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+
     @media (max-width: 860px) {
       .topbar { padding: 10px 12px; height: auto; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
       .brand { width: 100%; justify-content: space-between; }
       .brand span { display: none; }
       .userbar { width: 100%; justify-content: flex-start; }
       .workspace { width: calc(100vw - 20px); margin-top: 12px; }
+      .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
-      .toolbar { grid-template-columns: 1fr; padding: 8px; }
+      .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
+      .toolbar-left, .toolbar-filters, .toolbar-actions { width: 100%; flex-direction: column; align-items: stretch; }
+      .toolbar-left input, .toolbar select { min-width: 0; width: 100%; }
       .segmented { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
       .segmented button { min-width: 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .segmented button:nth-last-child(-n+4) { border-bottom: 0; }
@@ -737,6 +963,7 @@
       .admin-layout { grid-template-columns: 1fr; }
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
+      .form-grid, .form-grid.three, .form-grid.single { grid-template-columns: 1fr; }
       .valuation-layout { grid-template-columns: 1fr; }
       .valuation-form { padding: 12px; }
       .result-panel { position: static; }
@@ -750,7 +977,8 @@
       .amount-field input { padding-right: 62px; }
       .drawer-panel { width: 100vw; }
       .drawer-head, .drawer-body, .drawer-foot { padding-left: 12px; padding-right: 12px; }
-      .drawer-foot { justify-content: stretch; }
+      .drawer-foot { align-items: stretch; flex-direction: column; }
+      .drawer-foot .foot-actions { width: 100%; }
       .drawer-foot button { flex: 1; }
       .card-grid { grid-template-columns: 1fr; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
@@ -850,7 +1078,12 @@
       drawerOpen: false,
       editingId: null,
       form: null,
+      formInitialSnapshot: "",
+      formDirty: false,
+      saving: false,
+      publishing: false,
       drawerError: "",
+      tableLoading: false,
       loginNotice: "",
       lastError: ""
     };
@@ -1076,6 +1309,11 @@
       if (cny === null || cny === undefined || Number.isNaN(Number(cny))) return "--";
       const value = toDisplay(cny, currency);
       return `${trimNumber(value)} ${currency}`;
+    }
+
+    function metricMoney(cny, currency) {
+      if (!Number(cny)) return "—";
+      return money(cny, currency);
     }
 
     function moneyYiCny(cny) {
@@ -1401,10 +1639,23 @@
       if (state.mainView === "square") return renderSquare();
       if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
       return `
+        ${renderPageHeader("股池", "股票匹配、估值假设与预期回报管理")}
         ${renderUpdateBanner()}
         ${renderPublisherPanel()}
         ${renderToolbar()}
+        ${renderPoolSummary()}
         ${renderTable()}
+      `;
+    }
+
+    function renderPageHeader(title, subtitle) {
+      return `
+        <section class="page-header">
+          <div class="page-title">
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(subtitle)}</p>
+          </div>
+        </section>
       `;
     }
 
@@ -1621,31 +1872,56 @@
       const viewingOwn = state.viewPublisherId === "own";
       return `
         <div class="toolbar">
-          <input data-input="searchList" placeholder="搜索股票名称或代码" value="${escapeHtml(state.query)}">
-          <select data-input="viewPublisher">
-            <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
-            ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
-          </select>
-          <div class="segmented" aria-label="市场筛选">
-            ${["ALL", "CN", "HK", "US"].map((key) => `
-              <button class="${state.filter === key ? "active" : ""}" data-filter="${key}">
-                ${key === "ALL" ? "全部" : marketLabel(key)}
-              </button>
-            `).join("")}
+          <div class="toolbar-left">
+            <input data-input="searchList" placeholder="搜索股票名称、代码或发布者股池" value="${escapeHtml(state.query)}">
           </div>
-          ${viewingOwn ? `
-            <button class="${state.shareFilter === "SHARED" ? "primary" : ""}" data-action="toggleSharedFilter">已分享</button>
-            <label class="share-settings">
-              分享方式
-              <select data-input="shareVisibility">
-                <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密</option>
-                <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开</option>
-              </select>
-            </label>
-            <button data-action="copyShareLink">复制分享链接</button>
-            <button class="primary" data-action="newStock">新增股票</button>
-          ` : ""}
+          <div class="toolbar-filters">
+            <select data-input="viewPublisher" aria-label="股池筛选">
+              <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
+              ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
+            </select>
+            <div class="segmented" aria-label="市场筛选">
+              ${["ALL", "CN", "HK", "US"].map((key) => `
+                <button class="${state.filter === key ? "active" : ""}" data-filter="${key}">
+                  ${key === "ALL" ? "全部" : marketLabel(key)}
+                </button>
+              `).join("")}
+            </div>
+            ${viewingOwn ? `
+              <button class="${state.shareFilter === "SHARED" ? "primary" : "secondary"}" data-action="toggleSharedFilter">已分享</button>
+              <label class="share-settings">
+                分享方式
+                <select data-input="shareVisibility">
+                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密</option>
+                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开</option>
+                </select>
+              </label>
+            ` : ""}
+          </div>
+          <div class="toolbar-actions">
+            ${viewingOwn ? `
+              <button class="secondary" data-action="copyShareLink">复制分享链接</button>
+              <button class="primary" data-action="newStock">新增股票</button>
+            ` : ""}
+          </div>
         </div>
+      `;
+    }
+
+    function renderPoolSummary() {
+      const rows = userStocks();
+      const viewingOwn = state.viewPublisherId === "own";
+      const upsides = rows.map((stock) => calc(stock).upside).filter((value) => Number.isFinite(value));
+      const averageUpside = upsides.length ? upsides.reduce((sum, value) => sum + value, 0) / upsides.length : null;
+      const sharedCount = rows.filter((stock) => stock.isShared).length;
+      const marketCount = new Set(rows.map((stock) => stock.market).filter(Boolean)).size;
+      return `
+        <section class="summary-strip">
+          ${metricCard("股票数量", `${rows.length} 只`)}
+          ${metricCard("平均 Upside", percent(averageUpside), Number(averageUpside) >= 0 ? "gain" : "loss")}
+          ${metricCard(viewingOwn ? "已分享数量" : "可复制股票", `${viewingOwn ? sharedCount : rows.length} 只`)}
+          ${metricCard("覆盖市场", `${marketCount || 0} 个`)}
+        </section>
       `;
     }
 
@@ -1679,9 +1955,19 @@
     function renderTable() {
       const rows = userStocks();
       const viewingOwn = state.viewPublisherId === "own";
+      if (state.tableLoading) return renderTableSkeleton(viewingOwn);
       if (!rows.length) {
-        const text = viewingOwn ? "还没有股票。点击“新增股票”，从搜索匹配开始建立你的股池。" : "这个分享股池目前没有已发布股票。";
-        return `<section class="table-panel"><div class="empty">${text}</div></section>`;
+        const title = viewingOwn ? "还没有匹配的股票" : "这个分享股池暂无已发布股票";
+        const text = viewingOwn ? "从股票搜索开始录入市值、盈利假设和估值参数，建立你的研究股池。" : "可以切换其他关注人，或回到自己的股池继续维护研究记录。";
+        return `
+          <section class="table-panel">
+            <div class="empty">
+              <strong>${title}</strong>
+              <p>${text}</p>
+              ${viewingOwn ? `<button class="primary" data-action="newStock">新增股票</button>` : ""}
+            </div>
+          </section>
+        `;
       }
       return `
         <section class="table-panel">
@@ -1690,17 +1976,17 @@
               <thead>
                 <tr>
                   <th>标的</th>
-                  <th>最新市值<br><span class="stock-code">CNY 亿</span></th>
-                  ${sortTh("upside", "upside")}
-                  ${sortTh("forwardPE", "Forward PE")}
+                  <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
+                  ${sortTh("upside", "Upside", "num")}
+                  ${sortTh("forwardPE", "Forward PE", "num")}
                   ${sortTh("shareholderReturnRate", `<div class="tax-header"><span>前瞻股东回报率</span><label><span>20%股息税后</span><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}></label></div>`)}
-                  <th>前瞻市值<br><span class="stock-code">CNY 亿</span></th>
-                  <th>前瞻利润<br><span class="stock-code">CNY 亿</span></th>
-                  <th>前瞻 PE</th>
-                  <th>净现金<br><span class="stock-code">CNY 亿</span></th>
-                  <th>现金折扣</th>
-                  <th>前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th>分享</th><th>来源</th>" : ""}
+                  <th class="num">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num">前瞻 PE</th>
+                  <th class="num">净现金<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num">现金折扣</th>
+                  <th class="num">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
+                  ${viewingOwn ? "<th>分享状态</th><th>来源</th>" : ""}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -1713,10 +1999,24 @@
       `;
     }
 
-    function sortTh(key, label) {
+    function renderTableSkeleton(viewingOwn) {
+      const colSpan = viewingOwn ? 14 : 12;
+      return `
+        <section class="table-panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th colspan="${colSpan}">正在加载股池数据</th></tr></thead>
+              <tbody>${Array.from({ length: 6 }).map(() => `<tr><td colspan="${colSpan}"><div class="skeleton-row"></div></td></tr>`).join("")}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function sortTh(key, label, cls = "") {
       const active = state.sort.key === key;
       const arrow = active ? (state.sort.dir === "asc" ? " ↑" : " ↓") : "";
-      return `<th class="sortable" data-sort="${key}">${label}${arrow}</th>`;
+      return `<th class="sortable ${cls}" data-sort="${key}">${label}${arrow}</th>`;
     }
 
     function renderRow(stock, viewingOwn) {
@@ -1728,18 +2028,18 @@
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
-          <td data-label="最新市值">${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td data-label="upside" class="${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
-          <td data-label="Forward PE">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td data-label="前瞻股东回报率" class="${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
-          <td data-label="前瞻市值">${moneyYiCny(c.expectedMarketCapCny)}</td>
-          <td data-label="前瞻利润">${moneyYiCny(stock.expectedProfitCny)}</td>
-          <td data-label="前瞻 PE">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
-          <td data-label="净现金">${moneyYiCny(stock.netCashCny)}</td>
-          <td data-label="现金折扣">${stock.netCashDiscountRate ?? "--"}</td>
-          <td data-label="前瞻股东回报">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
+          <td data-label="最新市值" class="num">${moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td data-label="Upside" class="kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
+          <td data-label="Forward PE" class="kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td data-label="前瞻股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
+          <td data-label="前瞻市值" class="num">${moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td data-label="前瞻利润" class="num">${moneyYiCny(stock.expectedProfitCny)}</td>
+          <td data-label="前瞻 PE" class="num">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
+          <td data-label="净现金" class="num">${moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣" class="num">${stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报" class="num">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
-            <td data-label="分享">${renderShareState(stock)}</td>
+            <td data-label="分享状态">${renderShareState(stock)}</td>
             <td data-label="来源">${renderSourceCell(stock)}</td>
           ` : ""}
           <td data-label="操作">
@@ -1749,13 +2049,13 @@
                 <button class="icon" title="置顶" data-action="pinTop" data-id="${stock.id}">↑</button>
                 <button class="icon" title="置底" data-action="pinBottom" data-id="${stock.id}">↓</button>
                 ${stock.sourceType === "subscribed" ? `
-                  <button title="取消订阅" data-action="unsubscribeStock" data-id="${stock.id}">取消订阅</button>
-                  <button title="转为我的股票" data-action="convertToOwn" data-id="${stock.id}">转为我的</button>
+                  <button class="text-action" title="取消订阅" data-action="unsubscribeStock" data-id="${stock.id}">取消订阅</button>
+                  <button class="text-action" title="转为我的股票" data-action="convertToOwn" data-id="${stock.id}">转为我的</button>
                 ` : ""}
                 <button class="icon danger" title="删除" data-action="delete" data-id="${stock.id}">×</button>
               ` : `
-                <button data-action="copySharedStock" data-id="${stock.id}">一键复制</button>
-                <button class="primary" data-action="subscribeStock" data-id="${stock.id}">订阅</button>
+                <button class="text-action" data-action="copySharedStock" data-id="${stock.id}">一键复制</button>
+                <button class="primary text-action" data-action="subscribeStock" data-id="${stock.id}">订阅</button>
               `}
             </div>
           </td>
@@ -1764,10 +2064,10 @@
     }
 
     function renderShareState(stock) {
-      if (!stock.isShared) return `<div class="share-state"><strong class="muted">未分享</strong></div>`;
+      if (!stock.isShared) return `<div class="share-state"><span class="badge unshared">未分享</span></div>`;
       return `
         <div class="share-state">
-          <strong class="gain">已分享</strong>
+          <span class="badge shared">已分享</span>
           <span class="stock-code">${formatDateTime(stock.lastPublishedAt)}</span>
         </div>
       `;
@@ -1780,7 +2080,7 @@
         <div class="source-cell">
           <div class="source-tags">
             <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
-            <span class="badge soft">${typeLabel}</span>
+            <span class="badge source">${typeLabel}</span>
             ${stock.sourceStopped ? `<span class="badge warn">已停止分享</span>` : ""}
             ${stock.hasSourceUpdate ? `<span class="badge warn">有更新</span>` : ""}
           </div>
@@ -1830,101 +2130,91 @@
       const currency = form.displayCurrency || "CNY";
       const isSubscribed = form.sourceType === "subscribed";
       const locked = isSubscribed ? "disabled" : "";
+      const stockError = state.drawerError && (!form.name.trim() || !form.code.trim()) ? state.drawerError : "";
+      const generalError = state.drawerError && !stockError ? state.drawerError : "";
       return `
         <aside class="drawer ${state.drawerOpen ? "open" : ""}">
           <div class="drawer-panel">
             <div class="drawer-head">
-              <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
+              <div class="drawer-title">
+                <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
+                <p>录入当前市值、盈利假设、现金调整与股东回报，系统将自动计算估值指标。</p>
+              </div>
               <button class="icon" data-action="closeDrawer" title="关闭">×</button>
             </div>
             <div class="drawer-body">
               <div class="valuation-layout">
                 <div class="valuation-form">
                   ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
-                  <div class="compact-row stock-search-row">
-                    <label>股票名称:</label>
-                    <div>
-                      <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入名称或股票代码搜索" ${locked}>
-                      <div class="search-results" id="searchResults"></div>
+                  ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
+                    <div class="form-grid">
+                      ${formField("股票名称/代码搜索", `
+                        <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
+                        <div class="search-results" id="searchResults"></div>
+                        ${form.name ? `<div class="selected-stock"><span>${escapeHtml(form.name)} · ${escapeHtml(form.code)} · ${marketLabel(form.market)} · ${escapeHtml(form.exchange || "--")}</span><span>已选择</span></div>` : ""}
+                      `, { required: true, error: stockError })}
+                      ${formField("货币单位", `
+                        <select data-field="displayCurrency" ${locked}>
+                          ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key} · ${currencies[key].label}</option>`).join("")}
+                        </select>
+                      `)}
                     </div>
-                    <span></span>
-                  </div>
-                  <div class="compact-row two basic-row">
-                    <label>股票市值:</label>
-                    <span class="market-cap-value">${trimNumber(toDisplay(form.latestMarketCapCny, currency))}亿 ${currency}</span>
-                    <label class="inline-label">货币单位:</label>
-                    <select class="form-control-sm" data-field="displayCurrency" ${locked}>
-                      ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key}</option>`).join("")}
-                    </select>
-                  </div>
+                    <div class="form-grid">
+                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`, { help: "只读信息，来自股票匹配和行情接口。" })}
+                    </div>
+                  `)}
 
-                  <div class="form-divider">前瞻利润&股东回报</div>
-                  <div class="compact-row two">
-                    <label>前瞻利润:</label>
-                    <div class="amount-field">
-                      <input type="number" step="any" data-amount="expectedProfitCny" value="${escapeHtml(toDisplay(form.expectedProfitCny, currency))}" ${locked}>
-                      <span class="amount-suffix">亿 ${currency}</span>
+                  ${sectionCard("盈利与估值假设", "维护前瞻利润、目标 PE 和利润口径说明，用于计算前瞻市值与 Upside。", `
+                    <div class="form-grid three">
+                      ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true })}
+                      ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked))}
+                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="例如：18" ${locked}>`)}
                     </div>
-                    <label class="inline-label">前瞻年份:</label>
-                    ${forecastYearSelect(form.forecastYear, locked)}
-                  </div>
-                  <div class="compact-row two">
-                    <label>前瞻PE:</label>
-                    <input type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="请输入内容" ${locked}>
-                    <label class="inline-label">前瞻股东回报:</label>
-                    <div class="amount-field">
-                      <input type="number" step="any" data-amount="expectedShareholderReturnCny" value="${escapeHtml(toDisplay(form.expectedShareholderReturnCny, currency))}" placeholder="请输入" ${locked}>
-                      <span class="amount-suffix">亿 ${currency}</span>
+                    <div class="form-grid single">
+                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="例如：按 2026E non-GAAP 净利润，剔除一次性项目" ${locked}>`)}
                     </div>
-                  </div>
-                  <div class="compact-row two">
-                    <label>利润备注:</label>
-                    <input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="请输入内容" ${locked}>
-                    <label class="inline-label">股东回报政策</label>
-                    <input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="请输入内容" ${locked}>
-                  </div>
+                  `)}
 
-                  <div class="form-divider">净现金</div>
-                  <div class="compact-row two">
-                    <label>净现金盘点:</label>
-                    <div class="amount-field">
-                      <input type="number" step="any" data-amount="netCashCny" value="${escapeHtml(toDisplay(form.netCashCny, currency))}" placeholder="请输入" ${locked}>
-                      <span class="amount-suffix">亿 ${currency}</span>
+                  ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
+                    <div class="form-grid">
+                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked))}
+                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="例如：分红率 50%，另有回购计划" ${locked}>`)}
                     </div>
-                    <label class="inline-label">净现金打折系数:</label>
-                    <input class="form-control-sm" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="0-1" ${locked}>
-                  </div>
-                  <div class="compact-row two">
-                    <label>净现金口径:</label>
-                    <input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="请输入" ${locked}>
-                    <span></span>
-                    <span></span>
-                  </div>
+                  `)}
 
-                  <div class="form-divider">我的备注</div>
-                  <textarea data-field="myNote" placeholder="记录你自己的观察，这部分不会影响发布者原始数据。">${escapeHtml(form.myNote || "")}</textarea>
+                  ${sectionCard("净现金调整", "净现金可按折扣系数计入估值，适合处理现金、投资资产或净负债。", `
+                    <div class="form-grid three">
+                      ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked))}
+                      ${formField("现金折扣", `<input class="numeric-input" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" placeholder="0-1" ${locked}>`, { help: "1 表示全额计入，0 表示不计入。" })}
+                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`)}
+                    </div>
+                  `)}
+
+                  ${sectionCard("个人研究备注", "仅用于你的私人研究记录，不影响发布者原始数据。", `
+                    <textarea data-field="myNote" placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
+                  `)}
 
                   <input type="hidden" data-field="name" value="${escapeHtml(form.name)}">
                   <input type="hidden" data-field="code" value="${escapeHtml(form.code)}">
                   <input type="hidden" data-field="market" value="${escapeHtml(form.market)}">
                   <input type="hidden" data-field="exchange" value="${escapeHtml(form.exchange)}">
                   <input type="hidden" data-field="marketCapUpdatedAt" value="${escapeHtml(form.marketCapUpdatedAt)}">
-                  ${state.drawerError ? `<div class="form-error">${escapeHtml(state.drawerError)}</div>` : ""}
+                  ${generalError ? `<div class="form-error">${escapeHtml(generalError)}</div>` : ""}
                 </div>
                 <div class="result-panel">
-                  <h3>测算结果:</h3>
+                  <h3>估值测算</h3>
                   <div class="result-grid summary">
-                    ${resultItem("前瞻市值", `${money(c.expectedMarketCapCny, currency)}`)}
-                    ${resultItem("upside", percent(c.upside))}
+                    ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
+                    ${resultItem("Upside", percent(c.upside))}
                     ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
                     ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                   </div>
                   <div class="publish-box">
-                    <label>发布观点</label>
-                    <textarea data-field="publishNote" placeholder="记录这次为什么发布或更新观点，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
-                    <div class="hint">发布会先保存当前内容，并记录为一个公开版本。</div>
+                    <label>公开观点</label>
+                    <textarea data-field="publishNote" placeholder="记录这次发布或更新的原因，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
+                    <div class="hint">发布会保存当前版本，并生成公开快照。</div>
                     <div class="publish-actions">
-                      <button data-action="publishStock" ${isSubscribed ? "disabled" : ""}>发布</button>
+                      <button data-action="publishStock" ${isSubscribed || state.publishing || state.saving ? "disabled" : ""}>${state.publishing ? "发布中..." : "发布快照"}</button>
                     </div>
                     <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
                   </div>
@@ -1932,11 +2222,44 @@
               </div>
             </div>
             <div class="drawer-foot">
-              <button data-action="closeDrawer">取消</button>
-              <button class="primary" data-action="saveStock">保存</button>
+              <span class="hint">${state.formDirty ? "有未保存修改" : "所有已保存内容会保留在你的私人股池中"}</span>
+              <div class="foot-actions">
+                <button data-action="closeDrawer" ${state.saving || state.publishing ? "disabled" : ""}>取消</button>
+                <button class="primary" data-action="saveStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.saving ? "保存中..." : "保存股票"}</button>
+              </div>
             </div>
           </div>
         </aside>
+      `;
+    }
+
+    function sectionCard(title, description, body) {
+      return `
+        <section class="section-card">
+          <h3>${escapeHtml(title)}</h3>
+          ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+          ${body}
+        </section>
+      `;
+    }
+
+    function formField(label, control, options = {}) {
+      return `
+        <div class="form-field">
+          <label class="${options.required ? "required" : ""}">${escapeHtml(label)}</label>
+          ${control}
+          ${options.help ? `<div class="field-help">${escapeHtml(options.help)}</div>` : ""}
+          ${options.error ? `<div class="inline-error">${escapeHtml(options.error)}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function amountInput(key, cny, currency, attrs = "") {
+      return `
+        <div class="amount-field">
+          <input class="numeric-input" type="number" step="any" data-amount="${key}" value="${escapeHtml(toDisplay(cny, currency))}" placeholder="0.00" ${attrs}>
+          <span class="amount-suffix">亿 ${currency}</span>
+        </div>
       `;
     }
 
@@ -1971,8 +2294,14 @@
       return `<div class="metric"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
     }
 
+    function metricCard(label, value, cls = "") {
+      return `<div class="metric-card"><span>${label}</span><strong class="${cls}">${value || "—"}</strong></div>`;
+    }
+
     function resultItem(label, value) {
-      return `<div class="result-metric"><strong>${label}</strong><span>${value}</span></div>`;
+      const text = value && value !== "--" ? value : "—";
+      const cls = String(text).startsWith("-") ? "loss" : String(text).includes("%") && text !== "—" ? "gain" : "";
+      return `<div class="result-metric"><strong>${label}</strong><span class="${cls}">${text}</span></div>`;
     }
 
     function forecastYearSelect(value, attrs = "") {
@@ -2021,7 +2350,12 @@
       if (viewPublisher) viewPublisher.addEventListener("change", async (event) => {
         state.viewPublisherId = event.target.value;
         state.query = "";
-        if (state.viewPublisherId !== "own") await loadPublisherStocks(state.viewPublisherId);
+        if (state.viewPublisherId !== "own") {
+          state.tableLoading = true;
+          render();
+          await loadPublisherStocks(state.viewPublisherId);
+          state.tableLoading = false;
+        }
         render();
       });
       const shareVisibility = document.querySelector("[data-input='shareVisibility']");
@@ -2133,23 +2467,39 @@
       const stock = state.stocks.find((item) => item.id === stockId);
       state.editingId = stockId;
       state.form = stock ? { ...stock } : emptyForm();
+      state.formInitialSnapshot = formSnapshot(state.form);
+      state.formDirty = false;
       state.drawerError = "";
       state.drawerOpen = true;
       render();
     }
 
     function closeDrawer() {
+      if (state.formDirty && !confirm("有未保存修改，确定要关闭吗？")) return;
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
+      state.formInitialSnapshot = "";
+      state.formDirty = false;
       state.drawerError = "";
       render();
+    }
+
+    function formSnapshot(form) {
+      if (!form) return "";
+      const copy = { ...form, publishNote: form.publishNote || "" };
+      return JSON.stringify(copy);
+    }
+
+    function markFormDirty() {
+      state.formDirty = Boolean(state.form && formSnapshot(state.form) !== state.formInitialSnapshot);
     }
 
     function updateFormField(key, value) {
       if (!state.form) return;
       if (["expectedPE", "netCashDiscountRate"].includes(key)) state.form[key] = Number(value);
       else state.form[key] = value;
+      markFormDirty();
       if (key === "market") {
         state.form.displayCurrency = defaultCurrencyFor(state.form);
         render();
@@ -2165,6 +2515,7 @@
     function updateAmountField(key, value) {
       if (!state.form) return;
       state.form[key] = toCny(value, state.form.displayCurrency);
+      markFormDirty();
       refreshSummary();
     }
 
@@ -2174,8 +2525,8 @@
       const currency = state.form.displayCurrency || "CNY";
       const c = calc(state.form);
       summary.innerHTML = `
-        ${resultItem("前瞻市值", money(c.expectedMarketCapCny, currency))}
-        ${resultItem("upside", percent(c.upside))}
+        ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
+        ${resultItem("Upside", percent(c.upside))}
         ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
         ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
       `;
@@ -2223,16 +2574,20 @@
       state.form.latestMarketCapCny = stock.latestMarketCapCny || stock.marketCapCny || 0;
       state.form.marketCapUpdatedAt = stock.marketCapUpdatedAt || stock.updatedAt || todayString();
       state.form.forecastYear = state.form.forecastYear || "2025E";
+      markFormDirty();
       render();
     }
 
-    async function saveStock({ keepOpen = false } = {}) {
+    async function saveStock({ keepOpen = false, fromPublish = false } = {}) {
+      if (state.saving || (state.publishing && !fromPublish)) return null;
       if (!state.form.name.trim() || !state.form.code.trim()) {
         state.drawerError = "请填写股票名称和代码。";
         render();
         return null;
       }
+      state.saving = true;
       state.drawerError = "";
+      render();
       const now = new Date().toISOString();
       const payload = {
         ...state.form,
@@ -2260,6 +2615,7 @@
           });
         } catch (error) {
           state.drawerError = `保存失败：${error.message || String(error)}`;
+          state.saving = false;
           render();
           return null;
         }
@@ -2279,6 +2635,7 @@
           });
         } catch (error) {
           state.drawerError = `保存失败：${error.message || String(error)}`;
+          state.saving = false;
           render();
           return null;
         }
@@ -2286,11 +2643,21 @@
         state.stocks.push(payload);
       }
       state.form = { ...payload };
-      if (!keepOpen) closeDrawer();
+      state.formInitialSnapshot = formSnapshot(state.form);
+      state.formDirty = false;
+      state.saving = false;
+      if (!keepOpen) {
+        state.drawerOpen = false;
+        state.editingId = null;
+        state.form = null;
+        state.formInitialSnapshot = "";
+      }
+      render();
       return payload;
     }
 
     async function publishStock() {
+      if (state.publishing || state.saving) return;
       if (state.form?.sourceType === "subscribed") {
         state.drawerError = "订阅来的股票不能发布。如需发布自己的观点，请先转为我的股票。";
         render();
@@ -2301,9 +2668,15 @@
         render();
         return;
       }
+      if (!confirm("发布会保存当前内容并生成一个可分享快照，确定发布吗？")) return;
+      state.publishing = true;
       const note = state.form?.publishNote?.trim() || "";
-      const stock = await saveStock({ keepOpen: true });
-      if (!stock?.id) return;
+      const stock = await saveStock({ keepOpen: true, fromPublish: true });
+      if (!stock?.id) {
+        state.publishing = false;
+        render();
+        return;
+      }
       const now = new Date().toISOString();
       const payload = {
         ...stock,
@@ -2336,12 +2709,20 @@
         });
       } catch (error) {
         state.drawerError = `发布失败：${error.message || String(error)}`;
+        state.publishing = false;
         render();
         return;
       }
       state.stocks = state.stocks.map((item) => item.id === stock.id ? payload : item);
       state.form = { ...payload };
-      closeDrawer();
+      state.formInitialSnapshot = formSnapshot(state.form);
+      state.formDirty = false;
+      state.publishing = false;
+      state.drawerOpen = false;
+      state.editingId = null;
+      state.form = null;
+      state.formInitialSnapshot = "";
+      render();
     }
 
     async function updatePin(stockId, pin) {
