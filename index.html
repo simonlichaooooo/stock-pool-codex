@@ -870,7 +870,7 @@
       box-shadow: var(--shadow-soft);
       padding: 14px;
     }
-    .section-card h3 { margin: 0; font-size: 15px; color: #172033; }
+    .section-card h3 { margin: 0 0 12px; font-size: 15px; color: #172033; }
     .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
     .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -885,6 +885,7 @@
     .form-field label.required::after { content: " *"; color: var(--gain); }
     .form-field .field-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .inline-error { color: #912018; font-size: 12px; line-height: 1.45; }
+    .currency-select { width: calc(100% - 28px); }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -1665,7 +1666,6 @@
         ${renderUpdateBanner()}
         ${renderPublisherPanel()}
         ${renderToolbar()}
-        ${renderPoolSummary()}
         ${renderTable()}
       `;
     }
@@ -2160,7 +2160,6 @@
             <div class="drawer-head">
               <div class="drawer-title">
                 <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
-                <p>录入当前市值、盈利假设、现金调整与股东回报，系统将自动计算估值指标。</p>
               </div>
               <button class="icon" data-action="closeDrawer" title="关闭">×</button>
             </div>
@@ -2175,16 +2174,15 @@
                           <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
                           <div class="search-results" id="searchResults"></div>
                         </div>
-                        ${form.name ? `<div class="selected-stock"><span>${escapeHtml(form.name)} · ${escapeHtml(form.code)} · ${marketLabel(form.market)} · ${escapeHtml(form.exchange || "--")}</span><span>已选择</span></div>` : ""}
                       `, { required: true, error: stockError })}
                       ${formField("货币单位", `
-                        <select data-field="displayCurrency" ${locked}>
+                        <select class="currency-select" data-field="displayCurrency" ${locked}>
                           ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key} · ${currencies[key].label}</option>`).join("")}
                         </select>
                       `)}
                     </div>
                     <div class="form-grid">
-                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`, { help: "只读信息，来自股票匹配和行情接口。" })}
+                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`)}
                     </div>
                   `)}
 
@@ -2195,14 +2193,14 @@
                       ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" placeholder="例如：18" ${locked}>`)}
                     </div>
                     <div class="form-grid single">
-                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" placeholder="例如：按 2026E non-GAAP 净利润，剔除一次性项目" ${locked}>`)}
+                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`)}
                     </div>
                   `)}
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
                     <div class="form-grid">
                       ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked))}
-                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" placeholder="例如：分红率 50%，另有回购计划" ${locked}>`)}
+                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`)}
                     </div>
                   `)}
 
@@ -2261,7 +2259,6 @@
       return `
         <section class="section-card">
           <h3>${escapeHtml(title)}</h3>
-          ${description ? `<p>${escapeHtml(description)}</p>` : ""}
           ${body}
         </section>
       `;
