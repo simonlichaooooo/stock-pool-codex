@@ -566,15 +566,15 @@
     }
     .drawer input,
     .drawer select {
-      min-height: 34px;
-      padding: 6px 9px;
+      min-height: 30px;
+      padding: 4px 8px;
       font-size: 13px;
       line-height: 1.35;
       border-radius: 4px;
     }
     .drawer textarea {
       min-height: 72px;
-      padding: 8px 9px;
+      padding: 6px 8px;
       font-size: 13px;
       line-height: 1.55;
       border-radius: 4px;
@@ -852,6 +852,7 @@
     .form-grid.one { grid-template-columns: 150px; }
     .form-grid.single { grid-template-columns: minmax(0, 1fr); }
     .form-grid.market-cap-row { margin-top: 12px; }
+    .form-grid.follow-row { margin-top: 10px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
       color: #344054;
@@ -893,7 +894,7 @@
     }
     .percent-stepper button,
     .percent-stepper input {
-      min-height: 34px;
+      min-height: 30px;
       border-radius: 0;
     }
     .percent-stepper button {
@@ -907,7 +908,7 @@
       border-left: 0;
       border-right: 0;
       text-align: center;
-      padding: 6px 4px;
+      padding: 4px 4px;
     }
     .markdown-note {
       max-width: none !important;
@@ -941,7 +942,7 @@
     .amount-field input { padding-right: 58px; }
     .amount-field { width: 100%; }
     .readonly-value {
-      min-height: 34px;
+      min-height: 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -949,7 +950,7 @@
       border: 1px solid var(--line);
       border-radius: 4px;
       background: #f8fafc;
-      padding: 6px 9px;
+      padding: 4px 8px;
       color: #172033;
       font-size: 13px;
     }
@@ -2257,10 +2258,10 @@
                   ${sectionCard("盈利与估值假设", "维护前瞻利润、目标 PE 和利润口径说明，用于计算前瞻市值与 Upside。", `
                     <div class="form-grid three">
                       ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true, className: "input-short" })}
+                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" required ${locked}>`, { required: true, className: "input-short" })}
                       ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
-                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" ${locked}>`, { className: "input-short" })}
                     </div>
-                    <div class="form-grid single">
+                    <div class="form-grid single follow-row">
                       ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
@@ -2271,7 +2272,7 @@
                       ${formField("前瞻回购", amountInput("expectedBuybackCny", form.expectedBuybackCny, currency, locked), { className: "input-short" })}
                       ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked ? locked : "readonly"), { className: "input-short" })}
                     </div>
-                    <div class="form-grid single">
+                    <div class="form-grid single follow-row">
                       ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
@@ -2281,7 +2282,7 @@
                       ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked), { className: "input-short" })}
                       ${formField("现金折扣", percentStepperInput("netCashDiscountRate", form.netCashDiscountRate, locked), { className: "input-short" })}
                     </div>
-                    <div class="form-grid single">
+                    <div class="form-grid single follow-row">
                       ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
@@ -2706,6 +2707,11 @@
       if (state.saving || (state.publishing && !fromPublish)) return null;
       if (!state.form.name.trim() || !state.form.code.trim()) {
         state.drawerError = "请填写股票名称和代码。";
+        render();
+        return null;
+      }
+      if (!Number(state.form.expectedPE)) {
+        state.drawerError = "请填写前瞻 PE。";
         render();
         return null;
       }
