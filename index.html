@@ -2363,10 +2363,19 @@
       return `
         <div class="percent-stepper">
           <button type="button" data-discount-step="-10" ${attrs}>-</button>
-          <input class="numeric-input" type="number" min="0" max="100" step="10" data-percent-field="${key}" value="${escapeHtml(percent)}" ${attrs}>
+          <input class="numeric-input" type="text" inputmode="decimal" data-percent-field="${key}" value="${escapeHtml(formatPercentInput(percent))}" ${attrs}>
           <button type="button" data-discount-step="10" ${attrs}>+</button>
         </div>
       `;
+    }
+
+    function parsePercentInput(value) {
+      const parsed = Number(String(value ?? "").replace("%", "").trim());
+      return Math.min(100, Math.max(0, Number.isFinite(parsed) ? parsed : 0));
+    }
+
+    function formatPercentInput(value) {
+      return `${trimNumber(parsePercentInput(value))}%`;
     }
 
     function field(label, key, value, type = "text") {
@@ -2445,7 +2454,10 @@
       });
       document.querySelectorAll("[data-percent-field]").forEach((el) => {
         el.addEventListener("input", () => updatePercentField(el.dataset.percentField, el.value));
-        el.addEventListener("change", () => updatePercentField(el.dataset.percentField, el.value));
+        el.addEventListener("change", () => {
+          updatePercentField(el.dataset.percentField, el.value);
+          el.value = formatPercentInput((Number(state.form?.[el.dataset.percentField]) || 0) * 100);
+        });
       });
       document.querySelectorAll("[data-discount-step]").forEach((el) => {
         el.addEventListener("click", () => stepDiscountField(Number(el.dataset.discountStep)));
@@ -2623,7 +2635,7 @@
 
     function updatePercentField(key, value) {
       if (!state.form) return;
-      const percent = Math.min(100, Math.max(0, Number(value) || 0));
+      const percent = parsePercentInput(value);
       state.form[key] = percent / 100;
       markFormDirty();
       refreshSummary();
@@ -2632,9 +2644,9 @@
     function stepDiscountField(step) {
       if (!state.form) return;
       const input = document.querySelector("[data-percent-field='netCashDiscountRate']");
-      const current = input ? Number(input.value) || 0 : (Number(state.form.netCashDiscountRate) || 0) * 100;
+      const current = input ? parsePercentInput(input.value) : (Number(state.form.netCashDiscountRate) || 0) * 100;
       const next = Math.min(100, Math.max(0, current + step));
-      if (input) input.value = next;
+      if (input) input.value = formatPercentInput(next);
       updatePercentField("netCashDiscountRate", next);
     }
 
@@ -2680,7 +2692,7 @@
       box.innerHTML = results.length
         ? results.map((stock, index) => `
           <button class="result-item" data-catalog="${index}">
-            <span><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)} · ${marketLabel(stock.market)} · ${escapeHtml(stock.exchange)}</span></span>
+            <span><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)} · ${marketLabel(stock.market)}</span></span>
             ${stock.quoteId ? "" : `<span>${money(stock.marketCapCny, defaultCurrencyFor(stock))}</span>`}
           </button>
         `).join("")
