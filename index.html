@@ -832,8 +832,10 @@
     }
     .drawer-foot .foot-actions { display: flex; gap: 10px; align-items: center; }
     .valuation-layout { grid-template-columns: 800px 360px; gap: 24px; align-items: start; justify-content: start; }
-    .valuation-form { width: 800px; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
+    .valuation-form { width: 800px !important; max-width: 800px !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
+      width: 800px !important;
+      max-width: 800px !important;
       background: white;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -842,8 +844,8 @@
     }
     .section-card h3 { margin: 0 0 12px; font-size: 15px; color: #172033; }
     .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, 280px); gap: 12px 24px; align-items: start; justify-content: start; }
-    .form-grid.three { grid-template-columns: repeat(3, 160px); gap: 12px 48px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 280px); gap: 12px 40px; align-items: start; justify-content: start; }
+    .form-grid.three { grid-template-columns: repeat(3, 180px); gap: 12px 48px; }
     .form-grid.single { grid-template-columns: 280px; }
     .form-grid.market-cap-row { margin-top: 12px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
@@ -869,7 +871,7 @@
     .form-field.input-short input,
     .form-field.input-short select,
     .form-field.input-short .amount-field,
-    .form-field.input-short .readonly-value { max-width: 160px; }
+    .form-field.input-short .readonly-value { max-width: 180px; }
     .form-field.input-medium input,
     .form-field.input-medium select,
     .form-field.input-medium .search-combobox,
@@ -966,7 +968,8 @@
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .form-grid, .form-grid.three, .form-grid.single { grid-template-columns: 1fr; }
-      .valuation-form { width: 100%; }
+      .valuation-form,
+      .section-card { width: 100% !important; max-width: none !important; }
       .valuation-form .form-field > input,
       .valuation-form .form-field > select,
       .valuation-form .form-field > textarea,
