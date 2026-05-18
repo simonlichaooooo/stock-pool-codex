@@ -417,6 +417,96 @@
       border-color: #9a3412;
       background: #9a3412;
     }
+    .history-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 30;
+      background: rgba(15, 23, 42, 0.36);
+      padding: 32px;
+      overflow: auto;
+    }
+    .history-modal.open { display: grid; place-items: start center; }
+    .history-panel {
+      width: min(1040px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.2);
+      overflow: hidden;
+    }
+    .history-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .history-head h3 { margin: 0; font-size: 18px; }
+    .history-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .history-body {
+      padding: 16px 18px 18px;
+      background: #f6f8fa;
+      max-height: min(760px, calc(100vh - 150px));
+      overflow: auto;
+    }
+    .history-list {
+      display: grid;
+      gap: 12px;
+    }
+    .history-item {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 13px;
+      display: grid;
+      gap: 12px;
+    }
+    .history-item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .history-item h4 { margin: 0; font-size: 15px; }
+    .history-note {
+      margin: 0;
+      color: #344054;
+      line-height: 1.55;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .history-metric {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #f8fafc;
+      padding: 8px;
+      min-height: 58px;
+    }
+    .history-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .history-metric strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .history-delta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
     .form-error {
       margin-top: 14px;
       padding: 10px 12px;
@@ -1043,6 +1133,9 @@
       .share-settings { justify-content: space-between; }
       .share-settings select { width: 160px; }
       .admin-layout { grid-template-columns: 1fr; }
+      .history-modal { padding: 12px; }
+      .history-grid { grid-template-columns: 1fr 1fr; }
+      .history-item-head { flex-direction: column; }
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .form-grid, .form-grid.three, .form-grid.one, .form-grid.single { grid-template-columns: 1fr; }
@@ -1182,6 +1275,13 @@
       publishing: false,
       sharingStockId: "",
       drawerError: "",
+      publicationHistory: {
+        open: false,
+        loading: false,
+        stock: null,
+        rows: [],
+        error: ""
+      },
       tableLoading: false,
       loginNotice: "",
       lastError: ""
@@ -1694,6 +1794,76 @@
       return next;
     }
 
+    function buildPublicationSnapshot(stock, changeNote = "") {
+      const normalized = normalizeShareholderReturnFields(stock);
+      const computed = calc(normalized);
+      return {
+        schemaVersion: 2,
+        stock: {
+          id: normalized.id || null,
+          name: normalized.name || "",
+          code: normalized.code || "",
+          market: normalized.market || "",
+          exchange: normalized.exchange || "",
+          displayCurrency: normalized.displayCurrency || defaultCurrencyFor(normalized)
+        },
+        assumptions: {
+          latestMarketCapCny: Number(normalized.latestMarketCapCny) || 0,
+          marketCapUpdatedAt: normalized.marketCapUpdatedAt || "",
+          expectedProfitCny: Number(normalized.expectedProfitCny) || 0,
+          expectedPE: Number(normalized.expectedPE) || 0,
+          forecastYear: normalized.forecastYear || "",
+          expectedPERemark: normalized.expectedPERemark || "",
+          netCashCny: Number(normalized.netCashCny) || 0,
+          netCashScope: normalized.netCashScope || "",
+          netCashDiscountRate: Number(normalized.netCashDiscountRate) || 0,
+          expectedDividendCny: Number(normalized.expectedDividendCny) || 0,
+          expectedBuybackCny: Number(normalized.expectedBuybackCny) || 0,
+          expectedShareholderReturnCny: Number(normalized.expectedShareholderReturnCny) || 0,
+          shareholderReturnRemark: normalized.shareholderReturnRemark || ""
+        },
+        computed,
+        note: {
+          investmentNote: normalized.investmentNote || "",
+          myNote: normalized.myNote || "",
+          changeNote
+        }
+      };
+    }
+
+    function stockFromPublication(publication) {
+      const payload = publication?.payload || {};
+      if (!payload.schemaVersion) return normalizeShareholderReturnFields(payload);
+      return normalizeShareholderReturnFields({
+        ...(payload.stock || {}),
+        ...(payload.assumptions || {}),
+        investmentNote: payload.note?.investmentNote || "",
+        myNote: payload.note?.myNote || "",
+        isShared: true,
+        lastPublishedAt: publication.created_at || payload.lastPublishedAt || "",
+        updatedAt: publication.created_at || payload.updatedAt || ""
+      });
+    }
+
+    function stockWithPublication(stock, publication) {
+      if (!publication) return stock;
+      return {
+        ...stock,
+        ...stockFromPublication(publication),
+        id: stock.id,
+        userId: stock.userId,
+        publisherId: stock.publisherId,
+        publisherNickname: stock.publisherNickname,
+        sourceUserId: stock.sourceUserId,
+        sourceStockId: stock.sourceStockId,
+        sourceNickname: stock.sourceNickname,
+        sourceType: stock.sourceType,
+        isShared: true,
+        lastPublishedAt: publication.created_at || stock.lastPublishedAt,
+        updatedAt: publication.created_at || stock.updatedAt
+      };
+    }
+
     function ensureAuth() {
       if (state.loading) {
         renderLoading();
@@ -1742,6 +1912,7 @@
             ${renderCurrentView()}
           </main>
           ${renderDrawer()}
+          ${renderPublicationHistory()}
         </div>
       `;
       bindEvents();
@@ -2170,6 +2341,7 @@
               ` : `
                 <button class="text-action" data-action="copySharedStock" data-id="${stock.id}">一键复制</button>
                 <button class="primary text-action" data-action="subscribeStock" data-id="${stock.id}">订阅</button>
+                <button class="text-action" data-action="openPublicationHistory" data-id="${stock.id}">历史</button>
               `}
             </div>
           </td>
@@ -2185,8 +2357,103 @@
       return `
         <div class="share-state">
           <span class="badge shared">已分享</span>
+          <button class="text-action share-action" data-action="openPublicationHistory" data-id="${stock.id}">历史</button>
         </div>
       `;
+    }
+
+    function renderPublicationHistory() {
+      const modal = state.publicationHistory;
+      if (!modal.open) return "";
+      const stock = modal.stock || {};
+      return `
+        <div class="history-modal open" data-action="closePublicationHistory">
+          <section class="history-panel" onclick="event.stopPropagation()">
+            <div class="history-head">
+              <div>
+                <h3>${escapeHtml(stock.name || "发布历史")}</h3>
+                <p>${escapeHtml(stock.code || "")}${stock.publisherNickname ? ` · ${escapeHtml(stock.publisherNickname)}` : ""}</p>
+              </div>
+              <button class="icon" data-action="closePublicationHistory" title="关闭">×</button>
+            </div>
+            <div class="history-body">
+              ${modal.loading ? `<div class="empty">正在加载发布历史...</div>` : ""}
+              ${modal.error ? `<div class="form-error">${escapeHtml(modal.error)}</div>` : ""}
+              ${!modal.loading && !modal.error ? renderPublicationHistoryRows(modal.rows) : ""}
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function renderPublicationHistoryRows(rows) {
+      if (!rows.length) return `<div class="empty">还没有发布快照。</div>`;
+      return `
+        <div class="history-list">
+          ${rows.map((row, index) => renderPublicationHistoryItem(row, rows[index + 1])).join("")}
+        </div>
+      `;
+    }
+
+    function renderPublicationHistoryItem(row, previousRow) {
+      const stock = stockFromPublication(row);
+      const previous = previousRow ? stockFromPublication(previousRow) : null;
+      const c = row.payload?.computed || calc(stock);
+      return `
+        <article class="history-item">
+          <div class="history-item-head">
+            <div>
+              <h4>V${Number(row.version_number) || "--"} · ${formatDateTime(row.created_at)}</h4>
+              <div class="stock-code">${escapeHtml(stock.forecastYear || "--")} · ${escapeHtml(marketLabel(stock.market))}</div>
+            </div>
+            <div class="history-delta">${renderPublicationDeltas(stock, previous)}</div>
+          </div>
+          ${row.change_note ? `<p class="history-note">${escapeHtml(row.change_note)}</p>` : ""}
+          <div class="history-grid">
+            ${historyMetric("当时市值", moneyYiCny(stock.latestMarketCapCny))}
+            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny))}
+            ${historyMetric("前瞻 PE", stock.expectedPE ? `${trimNumber(stock.expectedPE)}x` : "--")}
+            ${historyMetric("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)}x` : "--")}
+            ${historyMetric("前瞻市值", moneyYiCny(c.expectedMarketCapCny))}
+            ${historyMetric("Upside", percent(c.upside))}
+            ${historyMetric("净现金", moneyYiCny(stock.netCashCny))}
+            ${historyMetric("现金折扣", percent(stock.netCashDiscountRate))}
+            ${historyMetric("股息", moneyYiCny(stock.expectedDividendCny))}
+            ${historyMetric("回购", moneyYiCny(stock.expectedBuybackCny))}
+            ${historyMetric("股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
+            ${historyMetric("股东回报率", percent(c.shareholderReturnRate))}
+          </div>
+          ${stock.expectedPERemark || stock.netCashScope || stock.shareholderReturnRemark ? `
+            <p class="history-note">${[
+              stock.expectedPERemark ? `利润备注：${stock.expectedPERemark}` : "",
+              stock.netCashScope ? `净现金口径：${stock.netCashScope}` : "",
+              stock.shareholderReturnRemark ? `股东回报：${stock.shareholderReturnRemark}` : ""
+            ].filter(Boolean).map(escapeHtml).join("<br>")}</p>
+          ` : ""}
+        </article>
+      `;
+    }
+
+    function historyMetric(label, value) {
+      return `<div class="history-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+    }
+
+    function renderPublicationDeltas(stock, previous) {
+      if (!previous) return `<span class="badge soft">首个版本</span>`;
+      const items = [
+        deltaBadge("市值", previous.latestMarketCapCny, stock.latestMarketCapCny, ""),
+        deltaBadge("利润", previous.expectedProfitCny, stock.expectedProfitCny, ""),
+        deltaBadge("PE", previous.expectedPE, stock.expectedPE, "x"),
+        deltaBadge("净现金", previous.netCashCny, stock.netCashCny, "")
+      ].filter(Boolean);
+      return items.length ? items.join("") : `<span class="badge soft">核心假设无变化</span>`;
+    }
+
+    function deltaBadge(label, before, after, suffix) {
+      const a = Number(after);
+      const b = Number(before);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return "";
+      return `<span class="badge soft">${escapeHtml(label)} ${trimNumber(b)}${suffix} → ${trimNumber(a)}${suffix}</span>`;
     }
 
     function renderSourceCell(stock) {
@@ -2333,6 +2600,15 @@
                       ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                     </div>
                     <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
+                    ${!isSubscribed ? `
+                      <div class="publish-box">
+                        <label>发布快照说明</label>
+                        <textarea data-field="publishNote" placeholder="记录这次发布相对上一版的变化，例如利润假设、PE、股东回报或净现金口径调整。">${escapeHtml(form.publishNote || "")}</textarea>
+                        <div class="publish-actions">
+                          <button data-action="publishStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.publishing ? "发布中..." : "发布快照"}</button>
+                        </div>
+                      </div>
+                    ` : ""}
                   </div>
                 </div>
               </div>
@@ -2529,6 +2805,8 @@
       if (action === "saveStock") saveStock();
       if (action === "publishStock") publishStock();
       if (action === "shareStock") shareStockFromList(stockId);
+      if (action === "openPublicationHistory") openPublicationHistory(stockId);
+      if (action === "closePublicationHistory") closePublicationHistory();
       if (action === "toggleSharedFilter") {
         state.shareFilter = state.shareFilter === "SHARED" ? "ALL" : "SHARED";
         render();
@@ -2557,6 +2835,46 @@
       state.query = "";
       if (state.mainView === "square") await loadSquare();
       if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
+      render();
+    }
+
+    async function openPublicationHistory(stockId) {
+      const stock = [...state.stocks, ...state.publisherStocks, ...state.adminStocks].find((item) => item.id === stockId);
+      if (!stockId || !stock) return;
+      state.publicationHistory = {
+        open: true,
+        loading: true,
+        stock,
+        rows: [],
+        error: ""
+      };
+      render();
+      try {
+        const rows = await loadPublicationRows(stockId);
+        state.publicationHistory = {
+          ...state.publicationHistory,
+          loading: false,
+          rows,
+          error: ""
+        };
+      } catch (error) {
+        state.publicationHistory = {
+          ...state.publicationHistory,
+          loading: false,
+          error: `读取发布历史失败：${error.message || String(error)}`
+        };
+      }
+      render();
+    }
+
+    function closePublicationHistory() {
+      state.publicationHistory = {
+        open: false,
+        loading: false,
+        stock: null,
+        rows: [],
+        error: ""
+      };
       render();
     }
 
@@ -2859,6 +3177,7 @@
       try {
         const latest = await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stock.id)}&select=version_number&order=version_number.desc&limit=1`);
         const versionNumber = Number(latest?.[0]?.version_number || 0) + 1;
+        const publicationPayload = buildPublicationSnapshot(payload, note);
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
           method: "PATCH",
           body: JSON.stringify({
@@ -2875,7 +3194,7 @@
             publisher_id: state.session.user.id,
             version_number: versionNumber,
             change_note: note,
-            payload
+            payload: publicationPayload
           })
         });
       } catch (error) {
@@ -2921,6 +3240,7 @@
       try {
         const latest = await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stockId)}&select=version_number&order=version_number.desc&limit=1`);
         const versionNumber = Number(latest?.[0]?.version_number || 0) + 1;
+        const publicationPayload = buildPublicationSnapshot(payload, "");
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "PATCH",
           body: JSON.stringify({
@@ -2937,7 +3257,7 @@
             publisher_id: state.session.user.id,
             version_number: versionNumber,
             change_note: "",
-            payload
+            payload: publicationPayload
           })
         });
       } catch (error) {
@@ -3023,13 +3343,32 @@
       });
     }
 
+    async function loadLatestPublications(stockIds) {
+      const ids = [...new Set((stockIds || []).filter(Boolean))];
+      if (!ids.length) return new Map();
+      const rows = await supabaseRequest(`/rest/v1/stock_publications?stock_id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,stock_id,version_number,change_note,payload,created_at&order=version_number.desc`);
+      const latest = new Map();
+      (rows || []).forEach((row) => {
+        if (!latest.has(row.stock_id)) latest.set(row.stock_id, row);
+      });
+      return latest;
+    }
+
+    async function loadPublicationRows(stockId) {
+      return await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stockId)}&select=id,stock_id,publisher_id,version_number,change_note,payload,created_at&order=version_number.desc`) || [];
+    }
+
     async function mergeLatestSourceStocks() {
       state.sourceUpdateCount = 0;
       const sourceIds = [...new Set(state.stocks.filter((stock) => stock.sourceType === "subscribed").map((stock) => stock.sourceStockId).filter(Boolean))];
       if (!sourceIds.length) return;
       try {
         const rows = await supabaseRequest(`/rest/v1/stock_records?id=in.(${sourceIds.map(encodeURIComponent).join(",")})&is_shared=eq.true&select=id,payload,source_nickname,last_published_at,updated_at`);
-        const sourceMap = new Map((rows || []).map((row) => [row.id, normalizeStockRow(row)]));
+        const latestPublications = await loadLatestPublications(sourceIds);
+        const sourceMap = new Map((rows || []).map((row) => {
+          const source = normalizeStockRow(row);
+          return [row.id, stockWithPublication(source, latestPublications.get(row.id))];
+        }));
         state.stocks = state.stocks.map((stock) => {
           const source = sourceMap.get(stock.sourceStockId);
           if (!source) return { ...stock, sourceStopped: true, hasSourceUpdate: false };
@@ -3067,10 +3406,11 @@
       if (!publisherId || publisherId === "own") return;
       try {
         const rows = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(publisherId)}&is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,is_shared,last_published_at,updated_at&order=last_published_at.desc`);
+        const latestPublications = await loadLatestPublications((rows || []).map((row) => row.id));
         const profile = state.followedPublishers.find((item) => item.id === publisherId) || state.shareInviteProfile || state.publisherProfile;
         state.publisherProfile = profile || null;
         state.publisherStocks = (rows || []).map((row) => ({
-          ...normalizeStockRow(row),
+          ...stockWithPublication(normalizeStockRow(row), latestPublications.get(row.id)),
           publisherId: row.user_id,
           publisherNickname: profile?.nickname || row.user_id
         }));
@@ -3083,9 +3423,10 @@
       try {
         const profiles = await supabaseRequest("/rest/v1/profiles?share_visibility=eq.public&square_hidden=eq.false&share_banned=eq.false&select=id,email,nickname,share_visibility,created_at");
         const rows = await supabaseRequest("/rest/v1/stock_records?is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,last_published_at,updated_at&order=last_published_at.desc");
+        const latestPublications = await loadLatestPublications((rows || []).map((row) => row.id));
         const byUser = new Map();
         (rows || []).forEach((row) => {
-          const stock = normalizeStockRow(row);
+          const stock = stockWithPublication(normalizeStockRow(row), latestPublications.get(row.id));
           const list = byUser.get(row.user_id) || [];
           list.push({ ...stock, userId: row.user_id });
           byUser.set(row.user_id, list);

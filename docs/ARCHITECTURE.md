@@ -149,7 +149,7 @@ saveStock({ keepOpen: true })
 更新 stock_records.is_shared = true
   |
   v
-插入 stock_publications 快照
+插入 stock_publications 结构化快照
   |
   v
 关闭抽屉并刷新列表
@@ -290,7 +290,9 @@ admin_users
 设计原因：
 
 - 发布版本不可只依赖当前 `stock_records`，否则无法追踪观点变化。
-- `payload` 快照可保留当时的完整估值假设。
+- `payload` 快照保留当时的股票基础信息、核心估值假设、计算结果和发布说明。
+- 对外查看发布者股池和订阅同步优先读取最新 `stock_publications.payload`，避免发布者私下保存但未发布的草稿污染分享视图。
+- 私有保存只更新 `stock_records`，不写入 `stock_publications`。
 
 ### 3.5 `follows`
 
@@ -960,4 +962,3 @@ https://woywnriyagjlfphezlnx.supabase.co/auth/v1/callback
 - 使用专业邮件服务，例如 Resend、Postmark、SendGrid 或 AWS SES。
 - 把 Supabase URL 和 anon key 移到环境变量。
 - 增加部署流水线检查。
-

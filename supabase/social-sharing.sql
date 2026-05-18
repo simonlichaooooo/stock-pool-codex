@@ -200,6 +200,12 @@ create table if not exists public.stock_publications (
   unique(stock_id, version_number)
 );
 
+create index if not exists stock_publications_stock_version_idx
+on public.stock_publications(stock_id, version_number desc);
+
+create index if not exists stock_publications_publisher_created_idx
+on public.stock_publications(publisher_id, created_at desc);
+
 alter table public.stock_publications enable row level security;
 
 grant select, insert on public.stock_publications to authenticated;
@@ -208,7 +214,23 @@ drop policy if exists "Publications are readable by signed in users" on public.s
 create policy "Publications are readable by signed in users"
 on public.stock_publications for select
 to authenticated
-using (true);
+using (
+  publisher_id = auth.uid()
+  or exists (
+    select 1 from public.stock_records
+    where stock_records.id = stock_publications.stock_id
+      and stock_records.is_shared = true
+      and stock_records.admin_hidden = false
+  )
+  or exists (
+    select 1 from public.admin_users
+    where admin_users.github_username = coalesce(
+      auth.jwt() -> 'user_metadata' ->> 'user_name',
+      auth.jwt() -> 'user_metadata' ->> 'preferred_username',
+      auth.jwt() -> 'user_metadata' ->> 'name'
+    )
+  )
+);
 
 drop policy if exists "Users can publish own stock records" on public.stock_publications;
 create policy "Users can publish own stock records"
