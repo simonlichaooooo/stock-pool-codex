@@ -3839,6 +3839,18 @@
       await loadFollowedPublishers();
       await loadShareInvite();
       await loadStocks();
+      await openFollowedPendingShare();
+    }
+
+    async function openFollowedPendingShare() {
+      const publisherId = localStorage.getItem(PENDING_SHARE_KEY);
+      if (!publisherId || publisherId === state.session.user.id) return;
+      const followed = state.followedPublishers.some((item) => item.id === publisherId);
+      if (!followed) return;
+      state.mainView = "pool";
+      state.viewPublisherId = publisherId;
+      state.query = "";
+      await loadPublisherStocks(publisherId);
     }
 
     async function followPublisher(publisherId) {
