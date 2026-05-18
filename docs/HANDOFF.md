@@ -61,9 +61,15 @@
   - `public`：公开分享，可在广场展示。
 - 用户可以复制自己的分享链接。
 - 被分享用户登录后可以关注发布者。
+- 关注只表示把发布者加入可查看列表，不会复制股票，也不会订阅任何股票。
+- 已关注发布者的分享链接会自动打开发布者股池视图；粉丝视角的操作只有“一键复制”“订阅”“历史”，不能编辑、置顶、置底或删除发布者股票。
 - 查看关注人的股池时，可以：
   - 一键复制：复制一份到自己的股池，之后可以自行修改。
   - 订阅：复制一份到自己的股池，后续发布者更新后同步更新核心估值内容。
+- 发布历史浮层展示结构化快照，包括当时市值、前瞻市值、Upside、前瞻利润、估值、Forward PE、净现金、现金折扣、净现金口径、股东回报和股东回报政策。
+- 发布者删除源股票时：
+  - 一键复制副本不受影响。
+  - 订阅副本保留在粉丝股池中，核心估值内容清空，来源列显示“发布者昵称 + 已删除”和删除日期。
 - 自己股池中显示来源信息，复制/订阅来源会展示发布者昵称、来源类型、更新时间。
 
 ### 广场
@@ -242,7 +248,7 @@ Supabase
 重要说明：
 
 - 每次点击发布都会生成新版本。
-- `payload` 保存发布时完整股票快照。
+- `payload` 保存发布时结构化股票快照，包含股票基础信息、核心估值假设、计算结果和发布说明。
 - `(stock_id, version_number)` 唯一。
 
 ### `follows`
@@ -259,6 +265,8 @@ Supabase
 
 - 主键为 `(follower_id, publisher_id)`。
 - 不允许自己关注自己。
+- 关注只用于让发布者出现在“股池筛选”下拉框，以及通过分享链接直接进入发布者股池。
+- 关注不等于股票订阅，不产生 `stock_records` 副本。
 
 ### `stock_subscriptions`
 
@@ -280,6 +288,10 @@ Supabase
 
 - 用于记录“一键订阅”后的来源股票与用户本地副本之间的关系。
 - 当前同步主要在前端 `mergeLatestSourceStocks()` 中完成。
+- 如果发布者删除来源股票，前端会先调用 `mark_subscriptions_source_deleted()`：
+  - 清空订阅副本中的核心估值字段。
+  - 保留订阅副本本身。
+  - 写入 `payload.sourceDeletedAt`，用于来源列展示删除日期。
 
 ### `admin_users`
 
@@ -515,6 +527,7 @@ GitHub OAuth 配置：
 - `publishStock()`
 - `copySharedStock()`
 - `mergeLatestSourceStocks()`
+- `markSubscribedCopiesSourceDeleted()`
 - `unsubscribeStock()`
 - `convertToOwnStock()`
 
@@ -522,6 +535,7 @@ GitHub OAuth 配置：
 
 - 这里同时更新 `stock_records`、`stock_publications`、`stock_subscriptions`。
 - 一键复制和订阅的行为差异依赖 `sourceType`。
+- 发布者删除源股票前，会通过 RPC `mark_subscriptions_source_deleted()` 标记订阅副本；复制副本不处理。
 
 ### Supabase RLS 策略
 
@@ -713,4 +727,3 @@ https://simonlichaooooo.github.io/stock-pool-codex/?share=<publisher_id>
 - “测算结果”后续建议统一改为“估值测算”。
 - “发布”后续建议统一改为“发布快照”。
 - “保存”后续可根据逻辑改为“保存股票”或“保存草稿”。
-

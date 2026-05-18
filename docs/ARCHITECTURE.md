@@ -181,7 +181,12 @@ followPublisher()
   |
   v
 写入 follows
+  |
+  v
+已关注发布者的分享链接自动切换到发布者股池视图
 ```
+
+关注只建立发布者级可见关系，不复制股票，也不订阅具体股票。
 
 订阅股票时：
 
@@ -199,6 +204,26 @@ copySharedStock(stockId, "subscribed")
   |
   v
 后续 loadStocks() 时 mergeLatestSourceStocks()
+```
+
+发布者删除源股票时：
+
+```text
+发布者确认删除股票
+  |
+  v
+markSubscribedCopiesSourceDeleted()
+  |
+  v
+/rest/v1/rpc/mark_subscriptions_source_deleted
+  |
+  ├─ 只处理 source_type = subscribed 的粉丝副本
+  ├─ 清空核心估值字段
+  ├─ 写入 sourceDeletedAt 和删除日期
+  └─ 一键复制副本不处理
+  |
+  v
+删除发布者自己的 stock_records
 ```
 
 ## 3. 数据库设计
@@ -305,6 +330,7 @@ admin_users
 设计原因：
 
 - 后续可扩展为付费订阅、关注列表、动态提醒。
+- 当前关注只用于发布者入口和股池筛选；股票级跟随由 `stock_subscriptions` 表达。
 
 ### 3.6 `stock_subscriptions`
 
@@ -323,6 +349,8 @@ admin_users
 
 - “订阅”需要区别于“一键复制”。
 - 一键复制后用户可自由修改；订阅则需要跟随发布者更新。
+- 发布者删除来源股票时，订阅副本保留但标记 `sourceDeletedAt`，避免粉丝股池中的关注线索突然消失。
+- 删除源股票的订阅标记由 `mark_subscriptions_source_deleted()` RPC 完成，因为发布者不能直接通过普通 RLS 更新粉丝的 `stock_records`。
 
 ### 3.7 `admin_users`
 
@@ -421,6 +449,7 @@ Prefer: ...
 /rest/v1/stock_publications
 /rest/v1/follows
 /rest/v1/stock_subscriptions
+/rest/v1/rpc/mark_subscriptions_source_deleted
 /rest/v1/admin_users
 /rest/v1/moderation_actions
 ```
