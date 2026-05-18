@@ -479,7 +479,7 @@
     }
     .history-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
     }
     .history-metric {
@@ -501,6 +501,7 @@
       line-height: 1.35;
       font-variant-numeric: tabular-nums;
       font-feature-settings: "tnum";
+      overflow-wrap: anywhere;
     }
     .history-delta {
       display: flex;
@@ -1134,7 +1135,7 @@
       .share-settings select { width: 160px; }
       .admin-layout { grid-template-columns: 1fr; }
       .history-modal { padding: 12px; }
-      .history-grid { grid-template-columns: 1fr 1fr; }
+      .history-grid { grid-template-columns: 1fr; }
       .history-item-head { flex-direction: column; }
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
@@ -2367,8 +2368,8 @@
       if (!modal.open) return "";
       const stock = modal.stock || {};
       return `
-        <div class="history-modal open" data-action="closePublicationHistory">
-          <section class="history-panel" onclick="event.stopPropagation()">
+        <div class="history-modal open" data-history-backdrop="true">
+          <section class="history-panel">
             <div class="history-head">
               <div>
                 <h3>${escapeHtml(stock.name || "发布历史")}</h3>
@@ -2411,23 +2412,21 @@
           ${row.change_note ? `<p class="history-note">${escapeHtml(row.change_note)}</p>` : ""}
           <div class="history-grid">
             ${historyMetric("当时市值", moneyYiCny(stock.latestMarketCapCny))}
-            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny))}
-            ${historyMetric("前瞻 PE", stock.expectedPE ? `${trimNumber(stock.expectedPE)}x` : "--")}
-            ${historyMetric("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)}x` : "--")}
             ${historyMetric("前瞻市值", moneyYiCny(c.expectedMarketCapCny))}
             ${historyMetric("Upside", percent(c.upside))}
+            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny))}
+            ${historyMetric("前瞻估值", stock.expectedPE ? `${trimNumber(stock.expectedPE)}x` : "--")}
+            ${historyMetric("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)}x` : "--")}
             ${historyMetric("净现金", moneyYiCny(stock.netCashCny))}
             ${historyMetric("现金折扣", percent(stock.netCashDiscountRate))}
-            ${historyMetric("股息", moneyYiCny(stock.expectedDividendCny))}
-            ${historyMetric("回购", moneyYiCny(stock.expectedBuybackCny))}
-            ${historyMetric("股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
-            ${historyMetric("股东回报率", percent(c.shareholderReturnRate))}
+            ${historyMetric("净现金口径", stock.netCashScope || "--")}
+            ${historyMetric("前瞻股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
+            ${historyMetric("前瞻股东回报率", percent(c.shareholderReturnRate))}
+            ${historyMetric("股东回报政策", stock.shareholderReturnRemark || "--")}
           </div>
-          ${stock.expectedPERemark || stock.netCashScope || stock.shareholderReturnRemark ? `
+          ${stock.expectedPERemark ? `
             <p class="history-note">${[
               stock.expectedPERemark ? `利润备注：${stock.expectedPERemark}` : "",
-              stock.netCashScope ? `净现金口径：${stock.netCashScope}` : "",
-              stock.shareholderReturnRemark ? `股东回报：${stock.shareholderReturnRemark}` : ""
             ].filter(Boolean).map(escapeHtml).join("<br>")}</p>
           ` : ""}
         </article>
@@ -2782,6 +2781,12 @@
       if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
+      const historyBackdrop = document.querySelector("[data-history-backdrop]");
+      if (historyBackdrop) {
+        historyBackdrop.addEventListener("click", (event) => {
+          if (event.target === historyBackdrop) closePublicationHistory();
+        });
+      }
     }
 
     async function onAction(event) {
