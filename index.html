@@ -3827,13 +3827,15 @@
     async function loadStocks() {
       let data;
       try {
-        data = await supabaseRequest("/rest/v1/stock_records?select=id,payload,source_user_id,source_stock_id,source_nickname,source_type,last_source_updated_at,source_seen_published_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc");
+        data = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,user_id,payload,source_user_id,source_stock_id,source_nickname,source_type,last_source_updated_at,source_seen_published_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc`);
       } catch (error) {
         state.lastError = error.message || String(error);
         state.stocks = [];
         return;
       }
-      state.stocks = (data || []).map((row) => normalizeStockRow(row));
+      state.stocks = (data || [])
+        .filter((row) => row.user_id === state.session.user.id)
+        .map((row) => normalizeStockRow(row));
       await mergeLatestSourceStocks();
     }
 
