@@ -1653,11 +1653,6 @@
     }
 
     function shareholderReturnTotal(stock) {
-      const dividend = Number(stock?.expectedDividendCny);
-      const buyback = Number(stock?.expectedBuybackCny);
-      if (!Number.isNaN(dividend) || !Number.isNaN(buyback)) {
-        return (Number.isNaN(dividend) ? 0 : dividend) + (Number.isNaN(buyback) ? 0 : buyback);
-      }
       return Number(stock?.expectedShareholderReturnCny) || 0;
     }
 
@@ -1670,7 +1665,11 @@
         next.expectedDividendCny = Number(next.expectedDividendCny) || 0;
         next.expectedBuybackCny = Number(next.expectedBuybackCny) || 0;
       }
-      next.expectedShareholderReturnCny = next.expectedDividendCny + next.expectedBuybackCny;
+      if (next.expectedShareholderReturnCny === undefined || next.expectedShareholderReturnCny === "") {
+        next.expectedShareholderReturnCny = next.expectedDividendCny + next.expectedBuybackCny;
+      } else {
+        next.expectedShareholderReturnCny = Number(next.expectedShareholderReturnCny) || 0;
+      }
       return next;
     }
 
@@ -2200,7 +2199,7 @@
         expectedBuybackCny: 0,
         expectedShareholderReturnCny: 0,
         shareholderReturnRemark: "",
-        forecastYear: "2025E",
+        forecastYear: "2026E",
         investmentNote: "",
         publishNote: "",
         isShared: false,
@@ -2270,7 +2269,7 @@
                     <div class="form-grid three">
                       ${formField("前瞻股息", amountInput("expectedDividendCny", form.expectedDividendCny, currency, locked), { className: "input-short" })}
                       ${formField("前瞻回购", amountInput("expectedBuybackCny", form.expectedBuybackCny, currency, locked), { className: "input-short" })}
-                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked ? locked : "readonly"), { className: "input-short" })}
+                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single follow-row">
                       ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
@@ -2402,8 +2401,9 @@
     }
 
     function forecastYearSelect(value, attrs = "") {
-      const years = [];
-      for (let year = 2025; year <= 2035; year += 1) years.push(`${year}E`);
+      const years = ["2025A"];
+      for (let year = 2026; year <= 2035; year += 1) years.push(`${year}E`);
+      if (value && !years.includes(value)) years.unshift(value);
       return `
         <select data-field="forecastYear" ${attrs}>
           ${years.map((year) => `<option value="${year}" ${value === year ? "selected" : ""}>${year}</option>`).join("")}
@@ -2636,7 +2636,9 @@
       if (!state.form) return;
       state.form[key] = toCny(value, state.form.displayCurrency);
       if (["expectedDividendCny", "expectedBuybackCny"].includes(key)) {
-        state.form = normalizeShareholderReturnFields(state.form);
+        state.form.expectedDividendCny = Number(state.form.expectedDividendCny) || 0;
+        state.form.expectedBuybackCny = Number(state.form.expectedBuybackCny) || 0;
+        state.form.expectedShareholderReturnCny = state.form.expectedDividendCny + state.form.expectedBuybackCny;
         const total = document.querySelector("[data-amount='expectedShareholderReturnCny']");
         if (total) total.value = toDisplay(state.form.expectedShareholderReturnCny, state.form.displayCurrency);
       }
@@ -2698,7 +2700,7 @@
       state.form.marketCapSourceCurrency = stock.marketCapSourceCurrency || stock.currency || marketCurrency(stock.market);
       state.form.latestMarketCapCny = stock.latestMarketCapCny || stock.marketCapCny || 0;
       state.form.marketCapUpdatedAt = stock.marketCapUpdatedAt || stock.updatedAt || todayString();
-      state.form.forecastYear = state.form.forecastYear || "2025E";
+      state.form.forecastYear = state.form.forecastYear || "2026E";
       markFormDirty();
       render();
     }
