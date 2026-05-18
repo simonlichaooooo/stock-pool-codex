@@ -815,7 +815,7 @@
       margin-bottom: 6px;
     }
     .empty p { margin: 0 auto 14px; max-width: 460px; }
-    .drawer-panel { width: min(1228px, calc(100vw - 28px)); }
+    .drawer-panel { width: fit-content; max-width: calc(100vw - 28px); }
     .drawer-head {
       padding: 16px 22px;
       align-items: flex-start;
@@ -831,11 +831,11 @@
       box-shadow: 0 -8px 18px rgba(16, 24, 40, 0.05);
     }
     .drawer-foot .foot-actions { display: flex; gap: 10px; align-items: center; }
-    .valuation-layout { grid-template-columns: 800px 360px; gap: 24px; align-items: start; justify-content: start; }
-    .valuation-form { width: 800px !important; max-width: 800px !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
+    .valuation-layout { grid-template-columns: max-content 360px; gap: 24px; align-items: start; justify-content: start; }
+    .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
-      width: 800px !important;
-      max-width: 800px !important;
+      width: 696px !important;
+      max-width: 100% !important;
       background: white;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -844,9 +844,10 @@
     }
     .section-card h3 { margin: 0 0 12px; font-size: 15px; color: #172033; }
     .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, 280px); gap: 12px 40px; align-items: start; justify-content: start; }
-    .form-grid.three { grid-template-columns: repeat(3, 180px); gap: 12px 48px; }
-    .form-grid.single { grid-template-columns: 280px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 200px); gap: 12px 48px; align-items: start; justify-content: start; }
+    .form-grid.three { grid-template-columns: repeat(3, 200px); gap: 12px 20px; }
+    .form-grid.one { grid-template-columns: 200px; }
+    .form-grid.single { grid-template-columns: 400px; }
     .form-grid.market-cap-row { margin-top: 12px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
@@ -865,18 +866,22 @@
     .valuation-form .form-field .amount-field,
     .valuation-form .form-field .readonly-value {
       width: 100%;
-      max-width: 280px;
+      max-width: 200px;
     }
     .valuation-form .form-field > textarea { max-width: 520px; }
     .form-field.input-short input,
     .form-field.input-short select,
     .form-field.input-short .amount-field,
-    .form-field.input-short .readonly-value { max-width: 180px; }
+    .form-field.input-short .readonly-value { max-width: 200px; }
     .form-field.input-medium input,
     .form-field.input-medium select,
     .form-field.input-medium .search-combobox,
-    .form-field.input-medium .readonly-value { max-width: 280px; }
-    .currency-select { width: 280px; }
+    .form-field.input-medium .readonly-value { max-width: 200px; }
+    .form-field.input-wide input,
+    .form-field.input-wide select,
+    .form-field.input-wide .search-combobox,
+    .form-field.input-wide .readonly-value { max-width: 400px; }
+    .currency-select { width: 200px; }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -967,7 +972,7 @@
       .admin-layout { grid-template-columns: 1fr; }
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
-      .form-grid, .form-grid.three, .form-grid.single { grid-template-columns: 1fr; }
+      .form-grid, .form-grid.three, .form-grid.one, .form-grid.single { grid-template-columns: 1fr; }
       .valuation-form,
       .section-card { width: 100% !important; max-width: none !important; }
       .valuation-form .form-field > input,
@@ -2173,22 +2178,26 @@
                       ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" ${locked}>`, { className: "input-short" })}
                     </div>
                     <div class="form-grid single">
-                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`)}
+                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
-                    <div class="form-grid">
+                    <div class="form-grid one">
                       ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked), { className: "input-short" })}
-                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-medium" })}
+                    </div>
+                    <div class="form-grid single">
+                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
 
                   ${sectionCard("净现金调整", "净现金可按折扣系数计入估值，适合处理现金、投资资产或净负债。", `
-                    <div class="form-grid three">
+                    <div class="form-grid">
                       ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked), { className: "input-short" })}
                       ${formField("现金折扣", `<input class="numeric-input" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" ${locked}>`, { help: "1 表示全额计入，0 表示不计入。", className: "input-short" })}
-                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-medium" })}
+                    </div>
+                    <div class="form-grid single">
+                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
                     </div>
                   `)}
 
