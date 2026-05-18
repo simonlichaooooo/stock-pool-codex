@@ -939,6 +939,72 @@
       box-shadow: 0 -8px 18px rgba(16, 24, 40, 0.05);
     }
     .drawer-foot .foot-actions { display: flex; gap: 10px; align-items: center; }
+    .foot-left {
+      display: grid;
+      gap: 5px;
+      align-content: center;
+    }
+    .drawer-delete-link {
+      width: fit-content;
+      min-height: 22px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #98a2b3;
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      box-shadow: none;
+    }
+    .drawer-delete-link:hover {
+      background: transparent;
+      border-color: transparent;
+      color: #b42318;
+    }
+    .confirm-panel {
+      width: min(420px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.2);
+      overflow: hidden;
+    }
+    .confirm-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .confirm-head h3 { margin: 0; font-size: 16px; }
+    .confirm-body {
+      padding: 18px 16px 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .confirm-body p {
+      margin: 0;
+      color: #344054;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 2px;
+    }
+    .confirm-actions .danger-primary {
+      background: #b42318;
+      border-color: #b42318;
+      color: #fff;
+    }
+    .confirm-actions .danger-primary:hover:not(:disabled) {
+      background: #912018;
+      border-color: #912018;
+    }
     .valuation-layout { grid-template-columns: max-content 360px; gap: 24px; align-items: start; justify-content: start; }
     .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
@@ -1172,6 +1238,7 @@
       .drawer-foot { align-items: stretch; flex-direction: column; }
       .drawer-foot .foot-actions { width: 100%; }
       .drawer-foot button { flex: 1; }
+      .drawer-foot .drawer-delete-link { flex: 0; }
       .card-grid { grid-template-columns: 1fr; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; }
@@ -1281,6 +1348,13 @@
         loading: false,
         stock: null,
         rows: [],
+        error: ""
+      },
+      deleteConfirm: {
+        open: false,
+        stockId: "",
+        stockName: "",
+        deleting: false,
         error: ""
       },
       tableLoading: false,
@@ -1914,6 +1988,7 @@
           </main>
           ${renderDrawer()}
           ${renderPublicationHistory()}
+          ${renderDeleteConfirm()}
         </div>
       `;
       bindEvents();
@@ -2387,6 +2462,30 @@
       `;
     }
 
+    function renderDeleteConfirm() {
+      const modal = state.deleteConfirm;
+      if (!modal.open) return "";
+      return `
+        <div class="history-modal open" data-delete-backdrop="true">
+          <section class="confirm-panel">
+            <div class="confirm-head">
+              <h3>删除股票</h3>
+              <button class="icon" data-action="closeDeleteConfirm" title="关闭" ${modal.deleting ? "disabled" : ""}>×</button>
+            </div>
+            <div class="confirm-body">
+              <p>确认删除该股票吗？如有分享，也同步一并删除。</p>
+              ${modal.stockName ? `<div class="stock-code">${escapeHtml(modal.stockName)}</div>` : ""}
+              ${modal.error ? `<div class="form-error">${escapeHtml(modal.error)}</div>` : ""}
+              <div class="confirm-actions">
+                <button data-action="closeDeleteConfirm" ${modal.deleting ? "disabled" : ""}>取消</button>
+                <button class="danger-primary" data-action="confirmDeleteStock" ${modal.deleting ? "disabled" : ""}>${modal.deleting ? "删除中..." : "确认删除"}</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
     function renderPublicationHistoryRows(rows) {
       if (!rows.length) return `<div class="empty">还没有发布快照。</div>`;
       return `
@@ -2613,7 +2712,10 @@
               </div>
             </div>
             <div class="drawer-foot">
-              <span class="hint">${state.formDirty ? "有未保存修改" : "所有已保存内容会保留在你的私人股池中"}</span>
+              <div class="foot-left">
+                <span class="hint">${state.formDirty ? "有未保存修改" : "所有已保存内容会保留在你的私人股池中"}</span>
+                ${form.id ? `<button class="drawer-delete-link" data-action="openDeleteConfirm" data-id="${form.id}" ${state.saving || state.publishing ? "disabled" : ""}>删除股票</button>` : ""}
+              </div>
               <div class="foot-actions">
                 <button data-action="closeDrawer" ${state.saving || state.publishing ? "disabled" : ""}>取消</button>
                 <button class="primary" data-action="saveStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.saving ? "保存中..." : "保存股票"}</button>
@@ -2787,6 +2889,12 @@
           if (event.target === historyBackdrop) closePublicationHistory();
         });
       }
+      const deleteBackdrop = document.querySelector("[data-delete-backdrop]");
+      if (deleteBackdrop) {
+        deleteBackdrop.addEventListener("click", (event) => {
+          if (event.target === deleteBackdrop) closeDeleteConfirm();
+        });
+      }
     }
 
     async function onAction(event) {
@@ -2812,6 +2920,9 @@
       if (action === "shareStock") shareStockFromList(stockId);
       if (action === "openPublicationHistory") openPublicationHistory(stockId);
       if (action === "closePublicationHistory") closePublicationHistory();
+      if (action === "openDeleteConfirm") openDeleteConfirm(stockId);
+      if (action === "closeDeleteConfirm") closeDeleteConfirm();
+      if (action === "confirmDeleteStock") confirmDeleteStock();
       if (action === "toggleSharedFilter") {
         state.shareFilter = state.shareFilter === "SHARED" ? "ALL" : "SHARED";
         render();
@@ -2832,7 +2943,7 @@
       if (action === "edit") openDrawer(stockId);
       if (action === "pinTop") updatePin(stockId, "top");
       if (action === "pinBottom") updatePin(stockId, "bottom");
-      if (action === "delete") deleteStock(stockId);
+      if (action === "delete") openDeleteConfirm(stockId);
     }
 
     async function switchMainView(view) {
@@ -2878,6 +2989,48 @@
         loading: false,
         stock: null,
         rows: [],
+        error: ""
+      };
+      render();
+    }
+
+    function openDeleteConfirm(stockId) {
+      const stock = state.stocks.find((item) => item.id === stockId) || (state.form?.id === stockId ? state.form : null);
+      if (!stockId || !stock) return;
+      state.deleteConfirm = {
+        open: true,
+        stockId,
+        stockName: `${stock.name || "该股票"}${stock.code ? `（${stock.code}）` : ""}`,
+        deleting: false,
+        error: ""
+      };
+      render();
+    }
+
+    function closeDeleteConfirm() {
+      if (state.deleteConfirm.deleting) return;
+      state.deleteConfirm = {
+        open: false,
+        stockId: "",
+        stockName: "",
+        deleting: false,
+        error: ""
+      };
+      render();
+    }
+
+    async function confirmDeleteStock() {
+      const stockId = state.deleteConfirm.stockId;
+      if (!stockId || state.deleteConfirm.deleting) return;
+      state.deleteConfirm = { ...state.deleteConfirm, deleting: true, error: "" };
+      render();
+      const ok = await deleteStock(stockId);
+      if (!ok) return;
+      state.deleteConfirm = {
+        open: false,
+        stockId: "",
+        stockName: "",
+        deleting: false,
         error: ""
       };
       render();
@@ -3295,17 +3448,31 @@
 
     async function deleteStock(stockId) {
       const stock = state.stocks.find((item) => item.id === stockId);
-      if (!stock || !confirm(`删除 ${stock.name}？`)) return;
+      if (!stock) return false;
       try {
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "DELETE"
         });
       } catch (error) {
-        alert(`删除失败：${error.message || String(error)}`);
-        return;
+        state.deleteConfirm = {
+          ...state.deleteConfirm,
+          deleting: false,
+          error: `删除失败：${error.message || String(error)}`
+        };
+        render();
+        return false;
       }
       state.stocks = state.stocks.filter((item) => item.id !== stockId);
+      if (state.editingId === stockId) {
+        state.drawerOpen = false;
+        state.editingId = null;
+        state.form = null;
+        state.formInitialSnapshot = "";
+        state.formDirty = false;
+        state.drawerError = "";
+      }
       render();
+      return true;
     }
 
     function toggleSort(key) {
