@@ -966,7 +966,10 @@
     }
     .result-panel h3 { font-size: 16px; }
     .side-note-box {
-      display: grid;
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
       gap: 8px;
     }
     .side-note-box label {
@@ -975,7 +978,10 @@
       font-weight: 750;
       line-height: 1.35;
     }
-    .side-note-box textarea { min-height: 180px; }
+    .side-note-box textarea {
+      flex: 1;
+      min-height: 240px;
+    }
     .valuation-summary-block {
       margin-top: auto;
       padding-top: 18px;
