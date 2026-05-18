@@ -180,7 +180,7 @@
       box-shadow: var(--shadow);
       overflow: hidden;
     }
-    .table-scroll { overflow-x: auto; }
+    .table-scroll { overflow: auto; max-height: calc(100vh - 164px); }
     table {
       width: 100%;
       border-collapse: separate;
@@ -913,16 +913,27 @@
       font-size: 13px;
       line-height: 1.5;
     }
+    .page-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .page-title-row h2 { margin: 0; }
+    .page-title-row select {
+      width: auto;
+      min-width: 210px;
+      background-color: white;
+    }
     .nav-tabs button.active {
       background: var(--brand-soft);
       border-color: transparent;
       color: var(--brand-strong);
     }
     .toolbar {
-      grid-template-columns: minmax(320px, 1fr) auto auto;
+      grid-template-columns: 350px minmax(0, 1fr) auto;
       padding: 10px;
-      position: sticky;
-      top: 68px;
+      position: relative;
       z-index: 4;
     }
     .toolbar-left, .toolbar-filters, .toolbar-actions {
@@ -931,7 +942,12 @@
       gap: 8px;
       min-width: 0;
     }
-    .toolbar-left input { min-width: 260px; }
+    .toolbar-left,
+    .toolbar-left input {
+      width: 350px;
+      min-width: 350px;
+      max-width: 350px;
+    }
     .toolbar-filters { flex-wrap: wrap; }
     .toolbar-actions { justify-content: flex-end; flex-wrap: wrap; }
     .toolbar select { width: auto; min-width: 128px; }
@@ -939,6 +955,19 @@
     th {
       background: #f3f6f8;
       box-shadow: inset 0 -1px 0 var(--line);
+      z-index: 3;
+    }
+    th.sticky-col,
+    td.sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--panel);
+      box-shadow: 1px 0 0 var(--line);
+    }
+    th.sticky-col {
+      z-index: 4;
+      background: #f3f6f8;
     }
     th.num, td.num { text-align: right; }
     td.kpi { text-align: right; font-weight: 760; font-size: 14px; }
@@ -1292,11 +1321,15 @@
       .userbar { width: 100%; justify-content: flex-start; }
       .workspace { width: calc(100vw - 20px); margin-top: 12px; }
       .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
+      .page-title-row select { width: 100%; min-width: 0; }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
       .toolbar-left, .toolbar-filters, .toolbar-actions { width: 100%; flex-direction: column; align-items: stretch; }
-      .toolbar-left input, .toolbar select { min-width: 0; width: 100%; }
+      .toolbar-left,
+      .toolbar-left input,
+      .toolbar select { min-width: 0; max-width: none; width: 100%; }
       .segmented { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
       .segmented button { min-width: 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .segmented button:nth-last-child(-n+4) { border-bottom: 0; }
@@ -1348,7 +1381,7 @@
       .drawer-foot .drawer-delete-link { flex: 0; }
       .card-grid { grid-template-columns: 1fr; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
-      .table-scroll { overflow: visible; }
+      .table-scroll { overflow: visible; max-height: none; }
       table, thead, tbody, tr, th, td { display: block; width: 100%; min-width: 0; }
       table { border-collapse: separate; }
       thead { display: none; }
@@ -1376,8 +1409,13 @@
         font-size: 12px;
         font-weight: 700;
       }
-      td[data-label="标的"]::before { content: ""; display: none; }
-      td[data-label="标的"] { grid-template-columns: 1fr; padding-top: 12px; }
+      th.sticky-col,
+      td.sticky-col {
+        position: static;
+        box-shadow: none;
+      }
+      td[data-label="股票名称"]::before { content: ""; display: none; }
+      td[data-label="股票名称"] { grid-template-columns: 1fr; padding-top: 12px; }
       .actions { flex-wrap: wrap; justify-content: flex-start; }
       .actions button { min-height: 32px; }
     }
@@ -2189,7 +2227,10 @@
       return `
         <section class="page-header">
           <div class="page-title">
-            <h2>${escapeHtml(title)}</h2>
+            <div class="page-title-row">
+              <h2>${escapeHtml(title)}</h2>
+              ${title === "股池" ? renderPublisherSelect() : ""}
+            </div>
             <p>${escapeHtml(subtitle)}</p>
           </div>
         </section>
@@ -2413,13 +2454,9 @@
       return `
         <div class="toolbar">
           <div class="toolbar-left">
-            <input data-input="searchList" placeholder="搜索股票名称、代码或发布者股池" value="${escapeHtml(state.query)}">
+            <input data-input="searchList" placeholder="股票名称、代码框" value="${escapeHtml(state.query)}">
           </div>
           <div class="toolbar-filters">
-            <select data-input="viewPublisher" aria-label="股池筛选">
-              <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
-              ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
-            </select>
             <div class="segmented" aria-label="市场筛选">
               ${["ALL", "CN", "HK", "US"].map((key) => `
                 <button class="${state.filter === key ? "active" : ""}" data-filter="${key}">
@@ -2432,8 +2469,8 @@
               <label class="share-settings">
                 分享方式
                 <select data-input="shareVisibility">
-                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密 一对一分享</option>
-                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开到股池</option>
+                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密 1v1分享</option>
+                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开到广场</option>
                 </select>
               </label>
             ` : ""}
@@ -2441,10 +2478,20 @@
           <div class="toolbar-actions">
             ${viewingOwn ? `
               <button class="secondary" data-action="copyShareLink">复制分享链接</button>
-              <button class="primary" data-action="newStock">新增股票</button>
+              <button class="primary" data-action="newStock">+添加股票</button>
             ` : ""}
           </div>
         </div>
+      `;
+    }
+
+    function renderPublisherSelect() {
+      const viewingOwn = state.viewPublisherId === "own";
+      return `
+        <select data-input="viewPublisher" aria-label="股池筛选">
+          <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
+          ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
+        </select>
       `;
     }
 
@@ -2490,7 +2537,7 @@
             <div class="empty">
               <strong>${title}</strong>
               <p>${text}</p>
-              ${viewingOwn ? `<button class="primary" data-action="newStock">新增股票</button>` : ""}
+              ${viewingOwn ? `<button class="primary" data-action="newStock">+添加股票</button>` : ""}
             </div>
           </section>
         `;
@@ -2501,7 +2548,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>标的</th>
+                  <th class="sticky-col">股票名称</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
@@ -2556,7 +2603,7 @@
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr>
-          <td data-label="标的">
+          <td data-label="股票名称" class="sticky-col">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
@@ -2741,7 +2788,6 @@
               <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
               <span class="badge warn">已删除</span>
             </div>
-            <span class="stock-code">${formatDate(stock.sourceDeletedAt)}</span>
           </div>
         `;
       }
@@ -2752,10 +2798,7 @@
           <div class="source-tags">
             <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
             <span class="badge source">${typeLabel}</span>
-            ${stock.sourceStopped ? `<span class="badge warn">已停止分享</span>` : ""}
-            ${stock.hasSourceUpdate ? `<span class="badge warn">有更新</span>` : ""}
           </div>
-          <span class="stock-code">${formatDateTime(stock.lastSourceUpdatedAt || stock.updatedAt)}</span>
         </div>
       `;
     }
