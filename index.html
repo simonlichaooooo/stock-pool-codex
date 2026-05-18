@@ -788,13 +788,16 @@
     .toolbar-filters { flex-wrap: wrap; }
     .toolbar-actions { justify-content: flex-end; flex-wrap: wrap; }
     .toolbar select { width: auto; min-width: 128px; }
-    table { min-width: 1360px; }
+    table { min-width: 1540px; }
     th {
       background: #f3f6f8;
       box-shadow: inset 0 -1px 0 var(--line);
     }
     th.num, td.num { text-align: right; }
     td.kpi { text-align: right; font-weight: 760; font-size: 14px; }
+    td.kpi.plain-kpi,
+    td.kpi.plain-kpi.gain,
+    td.kpi.plain-kpi.loss { font-weight: 400; }
     td.num { color: #243145; }
     tbody tr:hover { background: #f7fbfa; }
     .stock-name { font-weight: 780; color: #111827; }
@@ -894,8 +897,10 @@
     .search-combobox .search-results {
       position: absolute;
       left: 0;
-      right: 0;
+      right: auto;
       top: calc(100% + 6px);
+      width: 360px;
+      max-width: min(520px, calc(100vw - 48px));
       z-index: 40;
       max-height: 280px;
       overflow-y: auto;
@@ -930,8 +935,26 @@
       align-self: start;
       margin-top: 0 !important;
       top: 16px;
+      min-height: calc(100vh - 132px);
+      display: flex;
+      flex-direction: column;
     }
     .result-panel h3 { font-size: 16px; }
+    .side-note-box {
+      display: grid;
+      gap: 8px;
+    }
+    .side-note-box label {
+      color: #344054;
+      font-size: 14px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+    .side-note-box textarea { min-height: 180px; }
+    .valuation-summary-block {
+      margin-top: auto;
+      padding-top: 18px;
+    }
     .result-metric {
       background: #f8fafc;
       min-height: 74px;
@@ -996,7 +1019,7 @@
       .form-field.input-medium .readonly-value { max-width: none; }
       .valuation-layout { grid-template-columns: 1fr; }
       .valuation-form { padding: 12px; }
-      .result-panel { position: static; margin-top: 0 !important; }
+      .result-panel { position: static; margin-top: 0 !important; min-height: auto; }
       .compact-row,
       .compact-row.two,
       .compact-row.stock-search-row,
@@ -2015,7 +2038,9 @@
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
-                  ${sortTh("shareholderReturnRate", `<div class="tax-header"><span>前瞻股东回报率</span><label><span>20%股息税后</span><input type="checkbox" data-input="stockConnectTax" ${state.stockConnectDividendTax ? "checked" : ""}></label></div>`)}
+                  ${sortTh("shareholderReturnRate", "前瞻股东回报率", "num")}
+                  <th class="num">前瞻股息率</th>
+                  <th class="num">前瞻回购百分比</th>
                   <th class="num">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻 PE</th>
@@ -2036,7 +2061,7 @@
     }
 
     function renderTableSkeleton(viewingOwn) {
-      const colSpan = viewingOwn ? 14 : 12;
+      const colSpan = viewingOwn ? 16 : 14;
       return `
         <section class="table-panel">
           <div class="table-scroll">
@@ -2058,6 +2083,9 @@
     function renderRow(stock, viewingOwn) {
       const c = calc(stock);
       const shareholderRate = shareholderReturnRateForList(stock, c);
+      const latest = Number(stock.latestMarketCapCny) || 0;
+      const dividendYield = latest ? (Number(stock.expectedDividendCny) || 0) / latest : null;
+      const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr>
           <td data-label="标的">
@@ -2065,9 +2093,11 @@
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
           <td data-label="最新市值" class="num">${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td data-label="Upside" class="kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
-          <td data-label="Forward PE" class="kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
+          <td data-label="Forward PE" class="kpi plain-kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
           <td data-label="前瞻股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
+          <td data-label="前瞻股息率" class="kpi">${percent(dividendYield)}</td>
+          <td data-label="前瞻回购百分比" class="kpi">${percent(buybackRate)}</td>
           <td data-label="前瞻市值" class="num">${moneyYiCny(c.expectedMarketCapCny)}</td>
           <td data-label="前瞻利润" class="num">${moneyYiCny(stock.expectedProfitCny)}</td>
           <td data-label="前瞻 PE" class="num">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
@@ -2232,10 +2262,6 @@
                     </div>
                   `)}
 
-                  ${sectionCard("个人研究备注", "仅用于你的私人研究记录，不影响发布者原始数据。", `
-                    <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="支持 Markdown：记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
-                  `)}
-
                   <input type="hidden" data-field="name" value="${escapeHtml(form.name)}">
                   <input type="hidden" data-field="code" value="${escapeHtml(form.code)}">
                   <input type="hidden" data-field="market" value="${escapeHtml(form.market)}">
@@ -2244,19 +2270,17 @@
                   ${generalError ? `<div class="form-error">${escapeHtml(generalError)}</div>` : ""}
                 </div>
                 <div class="result-panel">
-                  <h3>估值测算</h3>
-                  <div class="result-grid summary">
-                    ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
-                    ${resultItem("Upside", percent(c.upside))}
-                    ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
-                    ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
+                  <div class="side-note-box">
+                    <label>个人研究备注</label>
+                    <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="支持 Markdown：记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
                   </div>
-                  <div class="publish-box">
-                    <label>公开观点</label>
-                    <textarea data-field="publishNote" placeholder="记录这次发布或更新的原因，例如盈利假设变化、估值口径变化等。">${escapeHtml(form.publishNote || "")}</textarea>
-                    <div class="hint">发布会保存当前版本，并生成公开快照。</div>
-                    <div class="publish-actions">
-                      <button data-action="publishStock" ${isSubscribed || state.publishing || state.saving ? "disabled" : ""}>${state.publishing ? "发布中..." : "发布快照"}</button>
+                  <div class="valuation-summary-block">
+                    <h3>估值测算</h3>
+                    <div class="result-grid summary">
+                      ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
+                      ${resultItem("Upside", percent(c.upside))}
+                      ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
+                      ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
                     </div>
                     <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
                   </div>
@@ -2589,7 +2613,7 @@
         ? results.map((stock, index) => `
           <button class="result-item" data-catalog="${index}">
             <span><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)} · ${marketLabel(stock.market)} · ${escapeHtml(stock.exchange)}</span></span>
-            <span>${stock.quoteId ? "点击获取市值" : money(stock.marketCapCny, defaultCurrencyFor(stock))}</span>
+            ${stock.quoteId ? "" : `<span>${money(stock.marketCapCny, defaultCurrencyFor(stock))}</span>`}
           </button>
         `).join("")
         : `<div class="empty" style="padding:18px">没有匹配结果，可以继续手动录入。</div>`;
