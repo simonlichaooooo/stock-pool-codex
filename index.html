@@ -801,6 +801,8 @@
     td.num { color: #243145; }
     tbody tr:hover { background: #f7fbfa; }
     .stock-name { font-weight: 780; color: #111827; }
+    .table-panel tbody td,
+    .table-panel tbody td *:not(.stock-name) { font-weight: 400; }
     .stock-code { margin-top: 3px; font-variant-numeric: tabular-nums; }
     .badge.shared { background: #e6f1ef; color: var(--brand-strong); }
     .badge.unshared { background: #eef1f4; color: #667085; }
@@ -2028,17 +2030,20 @@
         const groupDiff = groupWeight(a) - groupWeight(b);
         if (groupDiff) return groupDiff;
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
-        const ca = calc(a);
-        const cb = calc(b);
-        const va = state.sort.key === "shareholderReturnRate"
-          ? shareholderReturnRateForList(a, ca) ?? -Infinity
-          : ca[state.sort.key] ?? -Infinity;
-        const vb = state.sort.key === "shareholderReturnRate"
-          ? shareholderReturnRateForList(b, cb) ?? -Infinity
-          : cb[state.sort.key] ?? -Infinity;
+        const va = listSortValue(a, state.sort.key);
+        const vb = listSortValue(b, state.sort.key);
         return state.sort.dir === "asc" ? va - vb : vb - va;
       });
       return rows;
+    }
+
+    function listSortValue(stock, key) {
+      const c = calc(stock);
+      const latest = Number(stock.latestMarketCapCny) || 0;
+      if (key === "shareholderReturnRate") return shareholderReturnRateForList(stock, c) ?? -Infinity;
+      if (key === "dividendYield") return latest ? (Number(stock.expectedDividendCny) || 0) / latest : -Infinity;
+      if (key === "buybackRate") return latest ? (Number(stock.expectedBuybackCny) || 0) / latest : -Infinity;
+      return c[key] ?? -Infinity;
     }
 
     function renderTable() {
@@ -2069,8 +2074,8 @@
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
                   ${sortTh("shareholderReturnRate", "前瞻股东回报率", "num")}
-                  <th class="num">前瞻股息率</th>
-                  <th class="num">前瞻回购百分比</th>
+                  ${sortTh("dividendYield", "前瞻股息率", "num")}
+                  ${sortTh("buybackRate", "前瞻回购率", "num")}
                   <th class="num">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻 PE</th>
@@ -2127,7 +2132,7 @@
           <td data-label="Forward PE" class="kpi plain-kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
           <td data-label="前瞻股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
           <td data-label="前瞻股息率" class="kpi">${percent(dividendYield)}</td>
-          <td data-label="前瞻回购百分比" class="kpi">${percent(buybackRate)}</td>
+          <td data-label="前瞻回购率" class="kpi">${percent(buybackRate)}</td>
           <td data-label="前瞻市值" class="num">${moneyYiCny(c.expectedMarketCapCny)}</td>
           <td data-label="前瞻利润" class="num">${moneyYiCny(stock.expectedProfitCny)}</td>
           <td data-label="前瞻 PE" class="num">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
