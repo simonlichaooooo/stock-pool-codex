@@ -885,6 +885,30 @@
     .form-field.input-wide .search-combobox,
     .form-field.input-wide .readonly-value { max-width: none; }
     .currency-select { width: 150px; }
+    .percent-stepper {
+      width: 150px;
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) 32px;
+      align-items: stretch;
+    }
+    .percent-stepper button,
+    .percent-stepper input {
+      min-height: 34px;
+      border-radius: 0;
+    }
+    .percent-stepper button {
+      padding: 0;
+      font-size: 16px;
+      font-weight: 750;
+    }
+    .percent-stepper button:first-child { border-radius: 4px 0 0 4px; }
+    .percent-stepper button:last-child { border-radius: 0 4px 4px 0; }
+    .percent-stepper input {
+      border-left: 0;
+      border-right: 0;
+      text-align: center;
+      padding: 6px 4px;
+    }
     .markdown-note {
       max-width: none !important;
       line-height: 1.6;
@@ -2170,7 +2194,7 @@
         expectedPERemark: "",
         netCashCny: 0,
         netCashScope: "",
-        netCashDiscountRate: 1,
+        netCashDiscountRate: 0.5,
         expectedDividendCny: 0,
         expectedBuybackCny: 0,
         expectedShareholderReturnCny: 0,
@@ -2226,7 +2250,7 @@
                           ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key} · ${currencies[key].label}</option>`).join("")}
                         </select>
                       `)}
-                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`, { className: "input-medium" })}
+                      ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span></div>`, { className: "input-medium" })}
                     </div>
                   `)}
 
@@ -2255,7 +2279,7 @@
                   ${sectionCard("净现金调整", "净现金可按折扣系数计入估值，适合处理现金、投资资产或净负债。", `
                     <div class="form-grid">
                       ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked), { className: "input-short" })}
-                      ${formField("现金折扣", `<input class="numeric-input" type="number" min="0" max="1" step="0.01" data-field="netCashDiscountRate" value="${escapeHtml(form.netCashDiscountRate)}" ${locked}>`, { help: "1 表示全额计入，0 表示不计入。", className: "input-short" })}
+                      ${formField("现金折扣", percentStepperInput("netCashDiscountRate", form.netCashDiscountRate, locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single">
                       ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
@@ -2324,6 +2348,17 @@
         <div class="amount-field">
           <input class="numeric-input" type="number" step="any" data-amount="${key}" value="${escapeHtml(toDisplay(cny, currency))}" placeholder="0.00" ${attrs}>
           <span class="amount-suffix">亿 ${currency}</span>
+        </div>
+      `;
+    }
+
+    function percentStepperInput(key, value, attrs = "") {
+      const percent = Math.round((Number(value) || 0) * 100);
+      return `
+        <div class="percent-stepper">
+          <button type="button" data-discount-step="-10" ${attrs}>-</button>
+          <input class="numeric-input" type="number" min="0" max="100" step="10" data-percent-field="${key}" value="${escapeHtml(percent)}" ${attrs}>
+          <button type="button" data-discount-step="10" ${attrs}>+</button>
         </div>
       `;
     }
@@ -2400,6 +2435,13 @@
       });
       document.querySelectorAll("[data-amount]").forEach((el) => {
         el.addEventListener("input", () => updateAmountField(el.dataset.amount, el.value));
+      });
+      document.querySelectorAll("[data-percent-field]").forEach((el) => {
+        el.addEventListener("input", () => updatePercentField(el.dataset.percentField, el.value));
+        el.addEventListener("change", () => updatePercentField(el.dataset.percentField, el.value));
+      });
+      document.querySelectorAll("[data-discount-step]").forEach((el) => {
+        el.addEventListener("click", () => stepDiscountField(Number(el.dataset.discountStep)));
       });
       const loginForm = document.querySelector("[data-form='login']");
       if (loginForm) loginForm.addEventListener("submit", onLogin);
@@ -2570,6 +2612,23 @@
         return;
       }
       if (["expectedPE", "netCashDiscountRate", "expectedPERemark", "shareholderReturnRemark", "forecastYear"].includes(key)) refreshSummary();
+    }
+
+    function updatePercentField(key, value) {
+      if (!state.form) return;
+      const percent = Math.min(100, Math.max(0, Number(value) || 0));
+      state.form[key] = percent / 100;
+      markFormDirty();
+      refreshSummary();
+    }
+
+    function stepDiscountField(step) {
+      if (!state.form) return;
+      const input = document.querySelector("[data-percent-field='netCashDiscountRate']");
+      const current = input ? Number(input.value) || 0 : (Number(state.form.netCashDiscountRate) || 0) * 100;
+      const next = Math.min(100, Math.max(0, current + step));
+      if (input) input.value = next;
+      updatePercentField("netCashDiscountRate", next);
     }
 
     function updateAmountField(key, value) {
