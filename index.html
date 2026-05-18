@@ -371,6 +371,9 @@
       display: grid;
       gap: 4px;
     }
+    .share-cell { text-align: center; }
+    .share-cell .share-state { justify-items: center; }
+    .share-cell button { margin: 0 auto; }
     .share-state strong, .source-cell strong { font-size: 13px; }
     .source-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .badge.soft { font-weight: 500; color: var(--muted); background: #f4f6fa; }
@@ -1168,6 +1171,7 @@
       formDirty: false,
       saving: false,
       publishing: false,
+      sharingStockId: "",
       drawerError: "",
       tableLoading: false,
       loginNotice: "",
@@ -2082,7 +2086,7 @@
                   <th class="num">净现金<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">现金折扣</th>
                   <th class="num">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th>分享状态</th><th>来源</th>" : ""}
+                  ${viewingOwn ? "<th>分享</th><th>来源</th>" : ""}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -2140,7 +2144,7 @@
           <td data-label="现金折扣" class="num">${stock.netCashDiscountRate ?? "--"}</td>
           <td data-label="前瞻股东回报" class="num">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
-            <td data-label="分享状态">${renderShareState(stock)}</td>
+            <td data-label="分享" class="share-cell">${renderShareState(stock)}</td>
             <td data-label="来源">${renderSourceCell(stock)}</td>
           ` : ""}
           <td data-label="操作">
@@ -2165,11 +2169,13 @@
     }
 
     function renderShareState(stock) {
-      if (!stock.isShared) return `<div class="share-state"><span class="badge unshared">未分享</span></div>`;
+      if (!stock.isShared) {
+        const sharing = state.sharingStockId === stock.id;
+        return `<button class="text-action" data-action="shareStock" data-id="${stock.id}" ${sharing ? "disabled" : ""}>${sharing ? "分享中..." : "去分享"}</button>`;
+      }
       return `
         <div class="share-state">
           <span class="badge shared">已分享</span>
-          <span class="stock-code">${formatDateTime(stock.lastPublishedAt)}</span>
         </div>
       `;
     }
@@ -2513,6 +2519,7 @@
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
       if (action === "publishStock") publishStock();
+      if (action === "shareStock") shareStockFromList(stockId);
       if (action === "toggleSharedFilter") {
         state.shareFilter = state.shareFilter === "SHARED" ? "ALL" : "SHARED";
         render();
@@ -2877,6 +2884,61 @@
       state.editingId = null;
       state.form = null;
       state.formInitialSnapshot = "";
+      render();
+    }
+
+    async function shareStockFromList(stockId) {
+      if (state.sharingStockId || state.publishing || state.saving) return;
+      const stock = state.stocks.find((item) => item.id === stockId);
+      if (!stock || stock.isShared) return;
+      if (stock.sourceType === "subscribed") {
+        alert("订阅来的股票不能发布。如需发布自己的观点，请先转为我的股票。");
+        return;
+      }
+      if (state.profile?.share_banned) {
+        alert("你的分享能力当前已被管理员禁用，暂时不能发布。");
+        return;
+      }
+      state.sharingStockId = stockId;
+      render();
+      const now = new Date().toISOString();
+      const payload = {
+        ...stock,
+        isShared: true,
+        lastPublishedAt: now,
+        updatedAt: now,
+        publishNote: ""
+      };
+      try {
+        const latest = await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stockId)}&select=version_number&order=version_number.desc&limit=1`);
+        const versionNumber = Number(latest?.[0]?.version_number || 0) + 1;
+        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            payload,
+            updated_at: now,
+            is_shared: true,
+            last_published_at: now
+          })
+        });
+        await supabaseRequest("/rest/v1/stock_publications", {
+          method: "POST",
+          body: JSON.stringify({
+            stock_id: stockId,
+            publisher_id: state.session.user.id,
+            version_number: versionNumber,
+            change_note: "",
+            payload
+          })
+        });
+      } catch (error) {
+        alert(`分享失败：${error.message || String(error)}`);
+        state.sharingStockId = "";
+        render();
+        return;
+      }
+      state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
+      state.sharingStockId = "";
       render();
     }
 
