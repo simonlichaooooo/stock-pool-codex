@@ -834,7 +834,7 @@
     .valuation-layout { grid-template-columns: max-content 360px; gap: 24px; align-items: start; justify-content: start; }
     .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
-      width: 580px !important;
+      width: 520px !important;
       max-width: 100% !important;
       background: white;
       border: 1px solid var(--line);
@@ -847,7 +847,7 @@
     .form-grid { display: grid; grid-template-columns: repeat(2, 150px); gap: 12px 48px; align-items: start; justify-content: start; }
     .form-grid.three { grid-template-columns: repeat(3, 150px); gap: 12px 20px; }
     .form-grid.one { grid-template-columns: 150px; }
-    .form-grid.single { grid-template-columns: 400px; }
+    .form-grid.single { grid-template-columns: minmax(0, 1fr); }
     .form-grid.market-cap-row { margin-top: 12px; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
@@ -880,8 +880,13 @@
     .form-field.input-wide input,
     .form-field.input-wide select,
     .form-field.input-wide .search-combobox,
-    .form-field.input-wide .readonly-value { max-width: 400px; }
+    .form-field.input-wide .readonly-value { max-width: none; }
     .currency-select { width: 150px; }
+    .markdown-note {
+      max-width: none !important;
+      line-height: 1.6;
+    }
+    .drawer textarea.markdown-note { min-height: 180px; }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -2153,7 +2158,7 @@
                 <div class="valuation-form">
                   ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
                   ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
-                    <div class="form-grid">
+                    <div class="form-grid three">
                       ${formField("股票名称/代码搜索", `
                         <div class="search-combobox">
                           <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
@@ -2165,8 +2170,6 @@
                           ${Object.keys(currencies).map((key) => `<option value="${key}" ${currency === key ? "selected" : ""}>${key} · ${currencies[key].label}</option>`).join("")}
                         </select>
                       `)}
-                    </div>
-                    <div class="form-grid market-cap-row">
                       ${formField("当前市值", `<div class="readonly-value"><span>${metricMoney(form.latestMarketCapCny, currency)}</span><span class="stock-code">${escapeHtml(form.marketCapUpdatedAt || "未获取行情")}</span></div>`, { className: "input-medium" })}
                     </div>
                   `)}
@@ -2202,7 +2205,7 @@
                   `)}
 
                   ${sectionCard("个人研究备注", "仅用于你的私人研究记录，不影响发布者原始数据。", `
-                    <textarea data-field="myNote" placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
+                    <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="支持 Markdown：记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
                   `)}
 
                   <input type="hidden" data-field="name" value="${escapeHtml(form.name)}">
