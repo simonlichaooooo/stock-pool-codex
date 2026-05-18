@@ -374,6 +374,14 @@
     .share-cell { text-align: center; }
     .share-cell .share-state { justify-items: center; }
     .share-cell button { margin: 0 auto; }
+    .share-head { text-align: center; }
+    .share-action {
+      min-height: 20px;
+      padding: 0 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.2;
+    }
     .share-state strong, .source-cell strong { font-size: 13px; }
     .source-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .badge.soft { font-weight: 500; color: var(--muted); background: #f4f6fa; }
@@ -2086,7 +2094,7 @@
                   <th class="num">净现金<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">现金折扣</th>
                   <th class="num">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th>分享</th><th>来源</th>" : ""}
+                  ${viewingOwn ? "<th class=\"share-head\">分享</th><th>来源</th>" : ""}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -2171,7 +2179,7 @@
     function renderShareState(stock) {
       if (!stock.isShared) {
         const sharing = state.sharingStockId === stock.id;
-        return `<button class="text-action" data-action="shareStock" data-id="${stock.id}" ${sharing ? "disabled" : ""}>${sharing ? "分享中..." : "去分享"}</button>`;
+        return `<button class="text-action share-action" data-action="shareStock" data-id="${stock.id}" ${sharing ? "disabled" : ""}>${sharing ? "分享中..." : "去分享"}</button>`;
       }
       return `
         <div class="share-state">
