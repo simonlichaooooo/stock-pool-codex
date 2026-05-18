@@ -358,8 +358,9 @@
       align-items: center;
       gap: 8px;
       white-space: nowrap;
+      font-size: 11px;
     }
-    .share-settings select { width: 112px; }
+    .share-settings select { width: 148px; }
     .share-link {
       display: flex;
       align-items: center;
@@ -2012,8 +2013,8 @@
               <label class="share-settings">
                 分享方式
                 <select data-input="shareVisibility">
-                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密</option>
-                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开</option>
+                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密 一对一分享</option>
+                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开到股池</option>
                 </select>
               </label>
             ` : ""}
