@@ -483,17 +483,37 @@
       gap: 8px;
     }
     .history-metric {
+      position: relative;
       border: 1px solid var(--line);
       border-radius: 5px;
       background: #f8fafc;
       padding: 8px;
       min-height: 58px;
+      min-width: 0;
     }
-    .history-metric span {
-      display: block;
+    .history-metric-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       color: var(--muted);
       font-size: 12px;
       margin-bottom: 4px;
+      min-width: 0;
+    }
+    .history-metric-title span,
+    .history-metric-title em {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-style: normal;
+    }
+    .history-metric-title em {
+      max-width: 58%;
+      color: #667085;
+      text-align: right;
     }
     .history-metric strong {
       display: block;
@@ -502,6 +522,30 @@
       font-variant-numeric: tabular-nums;
       font-feature-settings: "tnum";
       overflow-wrap: anywhere;
+    }
+    .history-metric strong.text-value {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow-wrap: normal;
+    }
+    .history-metric [data-tooltip] { cursor: help; }
+    .history-metric [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: calc(100% - 4px);
+      z-index: 4;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #111827;
+      color: white;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: normal;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
     }
     .history-delta {
       display: flex;
@@ -2522,29 +2566,32 @@
           ${row.change_note ? `<p class="history-note">${escapeHtml(row.change_note)}</p>` : ""}
           <div class="history-grid">
             ${historyMetric("当时市值", moneyYiCny(stock.latestMarketCapCny))}
-            ${historyMetric("前瞻市值", moneyYiCny(c.expectedMarketCapCny))}
+            ${historyMetric("前瞻市值", moneyYiCny(c.expectedMarketCapCny), { meta: stock.forecastYear ? `@${stock.forecastYear}` : "" })}
             ${historyMetric("Upside", percent(c.upside))}
-            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny))}
+            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny), { meta: stock.expectedPERemark || "", tooltip: stock.expectedPERemark || "" })}
             ${historyMetric("前瞻估值", stock.expectedPE ? `${trimNumber(stock.expectedPE)}x` : "--")}
             ${historyMetric("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)}x` : "--")}
             ${historyMetric("净现金", moneyYiCny(stock.netCashCny))}
             ${historyMetric("现金折扣", percent(stock.netCashDiscountRate))}
-            ${historyMetric("净现金口径", stock.netCashScope || "--")}
+            ${historyMetric("净现金口径", stock.netCashScope || "--", { text: true, tooltip: stock.netCashScope || "" })}
             ${historyMetric("前瞻股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
             ${historyMetric("前瞻股东回报率", percent(c.shareholderReturnRate))}
-            ${historyMetric("股东回报政策", stock.shareholderReturnRemark || "--")}
+            ${historyMetric("股东回报政策", stock.shareholderReturnRemark || "--", { text: true, tooltip: stock.shareholderReturnRemark || "" })}
           </div>
-          ${stock.expectedPERemark ? `
-            <p class="history-note">${[
-              stock.expectedPERemark ? `利润备注：${stock.expectedPERemark}` : "",
-            ].filter(Boolean).map(escapeHtml).join("<br>")}</p>
-          ` : ""}
         </article>
       `;
     }
 
-    function historyMetric(label, value) {
-      return `<div class="history-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+    function historyMetric(label, value, options = {}) {
+      const tooltip = options.tooltip ? ` data-tooltip="${escapeHtml(options.tooltip)}" title="${escapeHtml(options.tooltip)}"` : "";
+      const meta = options.meta ? `<em${tooltip}>${escapeHtml(options.meta)}</em>` : "";
+      const valueTooltip = options.text && options.tooltip ? ` data-tooltip="${escapeHtml(options.tooltip)}" title="${escapeHtml(options.tooltip)}"` : "";
+      return `
+        <div class="history-metric">
+          <div class="history-metric-title"><span>${escapeHtml(label)}</span>${meta}</div>
+          <strong class="${options.text ? "text-value" : ""}"${valueTooltip}>${escapeHtml(value)}</strong>
+        </div>
+      `;
     }
 
     function renderPublicationDeltas(stock, previous) {
