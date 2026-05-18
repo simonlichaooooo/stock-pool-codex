@@ -1060,7 +1060,30 @@
       box-shadow: var(--shadow-soft);
       padding: 14px;
     }
-    .section-card h3 { margin: 0 0 12px; font-size: 15px; color: #172033; }
+    .section-card h3 { margin: 0; font-size: 15px; color: #172033; }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .section-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .section-toggle input {
+      min-height: auto;
+      width: 14px;
+      height: 14px;
+      margin: 0;
+    }
     .section-card p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .form-grid { display: grid; grid-template-columns: repeat(2, 150px); gap: 12px 48px; align-items: start; justify-content: start; }
     .form-grid.three { grid-template-columns: repeat(3, 150px); gap: 12px 20px; }
@@ -1169,6 +1192,42 @@
       color: #172033;
       font-size: 13px;
     }
+    .segment-valuation {
+      display: grid;
+      gap: 10px;
+    }
+    .segment-row {
+      display: grid;
+      grid-template-columns: 92px 120px 74px 82px minmax(0, 1fr) 30px;
+      gap: 8px;
+      align-items: end;
+    }
+    .segment-row.head {
+      align-items: center;
+      color: #667085;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .segment-row input,
+    .segment-row select,
+    .segment-row .amount-field,
+    .segment-row .readonly-value {
+      width: 100%;
+      max-width: none !important;
+    }
+    .segment-total {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .segment-actions {
+      display: flex;
+      justify-content: flex-start;
+      padding-top: 2px;
+    }
+    .segment-actions button { min-width: 96px; }
     .result-panel {
       padding: 14px;
       box-shadow: var(--shadow-soft);
@@ -1250,6 +1309,10 @@
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .form-grid, .form-grid.three, .form-grid.one, .form-grid.single { grid-template-columns: 1fr; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .segment-row { grid-template-columns: 1fr; align-items: stretch; padding-bottom: 10px; border-bottom: 1px solid var(--soft); }
+      .segment-row.head { display: none; }
+      .segment-total { grid-template-columns: 1fr; }
       .valuation-form,
       .section-card { width: 100% !important; max-width: none !important; }
       .valuation-form .form-field > input,
@@ -1435,9 +1498,20 @@
       return `${location.origin}${path || "/"}`;
     }
 
+    function hasAuthTokensInHash() {
+      return location.hash.includes("access_token=");
+    }
+
     function rememberPendingShareFromUrl() {
       const publisherId = new URLSearchParams(location.search).get("share");
-      if (publisherId) localStorage.setItem(PENDING_SHARE_KEY, publisherId);
+      if (publisherId) {
+        localStorage.setItem(PENDING_SHARE_KEY, publisherId);
+        return publisherId;
+      }
+      if (!hasAuthTokensInHash()) {
+        localStorage.removeItem(PENDING_SHARE_KEY);
+      }
+      return null;
     }
 
     function decodeJwt(token) {
@@ -1450,7 +1524,7 @@
     }
 
     function sessionFromHash() {
-      if (!location.hash.includes("access_token=")) return null;
+      if (!hasAuthTokensInHash()) return null;
       const params = new URLSearchParams(location.hash.slice(1));
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
@@ -1903,8 +1977,50 @@
       return Number(stock?.expectedShareholderReturnCny) || 0;
     }
 
-    function normalizeShareholderReturnFields(stock) {
+    function emptySegmentValuationRow(index = 0, forecastYear = "2026E") {
+      return {
+        segmentName: index ? `分部${index}` : "",
+        expectedProfitCny: 0,
+        expectedPE: 0,
+        forecastYear,
+        expectedPERemark: ""
+      };
+    }
+
+    function normalizeSegmentValuationFields(stock) {
       const next = { ...stock };
+      next.useSegmentValuation = Boolean(next.useSegmentValuation);
+      const rawSegments = Array.isArray(next.segmentValuations) ? next.segmentValuations : [];
+      next.segmentValuations = rawSegments.map((segment, index) => ({
+        segmentName: segment?.segmentName || segment?.name || `分部${index + 1}`,
+        expectedProfitCny: Number(segment?.expectedProfitCny) || 0,
+        expectedPE: Number(segment?.expectedPE) || 0,
+        forecastYear: segment?.forecastYear || next.forecastYear || "2026E",
+        expectedPERemark: segment?.expectedPERemark || ""
+      }));
+      if (next.useSegmentValuation) {
+        while (next.segmentValuations.length < 2) {
+          next.segmentValuations.push(emptySegmentValuationRow(next.segmentValuations.length + 1, next.forecastYear || "2026E"));
+        }
+        applySegmentValuationTotals(next);
+      }
+      return next;
+    }
+
+    function applySegmentValuationTotals(stock) {
+      if (!stock?.useSegmentValuation) return stock;
+      const segments = Array.isArray(stock.segmentValuations) ? stock.segmentValuations : [];
+      const totalProfit = segments.reduce((sum, segment) => sum + (Number(segment.expectedProfitCny) || 0), 0);
+      const totalMarketCap = segments.reduce((sum, segment) => {
+        return sum + (Number(segment.expectedProfitCny) || 0) * (Number(segment.expectedPE) || 0);
+      }, 0);
+      stock.expectedProfitCny = totalProfit;
+      stock.expectedPE = totalProfit ? totalMarketCap / totalProfit : 0;
+      return stock;
+    }
+
+    function normalizeShareholderReturnFields(stock) {
+      const next = normalizeSegmentValuationFields(stock);
       if (next.expectedDividendCny === undefined && next.expectedBuybackCny === undefined) {
         next.expectedDividendCny = Number(next.expectedShareholderReturnCny) || 0;
         next.expectedBuybackCny = 0;
@@ -1936,6 +2052,8 @@
         assumptions: {
           latestMarketCapCny: Number(normalized.latestMarketCapCny) || 0,
           marketCapUpdatedAt: normalized.marketCapUpdatedAt || "",
+          useSegmentValuation: Boolean(normalized.useSegmentValuation),
+          segmentValuations: Array.isArray(normalized.segmentValuations) ? normalized.segmentValuations : [],
           expectedProfitCny: Number(normalized.expectedProfitCny) || 0,
           expectedPE: Number(normalized.expectedPE) || 0,
           forecastYear: normalized.forecastYear || "",
@@ -2103,10 +2221,13 @@
       return `
         <div class="share-banner">
           <div>
-            <strong>${escapeHtml(profile.nickname)} 的分享股池</strong>
-            <div class="muted">关注后，可以在顶部下拉框查看 TA 已发布的股票。</div>
+            <strong>你正在查看：${escapeHtml(profile.nickname)} 的分享股池</strong>
+            <div class="muted">可以复制或订阅股票；复制/订阅后会进入你的股池。</div>
           </div>
-          <button class="primary" data-action="followPublisher" data-id="${profile.id}" ${followed ? "disabled" : ""}>${followed ? "已关注" : "关注分享"}</button>
+          <div class="actions">
+            <button class="primary" data-action="followPublisher" data-id="${profile.id}" ${followed ? "disabled" : ""}>${followed ? "已关注" : "关注分享"}</button>
+            <button class="secondary" data-action="openOwnPool">进入我的股池</button>
+          </div>
         </div>
       `;
     }
@@ -2649,6 +2770,11 @@
         displayCurrency: "CNY",
         latestMarketCapCny: 0,
         marketCapUpdatedAt: "",
+        useSegmentValuation: false,
+        segmentValuations: [
+          emptySegmentValuationRow(1, "2026E"),
+          emptySegmentValuationRow(2, "2026E")
+        ],
         expectedProfitCny: 0,
         expectedPE: 0,
         expectedPERemark: "",
@@ -2715,16 +2841,14 @@
                     </div>
                   `)}
 
-                  ${sectionCard("盈利与估值假设", "维护前瞻利润、目标 PE 和利润口径说明，用于计算前瞻市值与 Upside。", `
-                    <div class="form-grid three">
-                      ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true, className: "input-short" })}
-                      ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" required ${locked}>`, { required: true, className: "input-short" })}
-                      ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
-                    </div>
-                    <div class="form-grid single follow-row">
-                      ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide" })}
-                    </div>
-                  `)}
+                  ${sectionCard("盈利与估值假设", "维护前瞻利润、目标 PE 和利润口径说明，用于计算前瞻市值与 Upside。", renderValuationAssumptions(form, currency, locked), {
+                    titleExtra: `
+                      <label class="section-toggle">
+                        <input type="checkbox" data-field="useSegmentValuation" ${form.useSegmentValuation ? "checked" : ""} ${locked}>
+                        <span>分部估值法</span>
+                      </label>
+                    `
+                  })}
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
                     <div class="form-grid three">
@@ -2796,10 +2920,55 @@
       `;
     }
 
-    function sectionCard(title, description, body) {
+    function renderValuationAssumptions(form, currency, locked = "") {
+      if (form.useSegmentValuation) return renderSegmentValuation(form, currency, locked);
+      return `
+        <div class="form-grid three">
+          ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true, className: "input-short" })}
+          ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" required ${locked}>`, { required: true, className: "input-short" })}
+          ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
+        </div>
+        <div class="form-grid single follow-row">
+          ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide" })}
+        </div>
+      `;
+    }
+
+    function renderSegmentValuation(form, currency, locked = "") {
+      const segments = Array.isArray(form.segmentValuations) ? form.segmentValuations : [];
+      return `
+        <div class="segment-valuation">
+          <div class="segment-row head">
+            <span>分部名</span><span>前瞻利润</span><span>前瞻 PE</span><span>前瞻年份</span><span>利润备注</span><span></span>
+          </div>
+          ${segments.map((segment, index) => `
+            <div class="segment-row">
+              <input data-segment-field="segmentName" data-segment-index="${index}" value="${escapeHtml(segment.segmentName || "")}" placeholder="分部${index + 1}" ${locked}>
+              ${amountInput(`segmentProfit:${index}`, segment.expectedProfitCny, currency, locked)}
+              <input class="numeric-input" type="number" step="any" data-segment-field="expectedPE" data-segment-index="${index}" value="${escapeHtml(segment.expectedPE)}" ${locked}>
+              ${segmentForecastYearSelect(segment.forecastYear || form.forecastYear, index, locked)}
+              <input data-segment-field="expectedPERemark" data-segment-index="${index}" value="${escapeHtml(segment.expectedPERemark || "")}" ${locked}>
+              <button class="icon" type="button" data-action="removeSegment" data-index="${index}" title="删除分部" ${locked || segments.length <= 1 ? "disabled" : ""}>×</button>
+            </div>
+          `).join("")}
+          <div class="segment-actions">
+            <button type="button" data-action="addSegment" ${locked}>增加分部</button>
+          </div>
+          <div class="segment-total">
+            ${formField("加总前瞻利润", `<div class="readonly-value"><span data-segment-total="profit">${metricMoney(form.expectedProfitCny, currency)}</span></div>`, { className: "input-short" })}
+            ${formField("加总前瞻 PE", `<div class="readonly-value"><span data-segment-total="pe">${form.expectedPE ? `${trimNumber(form.expectedPE)} 倍` : "--"}</span></div>`, { className: "input-short" })}
+          </div>
+        </div>
+      `;
+    }
+
+    function sectionCard(title, description, body, options = {}) {
       return `
         <section class="section-card">
-          <h3>${escapeHtml(title)}</h3>
+          <div class="section-head">
+            <h3>${escapeHtml(title)}</h3>
+            ${options.titleExtra || ""}
+          </div>
           ${body}
         </section>
       `;
@@ -2893,6 +3062,17 @@
       `;
     }
 
+    function segmentForecastYearSelect(value, index, attrs = "") {
+      const years = ["2025A"];
+      for (let year = 2026; year <= 2035; year += 1) years.push(`${year}E`);
+      if (value && !years.includes(value)) years.unshift(value);
+      return `
+        <select data-segment-field="forecastYear" data-segment-index="${index}" ${attrs}>
+          ${years.map((year) => `<option value="${year}" ${value === year ? "selected" : ""}>${year}</option>`).join("")}
+        </select>
+      `;
+    }
+
     function bindEvents() {
       document.getElementById("app").onclick = (event) => {
         const actionEl = event.target.closest("[data-action]");
@@ -2913,11 +3093,15 @@
         });
       }
       document.querySelectorAll("[data-field]").forEach((el) => {
-        el.addEventListener("input", () => updateFormField(el.dataset.field, el.value));
-        el.addEventListener("change", () => updateFormField(el.dataset.field, el.value));
+        el.addEventListener("input", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
+        el.addEventListener("change", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
       });
       document.querySelectorAll("[data-amount]").forEach((el) => {
         el.addEventListener("input", () => updateAmountField(el.dataset.amount, el.value));
+      });
+      document.querySelectorAll("[data-segment-field]").forEach((el) => {
+        el.addEventListener("input", () => updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value));
+        el.addEventListener("change", () => updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value));
       });
       document.querySelectorAll("[data-percent-field]").forEach((el) => {
         el.addEventListener("input", () => updatePercentField(el.dataset.percentField, el.value));
@@ -2939,7 +3123,10 @@
       if (viewPublisher) viewPublisher.addEventListener("change", async (event) => {
         state.viewPublisherId = event.target.value;
         state.query = "";
-        if (state.viewPublisherId !== "own") {
+        if (state.viewPublisherId === "own") {
+          openOwnPool();
+          return;
+        } else {
           state.tableLoading = true;
           render();
           await loadPublisherStocks(state.viewPublisherId);
@@ -2999,10 +3186,13 @@
       }
       if (action === "copyShareLink") copyShareLink();
       if (action === "followPublisher") followPublisher(stockId);
+      if (action === "openOwnPool") openOwnPool();
       if (action === "copySharedStock") copySharedStock(stockId, "copied");
       if (action === "subscribeStock") copySharedStock(stockId, "subscribed");
       if (action === "unsubscribeStock") unsubscribeStock(stockId);
       if (action === "convertToOwn") convertToOwnStock(stockId);
+      if (action === "addSegment") addSegmentValuation();
+      if (action === "removeSegment") removeSegmentValuation(Number(event.currentTarget.dataset.index));
       if (action === "markSourceUpdatesRead") markSourceUpdatesRead();
       if (action === "openPublisherFromSquare") openPublisherFromSquare(stockId);
       if (action === "selectAdminUser") selectAdminUser(stockId);
@@ -3021,6 +3211,17 @@
       state.query = "";
       if (state.mainView === "square") await loadSquare();
       if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
+      render();
+    }
+
+    function openOwnPool() {
+      state.mainView = "pool";
+      state.viewPublisherId = "own";
+      state.shareInviteProfile = null;
+      state.publisherStocks = [];
+      state.publisherProfile = null;
+      state.query = "";
+      localStorage.removeItem(PENDING_SHARE_KEY);
       render();
     }
 
@@ -3185,6 +3386,15 @@
 
     function updateFormField(key, value) {
       if (!state.form) return;
+      if (key === "useSegmentValuation") {
+        state.form.useSegmentValuation = Boolean(value);
+        if (state.form.useSegmentValuation) {
+          state.form = normalizeSegmentValuationFields(state.form);
+        }
+        markFormDirty();
+        render();
+        return;
+      }
       if (["expectedPE", "netCashDiscountRate"].includes(key)) state.form[key] = Number(value);
       else state.form[key] = value;
       markFormDirty();
@@ -3198,6 +3408,35 @@
         return;
       }
       if (["expectedPE", "netCashDiscountRate", "expectedPERemark", "shareholderReturnRemark", "forecastYear"].includes(key)) refreshSummary();
+    }
+
+    function updateSegmentField(index, key, value) {
+      if (!state.form || !Array.isArray(state.form.segmentValuations) || !state.form.segmentValuations[index]) return;
+      state.form.segmentValuations[index] = {
+        ...state.form.segmentValuations[index],
+        [key]: key === "expectedPE" ? Number(value) : value
+      };
+      applySegmentValuationTotals(state.form);
+      markFormDirty();
+      if (["expectedPE", "forecastYear", "expectedPERemark"].includes(key)) refreshSummary();
+    }
+
+    function addSegmentValuation() {
+      if (!state.form || state.form.sourceType === "subscribed") return;
+      if (!Array.isArray(state.form.segmentValuations)) state.form.segmentValuations = [];
+      state.form.segmentValuations.push(emptySegmentValuationRow(state.form.segmentValuations.length + 1, state.form.forecastYear || "2026E"));
+      applySegmentValuationTotals(state.form);
+      markFormDirty();
+      render();
+    }
+
+    function removeSegmentValuation(index) {
+      if (!state.form || state.form.sourceType === "subscribed" || !Array.isArray(state.form.segmentValuations)) return;
+      if (state.form.segmentValuations.length <= 1 || !state.form.segmentValuations[index]) return;
+      state.form.segmentValuations.splice(index, 1);
+      applySegmentValuationTotals(state.form);
+      markFormDirty();
+      render();
     }
 
     function updatePercentField(key, value) {
@@ -3219,6 +3458,18 @@
 
     function updateAmountField(key, value) {
       if (!state.form) return;
+      if (key.startsWith("segmentProfit:")) {
+        const index = Number(key.split(":")[1]);
+        if (!Array.isArray(state.form.segmentValuations) || !state.form.segmentValuations[index]) return;
+        state.form.segmentValuations[index] = {
+          ...state.form.segmentValuations[index],
+          expectedProfitCny: toCny(value, state.form.displayCurrency)
+        };
+        applySegmentValuationTotals(state.form);
+        markFormDirty();
+        refreshSummary();
+        return;
+      }
       state.form[key] = toCny(value, state.form.displayCurrency);
       if (["expectedDividendCny", "expectedBuybackCny"].includes(key)) {
         state.form.expectedDividendCny = Number(state.form.expectedDividendCny) || 0;
@@ -3236,6 +3487,10 @@
       if (!summary || !state.form) return;
       const currency = state.form.displayCurrency || "CNY";
       const c = calc(state.form);
+      const segmentProfit = document.querySelector("[data-segment-total='profit']");
+      const segmentPE = document.querySelector("[data-segment-total='pe']");
+      if (segmentProfit) segmentProfit.textContent = metricMoney(state.form.expectedProfitCny, currency);
+      if (segmentPE) segmentPE.textContent = state.form.expectedPE ? `${trimNumber(state.form.expectedPE)} 倍` : "--";
       summary.innerHTML = `
         ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
         ${resultItem("Upside", percent(c.upside))}
@@ -3292,8 +3547,14 @@
 
     async function saveStock({ keepOpen = false, fromPublish = false } = {}) {
       if (state.saving || (state.publishing && !fromPublish)) return null;
+      state.form = normalizeShareholderReturnFields(state.form);
       if (!state.form.name.trim() || !state.form.code.trim()) {
         state.drawerError = "请填写股票名称和代码。";
+        render();
+        return null;
+      }
+      if (state.form.useSegmentValuation && !Number(state.form.expectedProfitCny)) {
+        state.drawerError = "请至少填写一个分部的前瞻利润。";
         render();
         return null;
       }
@@ -3851,6 +4112,7 @@
       state.viewPublisherId = publisherId;
       state.query = "";
       await loadPublisherStocks(publisherId);
+      localStorage.removeItem(PENDING_SHARE_KEY);
     }
 
     async function followPublisher(publisherId) {
@@ -3965,7 +4227,8 @@
           });
         }
         state.stocks.push(payload);
-        alert(sourceType === "subscribed" ? "已订阅到你的股池。" : "已复制到你的股池。");
+        const shouldOpenOwnPool = confirm(sourceType === "subscribed" ? "已订阅到你的股池。现在去管理吗？" : "已复制到你的股池。现在去管理吗？");
+        if (shouldOpenOwnPool) openOwnPool();
       } catch (error) {
         alert(`${sourceType === "subscribed" ? "订阅" : "复制"}失败：${error.message || String(error)}`);
       }
