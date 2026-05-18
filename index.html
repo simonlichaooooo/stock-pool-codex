@@ -1621,6 +1621,13 @@
       return date.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     }
 
+    function formatDate(value) {
+      if (!value) return "--";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return escapeHtml(value);
+      return date.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
+    }
+
     function marketCurrency(market) {
       return ({ CN: "CNY", HK: "HKD", US: "USD" })[market] || "CNY";
     }
@@ -2377,6 +2384,7 @@
 
     function renderRow(stock, viewingOwn) {
       const c = calc(stock);
+      const sourceDeleted = Boolean(stock.sourceDeletedAt);
       const shareholderRate = shareholderReturnRateForList(stock, c);
       const latest = Number(stock.latestMarketCapCny) || 0;
       const dividendYield = latest ? (Number(stock.expectedDividendCny) || 0) / latest : null;
@@ -2387,18 +2395,18 @@
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
-          <td data-label="最新市值" class="num">${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
-          <td data-label="Forward PE" class="kpi plain-kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td data-label="前瞻股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
-          <td data-label="前瞻股息率" class="kpi">${percent(dividendYield)}</td>
-          <td data-label="前瞻回购率" class="kpi">${percent(buybackRate)}</td>
-          <td data-label="前瞻市值" class="num">${moneyYiCny(c.expectedMarketCapCny)}</td>
-          <td data-label="前瞻利润" class="num">${moneyYiCny(stock.expectedProfitCny)}</td>
-          <td data-label="前瞻 PE" class="num">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
-          <td data-label="净现金" class="num">${moneyYiCny(stock.netCashCny)}</td>
-          <td data-label="现金折扣" class="num">${stock.netCashDiscountRate ?? "--"}</td>
-          <td data-label="前瞻股东回报" class="num">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
+          <td data-label="最新市值" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
+          <td data-label="Forward PE" class="kpi plain-kpi">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
+          <td data-label="前瞻股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(shareholderRate)}</td>
+          <td data-label="前瞻股息率" class="kpi">${sourceDeleted ? "--" : percent(dividendYield)}</td>
+          <td data-label="前瞻回购率" class="kpi">${sourceDeleted ? "--" : percent(buybackRate)}</td>
+          <td data-label="前瞻市值" class="num">${sourceDeleted ? "--" : moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td data-label="前瞻利润" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedProfitCny)}</td>
+          <td data-label="前瞻 PE" class="num">${sourceDeleted || !stock.expectedPE ? "--" : trimNumber(stock.expectedPE) + "x"}</td>
+          <td data-label="净现金" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣" class="num">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
             <td data-label="分享" class="share-cell">${renderShareState(stock)}</td>
             <td data-label="来源">${renderSourceCell(stock)}</td>
@@ -2426,6 +2434,9 @@
     }
 
     function renderShareState(stock) {
+      if (stock.sourceDeletedAt) {
+        return `<span class="badge unshared">订阅失效</span>`;
+      }
       if (!stock.isShared) {
         const sharing = state.sharingStockId === stock.id;
         return `<button class="text-action share-action" data-action="shareStock" data-id="${stock.id}" ${sharing ? "disabled" : ""}>${sharing ? "分享中..." : "去分享"}</button>`;
@@ -2555,6 +2566,17 @@
     }
 
     function renderSourceCell(stock) {
+      if (stock.sourceDeletedAt) {
+        return `
+          <div class="source-cell">
+            <div class="source-tags">
+              <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
+              <span class="badge warn">已删除</span>
+            </div>
+            <span class="stock-code">${formatDate(stock.sourceDeletedAt)}</span>
+          </div>
+        `;
+      }
       if (!stock.sourceStockId) return "";
       const typeLabel = stock.sourceType === "subscribed" ? "订阅" : stock.sourceType === "copied" ? "复制" : "来源";
       return `
@@ -2602,6 +2624,7 @@
         sourceSeenPublishedAt: "",
         lastSourceUpdatedAt: "",
         sourceStopped: false,
+        sourceDeletedAt: "",
         hasSourceUpdate: false,
         myNote: ""
       };
@@ -3450,6 +3473,7 @@
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock) return false;
       try {
+        await markSubscribedCopiesSourceDeleted(stockId);
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "DELETE"
         });
@@ -3473,6 +3497,16 @@
       }
       render();
       return true;
+    }
+
+    async function markSubscribedCopiesSourceDeleted(stockId) {
+      await supabaseRequest("/rest/v1/rpc/mark_subscriptions_source_deleted", {
+        method: "POST",
+        body: JSON.stringify({
+          p_stock_id: stockId,
+          p_deleted_at: new Date().toISOString()
+        })
+      });
     }
 
     function toggleSort(key) {
@@ -3510,6 +3544,7 @@
         lastPublishedAt: row.last_published_at || row.payload?.lastPublishedAt || "",
         adminHidden: Boolean(row.admin_hidden || row.payload?.adminHidden),
         sourceStopped: Boolean(row.payload?.sourceStopped),
+        sourceDeletedAt: row.payload?.sourceDeletedAt || "",
         hasSourceUpdate: Boolean(row.payload?.hasSourceUpdate),
         myNote: row.payload?.myNote || ""
       });

@@ -141,6 +141,60 @@ on public.stock_subscriptions for delete
 to authenticated
 using (subscriber_id = auth.uid());
 
+create or replace function public.mark_subscriptions_source_deleted(
+  p_stock_id uuid,
+  p_deleted_at timestamptz default now()
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.stock_records
+    where id = p_stock_id
+      and user_id = auth.uid()
+  ) then
+    raise exception 'stock not found or permission denied';
+  end if;
+
+  update public.stock_records
+  set
+    payload = payload || jsonb_build_object(
+      'latestMarketCapCny', null,
+      'marketCapUpdatedAt', '',
+      'expectedProfitCny', null,
+      'expectedPE', null,
+      'expectedPERemark', '',
+      'netCashCny', null,
+      'netCashScope', '',
+      'netCashDiscountRate', null,
+      'expectedDividendCny', null,
+      'expectedBuybackCny', null,
+      'expectedShareholderReturnCny', null,
+      'shareholderReturnRemark', '',
+      'investmentNote', '',
+      'publishNote', '',
+      'sourceStockId', '',
+      'sourceSeenPublishedAt', '',
+      'lastSourceUpdatedAt', p_deleted_at,
+      'sourceStopped', false,
+      'sourceDeletedAt', p_deleted_at,
+      'hasSourceUpdate', false
+    ),
+    updated_at = p_deleted_at,
+    source_stock_id = null,
+    last_source_updated_at = p_deleted_at,
+    source_seen_published_at = null
+  where source_stock_id = p_stock_id
+    and source_type = 'subscribed';
+end;
+$$;
+
+grant execute on function public.mark_subscriptions_source_deleted(uuid, timestamptz) to authenticated;
+
 grant select, insert, update, delete on public.stock_records to authenticated;
 
 drop policy if exists "Users can read shared stock records" on public.stock_records;
