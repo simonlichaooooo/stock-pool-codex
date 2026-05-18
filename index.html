@@ -1585,7 +1585,7 @@
       const pe = Number(stock.expectedPE) || 0;
       const cash = Number(stock.netCashCny) || 0;
       const discount = Number(stock.netCashDiscountRate) || 0;
-      const shareholder = Number(stock.expectedShareholderReturnCny) || 0;
+      const shareholder = shareholderReturnTotal(stock);
       const expectedMarketCapCny = profit * pe + cash * discount;
       return {
         expectedMarketCapCny,
@@ -1599,7 +1599,31 @@
       const rate = computed.shareholderReturnRate;
       if (rate === null || rate === undefined) return rate;
       if (!state.stockConnectDividendTax || stock.market !== "HK") return rate;
-      return rate * 0.8;
+      const latest = Number(stock.latestMarketCapCny) || 0;
+      if (!latest) return rate;
+      return ((Number(stock.expectedDividendCny) || 0) * 0.8 + (Number(stock.expectedBuybackCny) || 0)) / latest;
+    }
+
+    function shareholderReturnTotal(stock) {
+      const dividend = Number(stock?.expectedDividendCny);
+      const buyback = Number(stock?.expectedBuybackCny);
+      if (!Number.isNaN(dividend) || !Number.isNaN(buyback)) {
+        return (Number.isNaN(dividend) ? 0 : dividend) + (Number.isNaN(buyback) ? 0 : buyback);
+      }
+      return Number(stock?.expectedShareholderReturnCny) || 0;
+    }
+
+    function normalizeShareholderReturnFields(stock) {
+      const next = { ...stock };
+      if (next.expectedDividendCny === undefined && next.expectedBuybackCny === undefined) {
+        next.expectedDividendCny = Number(next.expectedShareholderReturnCny) || 0;
+        next.expectedBuybackCny = 0;
+      } else {
+        next.expectedDividendCny = Number(next.expectedDividendCny) || 0;
+        next.expectedBuybackCny = Number(next.expectedBuybackCny) || 0;
+      }
+      next.expectedShareholderReturnCny = next.expectedDividendCny + next.expectedBuybackCny;
+      return next;
     }
 
     function ensureAuth() {
@@ -2117,6 +2141,8 @@
         netCashCny: 0,
         netCashScope: "",
         netCashDiscountRate: 1,
+        expectedDividendCny: 0,
+        expectedBuybackCny: 0,
         expectedShareholderReturnCny: 0,
         shareholderReturnRemark: "",
         forecastYear: "2025E",
@@ -2186,8 +2212,10 @@
                   `)}
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
-                    <div class="form-grid one">
-                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked), { className: "input-short" })}
+                    <div class="form-grid three">
+                      ${formField("前瞻股息", amountInput("expectedDividendCny", form.expectedDividendCny, currency, locked), { className: "input-short" })}
+                      ${formField("前瞻回购", amountInput("expectedBuybackCny", form.expectedBuybackCny, currency, locked), { className: "input-short" })}
+                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked ? locked : "readonly"), { className: "input-short" })}
                     </div>
                     <div class="form-grid single">
                       ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
@@ -2475,7 +2503,7 @@
     function openDrawer(stockId = null) {
       const stock = state.stocks.find((item) => item.id === stockId);
       state.editingId = stockId;
-      state.form = stock ? { ...stock } : emptyForm();
+      state.form = normalizeShareholderReturnFields(stock ? { ...stock } : emptyForm());
       state.formInitialSnapshot = formSnapshot(state.form);
       state.formDirty = false;
       state.drawerError = "";
@@ -2523,6 +2551,11 @@
     function updateAmountField(key, value) {
       if (!state.form) return;
       state.form[key] = toCny(value, state.form.displayCurrency);
+      if (["expectedDividendCny", "expectedBuybackCny"].includes(key)) {
+        state.form = normalizeShareholderReturnFields(state.form);
+        const total = document.querySelector("[data-amount='expectedShareholderReturnCny']");
+        if (total) total.value = toDisplay(state.form.expectedShareholderReturnCny, state.form.displayCurrency);
+      }
       markFormDirty();
       refreshSummary();
     }
@@ -2598,7 +2631,7 @@
       render();
       const now = new Date().toISOString();
       const payload = {
-        ...state.form,
+        ...normalizeShareholderReturnFields(state.form),
         publishNote: "",
         updatedAt: now,
         manualOrder: state.form.manualOrder ?? Date.now()
@@ -2786,7 +2819,7 @@
     }
 
     function normalizeStockRow(row) {
-      return {
+      return normalizeShareholderReturnFields({
         ...row.payload,
         id: row.id,
         userId: row.user_id || row.payload?.userId || "",
@@ -2802,7 +2835,7 @@
         sourceStopped: Boolean(row.payload?.sourceStopped),
         hasSourceUpdate: Boolean(row.payload?.hasSourceUpdate),
         myNote: row.payload?.myNote || ""
-      };
+      });
     }
 
     async function mergeLatestSourceStocks() {
