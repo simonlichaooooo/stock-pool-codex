@@ -93,9 +93,44 @@
     }
     .brand {
       display: flex;
-      align-items: baseline;
-      gap: 12px;
+      align-items: center;
+      gap: 9px;
       min-width: 0;
+    }
+    .brand-logo {
+      position: relative;
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(15, 95, 85, 0.28);
+      border-radius: 7px;
+      background: linear-gradient(180deg, #f4fbf9, #dceeea);
+      color: var(--brand);
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: 0 5px 13px rgba(15, 95, 85, 0.12);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+    .brand-logo::before,
+    .brand-logo::after {
+      content: "$";
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(15, 95, 85, 0.32);
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .brand-logo::before { left: -3px; }
+    .brand-logo::after { right: -3px; }
+    .brand-logo span {
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
     }
     .brand h1 {
       margin: 0;
@@ -129,6 +164,7 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 12px;
+      width: 100%;
     }
     .nav-tabs {
       display: flex;
@@ -434,12 +470,15 @@
       justify-content: flex-end;
       gap: 10px;
       flex-wrap: wrap;
+      flex: 1 1 auto;
       min-width: 0;
       margin-left: auto;
     }
     .nav-publisher-select {
       width: 250px;
       min-width: 250px;
+      max-width: 250px;
+      flex: 0 0 250px;
       border-color: rgba(15, 95, 85, 0.38);
       background-color: var(--brand-soft);
       color: var(--brand-strong);
@@ -1421,7 +1460,7 @@
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .nav-pool-controls { width: 100%; justify-content: flex-start; }
-      .nav-publisher-select { width: 100%; min-width: 0; }
+      .nav-publisher-select { width: 100%; min-width: 0; max-width: none; flex: 1 1 auto; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
       .toolbar-left, .toolbar-filters, .toolbar-actions { width: 100%; flex-direction: column; align-items: stretch; }
       .toolbar-left,
@@ -2276,6 +2315,7 @@
         <div class="shell">
           <header class="topbar">
             <div class="brand">
+              <span class="brand-logo" aria-hidden="true"><span>钞</span></span>
               <h1>钞·作业</h1>
             </div>
             <div class="userbar">
@@ -2310,7 +2350,6 @@
             <div class="nav-pool-controls">
               ${renderPublisherSelect()}
               ${viewingOwn ? `
-                <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
                 <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
                   <input
                     type="checkbox"
@@ -2321,6 +2360,7 @@
                   <span class="share-switch-track" aria-hidden="true"></span>
                   <span>公开至广场</span>
                 </label>
+                <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
               ` : ""}
             </div>
           ` : ""}
