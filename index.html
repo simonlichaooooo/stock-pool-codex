@@ -1560,6 +1560,9 @@
     const AUTH_REDIRECT_URL = appBaseUrl();
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
+    const MARKET_CAP_REFRESH_MS = 15 * 60 * 1000;
+    let marketCapRefreshTimer = null;
+    let marketCapRefreshInFlight = false;
 
     let currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -2079,11 +2082,82 @@
         console.warn("行情接口不可用，使用备用市值。", error);
         return {
           ...stock,
-          latestMarketCapCny: stock.marketCapCny || 0,
+          latestMarketCapCny: Number(stock.latestMarketCapCny) || stock.marketCapCny || 0,
           marketCapSourceCurrency: stock.currency || marketCurrency(stock.market),
-          marketCapUpdatedAt: stock.updatedAt || todayString()
+          marketCapUpdatedAt: stock.marketCapUpdatedAt || stock.updatedAt || todayString()
         };
       }
+    }
+
+    function stripRuntimeMarketCapFields(stock) {
+      const {
+        latestMarketCapCny,
+        marketCapUpdatedAt,
+        marketCapSourceCurrency,
+        ...persisted
+      } = stock || {};
+      return persisted;
+    }
+
+    function payloadForStockRecord(stock) {
+      return stripRuntimeMarketCapFields(normalizeShareholderReturnFields(stock));
+    }
+
+    function mergeRuntimeMarketCap(stock, quote) {
+      return {
+        ...stock,
+        latestMarketCapCny: Number(quote.latestMarketCapCny) || Number(stock.latestMarketCapCny) || 0,
+        marketCapSourceCurrency: quote.marketCapSourceCurrency || stock.marketCapSourceCurrency || marketCurrency(stock.market),
+        marketCapUpdatedAt: quote.marketCapUpdatedAt || stock.marketCapUpdatedAt || todayString()
+      };
+    }
+
+    async function refreshMarketCaps({ renderAfter = true } = {}) {
+      if (marketCapRefreshInFlight || !state.session) return;
+      const ownTargets = state.stocks.filter((stock) => stock.quoteId && !stock.sourceDeletedAt);
+      const publisherTargets = state.publisherStocks.filter((stock) => stock.quoteId && !stock.sourceDeletedAt);
+      const targets = [
+        ...ownTargets.map((stock) => ({ scope: "own", stock })),
+        ...publisherTargets.map((stock) => ({ scope: "publisher", stock }))
+      ];
+      if (!targets.length) return;
+      marketCapRefreshInFlight = true;
+      try {
+        const quotes = await Promise.all(targets.map(async (item) => {
+          try {
+            return { ...item, quote: await fetchQuote(item.stock) };
+          } catch (error) {
+            console.warn("刷新市值失败。", item.stock?.code, error);
+            return null;
+          }
+        }));
+        quotes.filter(Boolean).forEach(({ scope, stock, quote }) => {
+          if (scope === "own") {
+            state.stocks = state.stocks.map((item) => item.id === stock.id ? mergeRuntimeMarketCap(item, quote) : item);
+          } else {
+            state.publisherStocks = state.publisherStocks.map((item) => item.id === stock.id ? mergeRuntimeMarketCap(item, quote) : item);
+          }
+          if (state.form?.id === stock.id) {
+            state.form = mergeRuntimeMarketCap(state.form, quote);
+          }
+        });
+      } finally {
+        marketCapRefreshInFlight = false;
+      }
+      if (renderAfter) render();
+    }
+
+    function startMarketCapAutoRefresh() {
+      stopMarketCapAutoRefresh();
+      marketCapRefreshTimer = window.setInterval(() => {
+        if (state.mainView === "pool") refreshMarketCaps();
+      }, MARKET_CAP_REFRESH_MS);
+    }
+
+    function stopMarketCapAutoRefresh() {
+      if (!marketCapRefreshTimer) return;
+      window.clearInterval(marketCapRefreshTimer);
+      marketCapRefreshTimer = null;
     }
 
     function tencentSymbol(stock) {
@@ -3049,7 +3123,6 @@
                   <input type="hidden" data-field="code" value="${escapeHtml(form.code)}">
                   <input type="hidden" data-field="market" value="${escapeHtml(form.market)}">
                   <input type="hidden" data-field="exchange" value="${escapeHtml(form.exchange)}">
-                  <input type="hidden" data-field="marketCapUpdatedAt" value="${escapeHtml(form.marketCapUpdatedAt)}">
                   ${generalError ? `<div class="form-error">${escapeHtml(generalError)}</div>` : ""}
                 </div>
                 <div class="result-panel">
@@ -3336,6 +3409,7 @@
       const action = event.currentTarget.dataset.action;
       const stockId = event.currentTarget.dataset.id;
       if (action === "logout") {
+        stopMarketCapAutoRefresh();
         writeJson(AUTH_STORAGE_KEY, null);
         state.session = null;
         state.profile = null;
@@ -3389,6 +3463,7 @@
       state.query = "";
       if (state.mainView === "square") await loadSquare();
       if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
+      if (state.mainView === "pool") await refreshMarketCaps({ renderAfter: false });
       render();
     }
 
@@ -3401,6 +3476,7 @@
       state.query = "";
       localStorage.removeItem(PENDING_SHARE_KEY);
       render();
+      refreshMarketCaps();
     }
 
     async function openPublicationHistory(stockId) {
@@ -3554,7 +3630,7 @@
 
     function formSnapshot(form) {
       if (!form) return "";
-      const copy = { ...form, publishNote: form.publishNote || "" };
+      const copy = { ...stripRuntimeMarketCapFields(form), publishNote: form.publishNote || "" };
       return JSON.stringify(copy);
     }
 
@@ -3751,8 +3827,9 @@
         updatedAt: now,
         manualOrder: state.form.manualOrder ?? Date.now()
       };
+      const persistedPayload = payloadForStockRecord(payload);
       const rowPatch = {
-        payload,
+        payload: persistedPayload,
         updated_at: now,
         source_user_id: payload.sourceUserId || null,
         source_stock_id: payload.sourceStockId || null,
@@ -3848,7 +3925,7 @@
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
           method: "PATCH",
           body: JSON.stringify({
-            payload,
+            payload: payloadForStockRecord(payload),
             updated_at: now,
             is_shared: true,
             last_published_at: now
@@ -3911,7 +3988,7 @@
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "PATCH",
           body: JSON.stringify({
-            payload,
+            payload: payloadForStockRecord(payload),
             updated_at: now,
             is_shared: true,
             last_published_at: now
@@ -3945,7 +4022,7 @@
       try {
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "PATCH",
-          body: JSON.stringify({ payload, updated_at: payload.updatedAt })
+          body: JSON.stringify({ payload: payloadForStockRecord(payload), updated_at: payload.updatedAt })
         });
       } catch (error) {
         alert(`更新失败：${error.message || String(error)}`);
@@ -4109,6 +4186,7 @@
           publisherId: row.user_id,
           publisherNickname: profile?.nickname || row.user_id
         }));
+        await refreshMarketCaps({ renderAfter: false });
       } catch (error) {
         alert(`读取分享股池失败：${error.message || String(error)}`);
       }
@@ -4205,7 +4283,7 @@
       try {
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "PATCH",
-          body: JSON.stringify({ payload, admin_hidden: next, updated_at: new Date().toISOString() })
+          body: JSON.stringify({ payload: payloadForStockRecord(payload), admin_hidden: next, updated_at: new Date().toISOString() })
         });
         await logModeration(next ? "hide_stock" : "restore_stock", stock.userId || null, stockId);
         state.adminStocks = state.adminStocks.map((item) => item.id === stockId ? { ...item, adminHidden: next } : item);
@@ -4280,6 +4358,8 @@
       await loadFollowedPublishers();
       await loadShareInvite();
       await loadStocks();
+      await refreshMarketCaps({ renderAfter: false });
+      startMarketCapAutoRefresh();
       await openFollowedPendingShare();
     }
 
@@ -4383,7 +4463,7 @@
           prefer: "return=representation",
           body: JSON.stringify({
             user_id: state.session.user.id,
-            payload,
+            payload: payloadForStockRecord(payload),
             source_user_id: payload.sourceUserId,
             source_stock_id: payload.sourceStockId,
             source_nickname: payload.sourceNickname,
@@ -4449,7 +4529,7 @@
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "PATCH",
           body: JSON.stringify({
-            payload,
+            payload: payloadForStockRecord(payload),
             updated_at: now,
             source_user_id: null,
             source_stock_id: null,
@@ -4477,7 +4557,7 @@
           return supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
             method: "PATCH",
             body: JSON.stringify({
-              payload,
+              payload: payloadForStockRecord(payload),
               source_seen_published_at: seenAt,
               last_source_updated_at: stock.lastSourceUpdatedAt || null
             })
@@ -4495,6 +4575,7 @@
       state.session = currentSession();
       if (state.session) {
         try {
+          await fetchExchangeRates();
           await loadProfile();
           if (!state.profileRequired) await afterProfileReady();
         } catch (error) {
@@ -4503,9 +4584,7 @@
       }
       state.loading = false;
       render();
-      fetchExchangeRates().then(() => {
-        if (!state.drawerOpen) render();
-      });
+      if (!state.session) fetchExchangeRates();
     }
 
     init();
