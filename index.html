@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>股池管理</title>
+  <title>钞·作业</title>
   <style>
     :root {
       --bg: #f5f7f9;
@@ -99,6 +99,7 @@
     }
     .brand h1 {
       margin: 0;
+      color: var(--brand);
       font-size: 18px;
       font-weight: 800;
       white-space: nowrap;
@@ -122,10 +123,16 @@
       padding: 8px;
       box-shadow: var(--shadow-soft);
     }
+    .nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
     .nav-tabs {
       display: flex;
       gap: 4px;
-      margin-bottom: 12px;
       flex-wrap: wrap;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -420,6 +427,24 @@
       gap: 10px;
       flex-wrap: wrap;
       min-width: 0;
+    }
+    .nav-pool-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+      margin-left: auto;
+    }
+    .nav-publisher-select {
+      width: 250px;
+      min-width: 250px;
+      border-color: rgba(15, 95, 85, 0.38);
+      background-color: var(--brand-soft);
+      color: var(--brand-strong);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(15, 95, 85, 0.08);
     }
     .share-link {
       display: flex;
@@ -1388,12 +1413,15 @@
       .brand span { display: none; }
       .userbar { width: 100%; justify-content: flex-start; }
       .workspace { width: calc(100vw - 20px); margin-top: 12px; }
+      .nav-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
       .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-title-row select { width: 100%; min-width: 0; }
       .page-header-actions { width: 100%; justify-content: flex-start; }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
+      .nav-pool-controls { width: 100%; justify-content: flex-start; }
+      .nav-publisher-select { width: 100%; min-width: 0; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
       .toolbar-left, .toolbar-filters, .toolbar-actions { width: 100%; flex-direction: column; align-items: stretch; }
       .toolbar-left,
@@ -2235,7 +2263,7 @@
       document.getElementById("app").innerHTML = `
         <main class="login-wrap">
           <section class="login-panel">
-            <h1>股池管理</h1>
+            <h1>钞·作业</h1>
             <p>正在连接登录状态和股池数据...</p>
           </section>
         </main>
@@ -2248,8 +2276,7 @@
         <div class="shell">
           <header class="topbar">
             <div class="brand">
-              <h1>股池管理</h1>
-              <span>股票匹配、估值假设与预期回报管理</span>
+              <h1>钞·作业</h1>
             </div>
             <div class="userbar">
               <span>${escapeHtml(state.session.user.email)}</span>
@@ -2271,12 +2298,33 @@
     }
 
     function renderNavTabs() {
+      const viewingOwn = state.viewPublisherId === "own";
       return `
-        <nav class="nav-tabs">
-          <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
-          <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
-          ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
-        </nav>
+        <div class="nav-row">
+          <nav class="nav-tabs">
+            <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
+            <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
+            ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
+          </nav>
+          ${state.mainView === "pool" ? `
+            <div class="nav-pool-controls">
+              ${renderPublisherSelect()}
+              ${viewingOwn ? `
+                <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
+                <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
+                  <input
+                    type="checkbox"
+                    data-input="shareVisibilityToggle"
+                    ${state.profile?.share_visibility === "public" ? "checked" : ""}
+                    ${state.profile?.share_banned ? "disabled" : ""}
+                  >
+                  <span class="share-switch-track" aria-hidden="true"></span>
+                  <span>公开至广场</span>
+                </label>
+              ` : ""}
+            </div>
+          ` : ""}
+        </div>
       `;
     }
 
@@ -2284,41 +2332,10 @@
       if (state.mainView === "square") return renderSquare();
       if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
       return `
-        ${renderPageHeader("股池", "股票匹配、估值假设与预期回报管理")}
         ${renderUpdateBanner()}
         ${renderPublisherPanel()}
         ${renderToolbar()}
         ${renderTable()}
-      `;
-    }
-
-    function renderPageHeader(title, subtitle) {
-      const viewingOwn = state.viewPublisherId === "own";
-      return `
-        <section class="page-header">
-          <div class="page-title">
-            <div class="page-title-row">
-              <h2>${escapeHtml(title)}</h2>
-              ${title === "股池" ? renderPublisherSelect() : ""}
-            </div>
-            <p>${escapeHtml(subtitle)}</p>
-          </div>
-          ${title === "股池" && viewingOwn ? `
-            <div class="page-header-actions">
-              <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
-              <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
-                <input
-                  type="checkbox"
-                  data-input="shareVisibilityToggle"
-                  ${state.profile?.share_visibility === "public" ? "checked" : ""}
-                  ${state.profile?.share_banned ? "disabled" : ""}
-                >
-                <span class="share-switch-track" aria-hidden="true"></span>
-                <span>公开至广场</span>
-              </label>
-            </div>
-          ` : ""}
-        </section>
       `;
     }
 
@@ -2510,7 +2527,7 @@
       document.getElementById("app").innerHTML = `
         <main class="login-wrap">
           <section class="login-panel">
-            <h1>股池管理</h1>
+            <h1>钞·作业</h1>
             <p>登录成功后，你的股池会保存到云端数据库。</p>
             <div class="login-actions">
               <button class="primary oauth-button" data-action="githubLogin" type="button">使用 GitHub 登录</button>
@@ -2565,7 +2582,7 @@
     function renderPublisherSelect() {
       const viewingOwn = state.viewPublisherId === "own";
       return `
-        <select data-input="viewPublisher" aria-label="股池筛选">
+        <select class="nav-publisher-select" data-input="viewPublisher" aria-label="股池筛选">
           <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
           ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
         </select>
