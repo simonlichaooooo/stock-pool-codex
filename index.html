@@ -150,6 +150,12 @@
       margin-bottom: 12px;
       width: 100%;
     }
+    .nav-primary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
     .nav-tabs {
       display: flex;
       gap: 4px;
@@ -454,7 +460,7 @@
       justify-content: flex-end;
       gap: 10px;
       flex-wrap: wrap;
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       margin-left: auto;
     }
@@ -1439,6 +1445,7 @@
       .userbar { width: 100%; justify-content: flex-start; }
       .workspace { width: calc(100vw - 20px); margin-top: 12px; }
       .nav-row { align-items: stretch; flex-direction: column; gap: 8px; }
+      .nav-primary { align-items: stretch; flex-direction: column; width: 100%; }
       .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
       .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-title-row select { width: 100%; min-width: 0; }
@@ -2302,7 +2309,7 @@
           <header class="topbar">
             <div class="topbar-inner">
               <div class="brand">
-                <img class="brand-logo" src="logo/logo.png" alt="钞·作业">
+                <img class="brand-logo" src="logo/logo-site.png" alt="钞·作业">
                 <h1>钞·作业</h1>
               </div>
               <div class="userbar">
@@ -2329,14 +2336,16 @@
       const viewingOwn = state.viewPublisherId === "own";
       return `
         <div class="nav-row">
-          <nav class="nav-tabs">
-            <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
-            <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
-            ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
-          </nav>
+          <div class="nav-primary">
+            <nav class="nav-tabs">
+              <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
+              <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
+              ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
+            </nav>
+            ${state.mainView === "pool" ? renderPublisherSelect() : ""}
+          </div>
           ${state.mainView === "pool" ? `
             <div class="nav-pool-controls">
-              ${renderPublisherSelect()}
               ${viewingOwn ? `
                 <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
                   <input
