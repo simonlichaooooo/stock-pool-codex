@@ -358,9 +358,69 @@
       align-items: center;
       gap: 8px;
       white-space: nowrap;
-      font-size: 11px;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 600;
     }
-    .share-settings select { width: 148px; }
+    .share-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .share-switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .share-switch-track {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      border-radius: 999px;
+      background: #d0d7e2;
+      transition: background .16s ease, box-shadow .16s ease;
+      flex: 0 0 auto;
+    }
+    .share-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.24);
+      transition: transform .16s ease;
+    }
+    .share-switch input:checked + .share-switch-track {
+      background: var(--brand);
+    }
+    .share-switch input:checked + .share-switch-track::after {
+      transform: translateX(16px);
+    }
+    .share-switch input:focus-visible + .share-switch-track {
+      box-shadow: 0 0 0 3px rgba(15, 95, 85, 0.14);
+    }
+    .share-switch input:disabled + .share-switch-track,
+    .share-switch input:disabled ~ span {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
     .share-link {
       display: flex;
       align-items: center;
@@ -956,6 +1016,8 @@
       background: #f3f6f8;
       box-shadow: inset 0 -1px 0 var(--line);
       z-index: 3;
+      vertical-align: top;
+      line-height: 1.25;
     }
     th.sticky-col,
     td.sticky-col {
@@ -980,6 +1042,12 @@
     .table-panel tbody td,
     .table-panel tbody td *:not(.stock-name) { font-weight: 400; }
     .stock-code { margin-top: 3px; font-variant-numeric: tabular-nums; }
+    thead .stock-code {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
     .badge.shared { background: #e6f1ef; color: var(--brand-strong); }
     .badge.unshared { background: #eef1f4; color: #667085; }
     .badge.source { background: #eef5ff; color: #234876; }
@@ -1323,6 +1391,7 @@
       .page-header { align-items: flex-start; flex-direction: column; gap: 10px; }
       .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-title-row select { width: 100%; min-width: 0; }
+      .page-header-actions { width: 100%; justify-content: flex-start; }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
@@ -1333,8 +1402,8 @@
       .segmented { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
       .segmented button { min-width: 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .segmented button:nth-last-child(-n+4) { border-bottom: 0; }
-      .share-settings { justify-content: space-between; }
-      .share-settings select { width: 160px; }
+      .share-settings,
+      .share-switch { justify-content: space-between; }
       .admin-layout { grid-template-columns: 1fr; }
       .history-modal { padding: 12px; }
       .history-grid { grid-template-columns: 1fr; }
@@ -2224,6 +2293,7 @@
     }
 
     function renderPageHeader(title, subtitle) {
+      const viewingOwn = state.viewPublisherId === "own";
       return `
         <section class="page-header">
           <div class="page-title">
@@ -2233,6 +2303,21 @@
             </div>
             <p>${escapeHtml(subtitle)}</p>
           </div>
+          ${title === "股池" && viewingOwn ? `
+            <div class="page-header-actions">
+              <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
+              <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
+                <input
+                  type="checkbox"
+                  data-input="shareVisibilityToggle"
+                  ${state.profile?.share_visibility === "public" ? "checked" : ""}
+                  ${state.profile?.share_banned ? "disabled" : ""}
+                >
+                <span class="share-switch-track" aria-hidden="true"></span>
+                <span>公开至广场</span>
+              </label>
+            </div>
+          ` : ""}
         </section>
       `;
     }
@@ -2466,18 +2551,10 @@
             </div>
             ${viewingOwn ? `
               <button class="${state.shareFilter === "SHARED" ? "primary" : "secondary"}" data-action="toggleSharedFilter">已分享</button>
-              <label class="share-settings">
-                分享方式
-                <select data-input="shareVisibility">
-                  <option value="private" ${state.profile?.share_visibility !== "public" ? "selected" : ""}>私密 1v1分享</option>
-                  <option value="public" ${state.profile?.share_visibility === "public" ? "selected" : ""} ${state.profile?.share_banned ? "disabled" : ""}>公开到广场</option>
-                </select>
-              </label>
             ` : ""}
           </div>
           <div class="toolbar-actions">
             ${viewingOwn ? `
-              <button class="secondary" data-action="copyShareLink">复制分享链接</button>
               <button class="primary" data-action="newStock">+添加股票</button>
             ` : ""}
           </div>
@@ -3177,8 +3254,12 @@
         }
         render();
       });
-      const shareVisibility = document.querySelector("[data-input='shareVisibility']");
-      if (shareVisibility) shareVisibility.addEventListener("change", (event) => updateShareVisibility(event.target.value));
+      const shareVisibilityToggle = document.querySelector("[data-input='shareVisibilityToggle']");
+      if (shareVisibilityToggle) {
+        shareVisibilityToggle.addEventListener("change", (event) => {
+          updateShareVisibility(event.target.checked ? "public" : "private");
+        });
+      }
       const squareSort = document.querySelector("[data-input='squareSort']");
       if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
@@ -4199,7 +4280,7 @@
         });
       } catch (error) {
         state.profile = { ...state.profile, share_visibility: previous };
-        alert(`分享方式保存失败：${error.message || String(error)}`);
+        alert(`公开状态保存失败：${error.message || String(error)}`);
         render();
       }
     }
@@ -4208,9 +4289,9 @@
       const shareUrl = `${AUTH_REDIRECT_URL}?share=${encodeURIComponent(state.profile.id)}`;
       try {
         await navigator.clipboard.writeText(shareUrl);
-        alert("分享链接已复制。");
+        alert("1v1分享链接已复制。");
       } catch {
-        prompt("复制你的分享链接：", shareUrl);
+        prompt("复制你的1v1分享链接：", shareUrl);
       }
     }
 
