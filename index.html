@@ -4063,21 +4063,7 @@
     }
 
     async function markSubscribedCopiesSourceDeleted(stockId) {
-      try {
-        await supabaseRequest("/rest/v1/rpc/mark_subscriptions_source_deleted", {
-          method: "POST",
-          body: JSON.stringify({
-            p_stock_id: stockId,
-            p_deleted_at: new Date().toISOString()
-          })
-        });
-      } catch (error) {
-        if (String(error.message || error).includes("PGRST202")) {
-          console.warn("订阅副本删除标记 RPC 不存在，继续删除源股票。", error);
-          return;
-        }
-        throw error;
-      }
+      console.warn("跳过订阅副本删除标记：线上数据库未安装 mark_subscriptions_source_deleted RPC。", stockId);
     }
 
     function toggleSort(key) {
