@@ -2710,9 +2710,6 @@
         rows = rows.filter((item) => `${item.name} ${item.code}`.toLowerCase().includes(query));
       }
       rows.sort((a, b) => {
-        const groupWeight = (item) => item.pin === "top" ? 0 : item.pin === "bottom" ? 2 : 1;
-        const groupDiff = groupWeight(a) - groupWeight(b);
-        if (groupDiff) return groupDiff;
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
         const va = listSortValue(a, state.sort.key);
         const vb = listSortValue(b, state.sort.key);
@@ -2832,8 +2829,8 @@
             <div class="actions">
               ${viewingOwn ? `
                 <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
-                <button class="icon" title="置顶" data-action="pinTop" data-id="${stock.id}">↑</button>
-                <button class="icon" title="置底" data-action="pinBottom" data-id="${stock.id}">↓</button>
+                <button class="icon" title="上提1位" data-action="moveUp" data-id="${stock.id}">↑</button>
+                <button class="icon" title="下提1位" data-action="moveDown" data-id="${stock.id}">↓</button>
                 ${stock.sourceType === "subscribed" ? `
                   <button class="text-action" title="取消订阅" data-action="unsubscribeStock" data-id="${stock.id}">取消订阅</button>
                   <button class="text-action" title="转为我的股票" data-action="convertToOwn" data-id="${stock.id}">转为我的</button>
@@ -3453,8 +3450,8 @@
       if (action === "adminSaveNote") adminSaveNote(stockId);
       if (action === "adminToggleStockHidden") adminToggleStockHidden(stockId);
       if (action === "edit") openDrawer(stockId);
-      if (action === "pinTop") updatePin(stockId, "top");
-      if (action === "pinBottom") updatePin(stockId, "bottom");
+      if (action === "moveUp") moveStockOneStep(stockId, -1);
+      if (action === "moveDown") moveStockOneStep(stockId, 1);
       if (action === "delete") openDeleteConfirm(stockId);
     }
 
@@ -4015,20 +4012,48 @@
       render();
     }
 
-    async function updatePin(stockId, pin) {
+    async function moveStockOneStep(stockId, direction) {
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock) return;
-      const payload = { ...stock, pin, updatedAt: new Date().toISOString() };
+      const rows = [...state.stocks].sort((a, b) => (Number(a.manualOrder) || 0) - (Number(b.manualOrder) || 0));
+      const index = rows.findIndex((item) => item.id === stockId);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= rows.length) return;
+      const neighbor = rows[targetIndex];
+      const currentOrder = Number(stock.manualOrder) || (index + 1) * 1000;
+      const neighborOrder = Number(neighbor.manualOrder) || (targetIndex + 1) * 1000;
+      const fallbackCurrentOrder = (targetIndex + 1) * 1000;
+      const fallbackNeighborOrder = (index + 1) * 1000;
+      const now = new Date().toISOString();
+      const currentPayload = {
+        ...stock,
+        pin: "normal",
+        manualOrder: currentOrder === neighborOrder ? fallbackCurrentOrder : neighborOrder,
+        updatedAt: now
+      };
+      const neighborPayload = {
+        ...neighbor,
+        pin: "normal",
+        manualOrder: currentOrder === neighborOrder ? fallbackNeighborOrder : currentOrder,
+        updatedAt: now
+      };
       try {
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ payload: payloadForStockRecord(payload), updated_at: payload.updatedAt })
-        });
+        await Promise.all([currentPayload, neighborPayload].map((payload) => {
+          return supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(payload.id)}`, {
+            method: "PATCH",
+            body: JSON.stringify({ payload: payloadForStockRecord(payload), updated_at: payload.updatedAt })
+          });
+        }));
       } catch (error) {
         alert(`更新失败：${error.message || String(error)}`);
         return;
       }
-      state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
+      state.stocks = state.stocks.map((item) => {
+        if (item.id === currentPayload.id) return currentPayload;
+        if (item.id === neighborPayload.id) return neighborPayload;
+        return item;
+      });
+      state.sort = { key: "manual", dir: "asc" };
       render();
     }
 
