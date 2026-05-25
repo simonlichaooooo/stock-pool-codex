@@ -1582,7 +1582,8 @@
       { name: "宁德时代", aliases: "宁德时代 catl ningdeshidai", code: "300750.SZ", quoteId: "0.300750", market: "CN", exchange: "SZSE", currency: "CNY", marketCapCny: 9100, updatedAt: "2026-05-15" },
       { name: "苹果", aliases: "apple pingguo aapl", code: "AAPL", quoteId: "105.AAPL", market: "US", exchange: "NASDAQ", currency: "USD", marketCapCny: 225000, updatedAt: "2026-05-15" },
       { name: "微软", aliases: "microsoft weiruan msft", code: "MSFT", quoteId: "105.MSFT", market: "US", exchange: "NASDAQ", currency: "USD", marketCapCny: 258000, updatedAt: "2026-05-15" },
-      { name: "英伟达", aliases: "nvidia yingweida nvda", code: "NVDA", quoteId: "105.NVDA", market: "US", exchange: "NASDAQ", currency: "USD", marketCapCny: 232000, updatedAt: "2026-05-15" }
+      { name: "英伟达", aliases: "nvidia yingweida nvda", code: "NVDA", quoteId: "105.NVDA", market: "US", exchange: "NASDAQ", currency: "USD", marketCapCny: 232000, updatedAt: "2026-05-15" },
+      { name: "富途控股", aliases: "富途 futu futuholdings ftkg", code: "FUTU", quoteId: "105.FUTU", market: "US", exchange: "NASDAQ", currency: "USD", marketCapCny: 850, updatedAt: "2026-05-25" }
     ];
 
     const state = {
@@ -1929,10 +1930,19 @@
       return code;
     }
 
+    function isUsStockSearchItem(item) {
+      if (item.Classify !== "UsStock") return false;
+      if (item.MarketType !== "7" && item.SecurityTypeName !== "美股") return false;
+      if (!["105", "106", "107"].includes(String(item.MktNum || ""))) return false;
+      const typeUS = String(item.TypeUS || "");
+      const code = String(item.Code || "");
+      if (code.includes("_")) return false;
+      return ["1", "3"].includes(typeUS) || ["7", "20"].includes(String(item.SecurityType || ""));
+    }
+
     function normalizeSearchItem(item) {
       const quoteId = item.QuoteID || `${item.MktNum}.${item.Code}`;
       const classify = item.Classify;
-      const securityType = String(item.SecurityType || "");
       const securityName = item.SecurityTypeName || "";
       let market = "";
       let exchange = item.JYS || "";
@@ -1942,7 +1952,7 @@
       } else if (classify === "HK" && item.TypeUS === "3") {
         market = "HK";
         exchange = "HKEX";
-      } else if (classify === "UsStock" && securityType === "20") {
+      } else if (isUsStockSearchItem(item)) {
         market = "US";
       } else {
         return null;
