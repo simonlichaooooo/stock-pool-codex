@@ -2780,8 +2780,8 @@
             <table>
               <thead>
                 <tr>
-                  <th class="sticky-col">版本</th>
-                  <th>股票名称</th>
+                  <th class="sticky-col">股票名称</th>
+                  <th>版本</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
@@ -2836,11 +2836,11 @@
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr>
-          <td data-label="版本" class="sticky-col version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
-          <td data-label="股票名称">
+          <td data-label="股票名称" class="sticky-col">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
+          <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
           <td data-label="最新市值" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
           <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
           <td data-label="Forward PE" class="kpi plain-kpi">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
@@ -3104,7 +3104,6 @@
                   ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
                   ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
                     <div class="form-grid three">
-                      ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
                       ${formField("股票名称/代码搜索", `
                         <div class="search-combobox">
                           <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
@@ -3147,6 +3146,9 @@
                     </div>
                     <div class="form-grid single follow-row">
                       ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
+                    </div>
+                    <div class="form-grid single follow-row">
+                      ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
                     </div>
                   `)}
 
