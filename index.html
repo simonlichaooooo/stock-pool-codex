@@ -1250,6 +1250,7 @@
     .form-grid.single { grid-template-columns: minmax(0, 1fr); }
     .form-grid.market-cap-row { margin-top: 12px; }
     .form-grid.follow-row { margin-top: 10px; }
+    .form-field.span-2 { grid-column: span 2; }
     .form-field { display: grid; gap: 6px; min-width: 0; }
     .form-field label {
       color: #344054;
@@ -1376,11 +1377,14 @@
     }
     .segment-total {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       padding-top: 10px;
       border-top: 1px solid var(--line);
     }
+    .segment-total .form-field > input,
+    .segment-total .form-field > select,
+    .segment-total .form-field .readonly-value { max-width: none; }
     .segment-actions {
       display: flex;
       justify-content: flex-start;
@@ -1479,6 +1483,7 @@
       .share-banner, .publisher-panel, .update-banner { align-items: flex-start; flex-direction: column; }
       .form-row, .grid-2, .grid-3, .summary { grid-template-columns: 1fr; }
       .form-grid, .form-grid.three, .form-grid.one, .form-grid.single { grid-template-columns: 1fr; }
+      .form-field.span-2 { grid-column: auto; }
       .section-head { align-items: flex-start; flex-direction: column; gap: 8px; }
       .segment-row { grid-template-columns: 1fr; align-items: stretch; padding-bottom: 10px; border-bottom: 1px solid var(--soft); }
       .segment-row.head { display: none; }
@@ -3147,9 +3152,6 @@
                     <div class="form-grid single follow-row">
                       ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
                     </div>
-                    <div class="form-grid single follow-row">
-                      ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
-                    </div>
                   `)}
 
                   <input type="hidden" data-field="name" value="${escapeHtml(form.name)}">
@@ -3221,8 +3223,9 @@
           ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" required ${locked}>`, { required: true, className: "input-short" })}
           ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
         </div>
-        <div class="form-grid single follow-row">
-          ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide" })}
+        <div class="form-grid three follow-row">
+          ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide span-2" })}
+          ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
         </div>
       `;
     }
@@ -3250,6 +3253,7 @@
           <div class="segment-total">
             ${formField("加总前瞻利润", `<div class="readonly-value"><span data-segment-total="profit">${metricMoney(form.expectedProfitCny, currency)}</span></div>`, { className: "input-short" })}
             ${formField("加总前瞻 PE", `<div class="readonly-value"><span data-segment-total="pe">${form.expectedPE ? `${trimNumber(form.expectedPE)} 倍` : "--"}</span></div>`, { className: "input-short" })}
+            ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
           </div>
         </div>
       `;
