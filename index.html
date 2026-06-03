@@ -241,6 +241,13 @@
     tbody tr:hover { background: #f8fbfb; }
     .stock-name { font-weight: 760; }
     .stock-code { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .version-cell {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 760;
+      color: #344054;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -1080,6 +1087,7 @@
       z-index: 2;
       background: var(--panel);
       box-shadow: 1px 0 0 var(--line);
+      min-width: 110px;
     }
     th.sticky-col {
       z-index: 4;
@@ -2104,6 +2112,7 @@
         latestMarketCapCny,
         marketCapUpdatedAt,
         marketCapSourceCurrency,
+        versionCustom,
         ...persisted
       } = stock || {};
       return persisted;
@@ -2272,6 +2281,7 @@
 
     function normalizeShareholderReturnFields(stock) {
       const next = normalizeSegmentValuationFields(stock);
+      next.version = normalizeStockVersion(next.version);
       if (next.expectedDividendCny === undefined && next.expectedBuybackCny === undefined) {
         next.expectedDividendCny = Number(next.expectedShareholderReturnCny) || 0;
         next.expectedBuybackCny = 0;
@@ -2287,6 +2297,15 @@
       return next;
     }
 
+    function normalizeStockVersion(value) {
+      const text = String(value || "").trim();
+      return text || "中性";
+    }
+
+    function stockVersionMode(value) {
+      return ["乐观", "中性", "悲观"].includes(normalizeStockVersion(value)) ? normalizeStockVersion(value) : "自定义";
+    }
+
     function buildPublicationSnapshot(stock, changeNote = "") {
       const normalized = normalizeShareholderReturnFields(stock);
       const computed = calc(normalized);
@@ -2298,6 +2317,7 @@
           code: normalized.code || "",
           market: normalized.market || "",
           exchange: normalized.exchange || "",
+          version: normalizeStockVersion(normalized.version),
           displayCurrency: normalized.displayCurrency || defaultCurrencyFor(normalized)
         },
         assumptions: {
@@ -2760,7 +2780,8 @@
             <table>
               <thead>
                 <tr>
-                  <th class="sticky-col">股票名称</th>
+                  <th class="sticky-col">版本</th>
+                  <th>股票名称</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
@@ -2787,7 +2808,7 @@
     }
 
     function renderTableSkeleton(viewingOwn) {
-      const colSpan = viewingOwn ? 16 : 14;
+      const colSpan = viewingOwn ? 17 : 15;
       return `
         <section class="table-panel">
           <div class="table-scroll">
@@ -2815,7 +2836,8 @@
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr>
-          <td data-label="股票名称" class="sticky-col">
+          <td data-label="版本" class="sticky-col version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
+          <td data-label="股票名称">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
@@ -3018,6 +3040,7 @@
     function emptyForm() {
       return {
         id: null,
+        version: "中性",
         name: "",
         code: "",
         market: "HK",
@@ -3081,6 +3104,7 @@
                   ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
                   ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
                     <div class="form-grid three">
+                      ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
                       ${formField("股票名称/代码搜索", `
                         <div class="search-combobox">
                           <input data-input="stockSearch" value="${escapeHtml(form.name ? `${form.name}（${form.code}）` : "")}" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" ${locked}>
@@ -3171,6 +3195,19 @@
             </div>
           </div>
         </aside>
+      `;
+    }
+
+    function renderVersionControl(form, locked = "") {
+      const version = normalizeStockVersion(form.version);
+      const mode = form.versionCustom ? "自定义" : stockVersionMode(version);
+      if (mode === "自定义") {
+        return `<input data-field="version" value="${escapeHtml(form.versionCustom ? (form.version || "") : version)}" placeholder="输入版本" ${locked}>`;
+      }
+      return `
+        <select data-field="version" ${locked}>
+          ${["乐观", "中性", "悲观", "自定义"].map((option) => `<option value="${option}" ${mode === option ? "selected" : ""}>${option}</option>`).join("")}
+        </select>
       `;
     }
 
@@ -3647,6 +3684,19 @@
 
     function updateFormField(key, value) {
       if (!state.form) return;
+      if (key === "version") {
+        if (value === "自定义") {
+          state.form.versionCustom = true;
+          state.form.version = "";
+          markFormDirty();
+          render();
+          return;
+        }
+        state.form.versionCustom = Boolean(state.form.versionCustom && !["乐观", "中性", "悲观"].includes(value));
+        state.form.version = value;
+        markFormDirty();
+        return;
+      }
       if (key === "useSegmentValuation") {
         state.form.useSegmentValuation = Boolean(value);
         if (state.form.useSegmentValuation) {
