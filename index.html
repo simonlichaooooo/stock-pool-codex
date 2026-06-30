@@ -886,20 +886,22 @@
     .form-control-sm { max-width: 180px; }
     .form-control-md { max-width: 240px; }
     .amount-field {
-      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 68px;
+      width: 100%;
     }
     .amount-field input {
-      padding-right: 62px;
+      border-radius: 4px 0 0 4px;
+      padding-right: 8px;
     }
-    .amount-suffix {
-      color: var(--muted);
-      white-space: nowrap;
+    .amount-field select {
+      min-height: 30px;
+      border-left: 0;
+      border-radius: 0 4px 4px 0;
+      padding: 0 4px;
       font-size: 11px;
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
+      color: #344054;
+      background: #f8fafc;
     }
     .form-divider {
       margin: 12px 0 8px;
@@ -1337,7 +1339,7 @@
     .search-combobox .result-item:hover {
       background: #f7fbfa;
     }
-    .amount-field input { padding-right: 58px; }
+    .amount-field input { padding-right: 8px; }
     .amount-field { width: 100%; }
     .readonly-value {
       min-height: 30px;
@@ -1514,7 +1516,7 @@
       .compact-row.basic-row,
       .compact-row.market-cap-row,
       .compact-row.amount-row { grid-template-columns: 1fr; }
-      .amount-field input { padding-right: 62px; }
+      .amount-field input { padding-right: 8px; }
       .drawer-panel { width: 100vw; }
       .drawer-head, .drawer-body, .drawer-foot { padding-left: 12px; padding-right: 12px; }
       .drawer-foot { align-items: stretch; flex-direction: column; }
@@ -1879,6 +1881,36 @@
     function toCny(value, currency) {
       const rate = currencies[currency]?.rateToCny || 1;
       return Number(value || 0) * rate;
+    }
+
+    function defaultAmountCurrencies() {
+      return {
+        expectedProfitCny: "CNY",
+        expectedDividendCny: "CNY",
+        expectedBuybackCny: "CNY",
+        expectedShareholderReturnCny: "CNY",
+        netCashCny: "CNY"
+      };
+    }
+
+    function normalizeAmountCurrencies(value) {
+      const defaults = defaultAmountCurrencies();
+      const raw = value && typeof value === "object" ? value : {};
+      return Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => {
+        const currency = raw[key];
+        return [key, currencies[currency] ? currency : fallback];
+      }));
+    }
+
+    function amountCurrencyFor(form, key) {
+      if (!form) return "CNY";
+      if (String(key).startsWith("segmentProfit:")) {
+        const index = Number(String(key).split(":")[1]);
+        const segment = Array.isArray(form.segmentValuations) ? form.segmentValuations[index] : null;
+        return currencies[segment?.expectedProfitCurrency] ? segment.expectedProfitCurrency : "CNY";
+      }
+      const map = normalizeAmountCurrencies(form.amountCurrencies);
+      return currencies[map[key]] ? map[key] : "CNY";
     }
 
     function money(cny, currency) {
@@ -2246,6 +2278,7 @@
       return {
         segmentName: index ? `分部${index}` : "",
         expectedProfitCny: 0,
+        expectedProfitCurrency: "CNY",
         expectedPE: 0,
         forecastYear,
         expectedPERemark: ""
@@ -2259,6 +2292,7 @@
       next.segmentValuations = rawSegments.map((segment, index) => ({
         segmentName: segment?.segmentName || segment?.name || `分部${index + 1}`,
         expectedProfitCny: Number(segment?.expectedProfitCny) || 0,
+        expectedProfitCurrency: currencies[segment?.expectedProfitCurrency] ? segment.expectedProfitCurrency : "CNY",
         expectedPE: Number(segment?.expectedPE) || 0,
         forecastYear: segment?.forecastYear || next.forecastYear || "2026E",
         expectedPERemark: segment?.expectedPERemark || ""
@@ -2287,6 +2321,7 @@
     function normalizeShareholderReturnFields(stock) {
       const next = normalizeSegmentValuationFields(stock);
       next.version = normalizeStockVersion(next.version);
+      next.amountCurrencies = normalizeAmountCurrencies(next.amountCurrencies);
       if (next.expectedDividendCny === undefined && next.expectedBuybackCny === undefined) {
         next.expectedDividendCny = Number(next.expectedShareholderReturnCny) || 0;
         next.expectedBuybackCny = 0;
@@ -2328,6 +2363,7 @@
         assumptions: {
           latestMarketCapCny: Number(normalized.latestMarketCapCny) || 0,
           marketCapUpdatedAt: normalized.marketCapUpdatedAt || "",
+          amountCurrencies: normalizeAmountCurrencies(normalized.amountCurrencies),
           useSegmentValuation: Boolean(normalized.useSegmentValuation),
           segmentValuations: Array.isArray(normalized.segmentValuations) ? normalized.segmentValuations : [],
           expectedProfitCny: Number(normalized.expectedProfitCny) || 0,
@@ -3053,6 +3089,7 @@
         displayCurrency: "CNY",
         latestMarketCapCny: 0,
         marketCapUpdatedAt: "",
+        amountCurrencies: defaultAmountCurrencies(),
         useSegmentValuation: false,
         segmentValuations: [
           emptySegmentValuationRow(1, "2026E"),
@@ -3135,9 +3172,9 @@
 
                   ${sectionCard("股东回报", "记录未来分红、回购或其他股东回报假设。", `
                     <div class="form-grid three">
-                      ${formField("前瞻股息", amountInput("expectedDividendCny", form.expectedDividendCny, currency, locked), { className: "input-short" })}
-                      ${formField("前瞻回购", amountInput("expectedBuybackCny", form.expectedBuybackCny, currency, locked), { className: "input-short" })}
-                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, currency, locked), { className: "input-short" })}
+                      ${formField("前瞻股息", amountInput("expectedDividendCny", form.expectedDividendCny, amountCurrencyFor(form, "expectedDividendCny"), locked), { className: "input-short" })}
+                      ${formField("前瞻回购", amountInput("expectedBuybackCny", form.expectedBuybackCny, amountCurrencyFor(form, "expectedBuybackCny"), locked), { className: "input-short" })}
+                      ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, amountCurrencyFor(form, "expectedShareholderReturnCny"), locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single follow-row">
                       ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
@@ -3146,7 +3183,7 @@
 
                   ${sectionCard("净现金调整", "净现金可按折扣系数计入估值，适合处理现金、投资资产或净负债。", `
                     <div class="form-grid">
-                      ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, currency, locked), { className: "input-short" })}
+                      ${formField("净现金盘点", amountInput("netCashCny", form.netCashCny, amountCurrencyFor(form, "netCashCny"), locked), { className: "input-short" })}
                       ${formField("现金折扣", percentStepperInput("netCashDiscountRate", form.netCashDiscountRate, locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single follow-row">
@@ -3219,7 +3256,7 @@
       if (form.useSegmentValuation) return renderSegmentValuation(form, currency, locked);
       return `
         <div class="form-grid three">
-          ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, currency, locked), { required: true, className: "input-short" })}
+          ${formField("前瞻利润", amountInput("expectedProfitCny", form.expectedProfitCny, amountCurrencyFor(form, "expectedProfitCny"), locked), { required: true, className: "input-short" })}
           ${formField("前瞻 PE", `<input class="numeric-input" type="number" step="any" data-field="expectedPE" value="${escapeHtml(form.expectedPE)}" required ${locked}>`, { required: true, className: "input-short" })}
           ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
         </div>
@@ -3240,7 +3277,7 @@
           ${segments.map((segment, index) => `
             <div class="segment-row">
               <input data-segment-field="segmentName" data-segment-index="${index}" value="${escapeHtml(segment.segmentName || "")}" placeholder="分部${index + 1}" ${locked}>
-              ${amountInput(`segmentProfit:${index}`, segment.expectedProfitCny, currency, locked)}
+              ${amountInput(`segmentProfit:${index}`, segment.expectedProfitCny, amountCurrencyFor(form, `segmentProfit:${index}`), locked)}
               <input class="numeric-input" type="number" step="any" data-segment-field="expectedPE" data-segment-index="${index}" value="${escapeHtml(segment.expectedPE)}" ${locked}>
               ${segmentForecastYearSelect(segment.forecastYear || form.forecastYear, index, locked)}
               <input data-segment-field="expectedPERemark" data-segment-index="${index}" value="${escapeHtml(segment.expectedPERemark || "")}" ${locked}>
@@ -3286,7 +3323,9 @@
       return `
         <div class="amount-field">
           <input class="numeric-input" type="number" step="any" data-amount="${key}" value="${escapeHtml(toDisplay(cny, currency))}" placeholder="0.00" ${attrs}>
-          <span class="amount-suffix">亿 ${currency}</span>
+          <select data-amount-currency="${key}" aria-label="金额币种" ${attrs}>
+            ${Object.keys(currencies).map((code) => `<option value="${code}" ${currency === code ? "selected" : ""}>亿 ${code}</option>`).join("")}
+          </select>
         </div>
       `;
     }
@@ -3395,6 +3434,9 @@
       });
       document.querySelectorAll("[data-amount]").forEach((el) => {
         el.addEventListener("input", () => updateAmountField(el.dataset.amount, el.value));
+      });
+      document.querySelectorAll("[data-amount-currency]").forEach((el) => {
+        el.addEventListener("change", () => updateAmountCurrency(el.dataset.amountCurrency, el.value));
       });
       document.querySelectorAll("[data-segment-field]").forEach((el) => {
         el.addEventListener("input", () => updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value));
@@ -3780,23 +3822,42 @@
         if (!Array.isArray(state.form.segmentValuations) || !state.form.segmentValuations[index]) return;
         state.form.segmentValuations[index] = {
           ...state.form.segmentValuations[index],
-          expectedProfitCny: toCny(value, state.form.displayCurrency)
+          expectedProfitCny: toCny(value, amountCurrencyFor(state.form, key))
         };
         applySegmentValuationTotals(state.form);
         markFormDirty();
         refreshSummary();
         return;
       }
-      state.form[key] = toCny(value, state.form.displayCurrency);
+      state.form[key] = toCny(value, amountCurrencyFor(state.form, key));
       if (["expectedDividendCny", "expectedBuybackCny"].includes(key)) {
         state.form.expectedDividendCny = Number(state.form.expectedDividendCny) || 0;
         state.form.expectedBuybackCny = Number(state.form.expectedBuybackCny) || 0;
         state.form.expectedShareholderReturnCny = state.form.expectedDividendCny + state.form.expectedBuybackCny;
         const total = document.querySelector("[data-amount='expectedShareholderReturnCny']");
-        if (total) total.value = toDisplay(state.form.expectedShareholderReturnCny, state.form.displayCurrency);
+        if (total) total.value = toDisplay(state.form.expectedShareholderReturnCny, amountCurrencyFor(state.form, "expectedShareholderReturnCny"));
       }
       markFormDirty();
       refreshSummary();
+    }
+
+    function updateAmountCurrency(key, currency) {
+      if (!state.form || !currencies[currency]) return;
+      if (key.startsWith("segmentProfit:")) {
+        const index = Number(key.split(":")[1]);
+        if (!Array.isArray(state.form.segmentValuations) || !state.form.segmentValuations[index]) return;
+        state.form.segmentValuations[index] = {
+          ...state.form.segmentValuations[index],
+          expectedProfitCurrency: currency
+        };
+      } else {
+        state.form.amountCurrencies = normalizeAmountCurrencies({
+          ...state.form.amountCurrencies,
+          [key]: currency
+        });
+      }
+      markFormDirty();
+      render();
     }
 
     function refreshSummary() {
