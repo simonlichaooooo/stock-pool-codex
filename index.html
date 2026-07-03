@@ -248,7 +248,6 @@
       justify-content: center;
       width: 20px;
       height: 28px;
-      margin-right: 6px;
       color: #98a2b3;
       cursor: grab;
       user-select: none;
@@ -256,7 +255,15 @@
       font-size: 16px;
     }
     .drag-handle:active { cursor: grabbing; }
-    .stock-title-wrap { display: inline-flex; align-items: center; }
+    th.drag-col,
+    td.drag-col {
+      width: 42px;
+      min-width: 42px;
+      max-width: 42px;
+      padding-left: 6px;
+      padding-right: 6px;
+      text-align: center;
+    }
     .stock-name { font-weight: 760; }
     .stock-code { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .version-cell {
@@ -1109,6 +1116,10 @@
       box-shadow: 1px 0 0 var(--line);
       min-width: 110px;
     }
+    th.drag-col.sticky-col,
+    td.drag-col.sticky-col { left: 0; min-width: 42px; }
+    th.stock-col-after-drag,
+    td.stock-col-after-drag { left: 42px; }
     th.sticky-col {
       z-index: 4;
       background: #f3f6f8;
@@ -2848,7 +2859,8 @@
             <table>
               <thead>
                 <tr>
-                  <th class="sticky-col">股票名称</th>
+                  ${viewingOwn ? `<th class="drag-col sticky-col" aria-label="拖拽排序"></th>` : ""}
+                  <th class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">股票名称</th>
                   <th>版本</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${sortTh("upside", "Upside", "num")}
@@ -2876,7 +2888,7 @@
     }
 
     function renderTableSkeleton(viewingOwn) {
-      const colSpan = viewingOwn ? 17 : 15;
+      const colSpan = viewingOwn ? 18 : 15;
       return `
         <section class="table-panel">
           <div class="table-scroll">
@@ -2904,11 +2916,9 @@
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr class="stock-row" data-stock-row="${stock.id}">
-          <td data-label="股票名称" class="sticky-col">
-            <div class="stock-title-wrap">
-              ${viewingOwn ? `<span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span>` : ""}
-              <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
-            </div>
+          ${viewingOwn ? `<td data-label="排序" class="drag-col sticky-col"><span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span></td>` : ""}
+          <td data-label="股票名称" class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">
+            <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
           <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
