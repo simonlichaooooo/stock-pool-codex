@@ -239,6 +239,24 @@
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { color: var(--brand); }
     tbody tr:hover { background: #f8fbfb; }
+    tbody tr.stock-row.dragging { opacity: .45; }
+    tbody tr.stock-row.drag-over-before td { box-shadow: inset 0 2px 0 var(--brand); }
+    tbody tr.stock-row.drag-over-after td { box-shadow: inset 0 -2px 0 var(--brand); }
+    .drag-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 28px;
+      margin-right: 6px;
+      color: #98a2b3;
+      cursor: grab;
+      user-select: none;
+      vertical-align: middle;
+      font-size: 16px;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .stock-title-wrap { display: inline-flex; align-items: center; }
     .stock-name { font-weight: 760; }
     .stock-code { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .version-cell {
@@ -1210,7 +1228,7 @@
       background: #912018;
       border-color: #912018;
     }
-    .valuation-layout { grid-template-columns: max-content 360px; gap: 24px; align-items: start; justify-content: start; }
+    .valuation-layout { grid-template-columns: max-content 500px; gap: 24px; align-items: start; justify-content: start; }
     .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
       width: 520px !important;
@@ -1315,6 +1333,13 @@
       line-height: 1.6;
     }
     .drawer textarea.markdown-note { min-height: 180px; }
+    .drawer textarea.auto-grow-note {
+      min-height: 30px;
+      resize: vertical;
+      overflow-y: hidden;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
     .search-combobox {
       position: relative;
       z-index: 12;
@@ -1371,6 +1396,7 @@
       font-weight: 750;
     }
     .segment-row input,
+    .segment-row textarea,
     .segment-row select,
     .segment-row .amount-field,
     .segment-row .readonly-value {
@@ -1420,6 +1446,7 @@
     .side-note-box textarea {
       flex: 1;
       min-height: 240px;
+      overflow-wrap: anywhere;
     }
     .valuation-summary-block {
       margin-top: auto;
@@ -2876,9 +2903,12 @@
       const dividendYield = latest ? (Number(stock.expectedDividendCny) || 0) / latest : null;
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
-        <tr>
+        <tr class="stock-row" data-stock-row="${stock.id}">
           <td data-label="股票名称" class="sticky-col">
-            <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
+            <div class="stock-title-wrap">
+              ${viewingOwn ? `<span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span>` : ""}
+              <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
+            </div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
           <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
@@ -3177,7 +3207,7 @@
                       ${formField("前瞻股东回报", amountInput("expectedShareholderReturnCny", form.expectedShareholderReturnCny, amountCurrencyFor(form, "expectedShareholderReturnCny"), locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single follow-row">
-                      ${formField("股东回报政策", `<input data-field="shareholderReturnRemark" value="${escapeHtml(form.shareholderReturnRemark)}" ${locked}>`, { className: "input-wide" })}
+                      ${formField("股东回报政策", `<textarea class="auto-grow-note" rows="1" data-field="shareholderReturnRemark" ${locked}>${escapeHtml(form.shareholderReturnRemark)}</textarea>`, { className: "input-wide" })}
                     </div>
                   `)}
 
@@ -3187,7 +3217,7 @@
                       ${formField("现金折扣", percentStepperInput("netCashDiscountRate", form.netCashDiscountRate, locked), { className: "input-short" })}
                     </div>
                     <div class="form-grid single follow-row">
-                      ${formField("净现金口径", `<input data-field="netCashScope" value="${escapeHtml(form.netCashScope || "")}" placeholder="例如：现金及短投 - 有息负债" ${locked}>`, { className: "input-wide" })}
+                      ${formField("净现金口径", `<textarea class="auto-grow-note" rows="1" data-field="netCashScope" placeholder="例如：现金及短投 - 有息负债" ${locked}>${escapeHtml(form.netCashScope || "")}</textarea>`, { className: "input-wide" })}
                     </div>
                   `)}
 
@@ -3214,7 +3244,7 @@
                     ${!isSubscribed ? `
                       <div class="publish-box">
                         <label>发布快照说明</label>
-                        <textarea data-field="publishNote" placeholder="记录这次发布相对上一版的变化，例如利润假设、PE、股东回报或净现金口径调整。">${escapeHtml(form.publishNote || "")}</textarea>
+                        <textarea class="auto-grow-note" data-field="publishNote" placeholder="记录这次发布相对上一版的变化，例如利润假设、PE、股东回报或净现金口径调整。">${escapeHtml(form.publishNote || "")}</textarea>
                         <div class="publish-actions">
                           <button data-action="publishStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.publishing ? "发布中..." : "发布快照"}</button>
                         </div>
@@ -3261,7 +3291,7 @@
           ${formField("前瞻年份", forecastYearSelect(form.forecastYear, locked), { className: "input-short" })}
         </div>
         <div class="form-grid three follow-row">
-          ${formField("利润备注", `<input data-field="expectedPERemark" value="${escapeHtml(form.expectedPERemark)}" ${locked}>`, { className: "input-wide span-2" })}
+          ${formField("利润备注", `<textarea class="auto-grow-note" rows="1" data-field="expectedPERemark" ${locked}>${escapeHtml(form.expectedPERemark)}</textarea>`, { className: "input-wide span-2" })}
           ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
         </div>
       `;
@@ -3280,7 +3310,7 @@
               ${amountInput(`segmentProfit:${index}`, segment.expectedProfitCny, amountCurrencyFor(form, `segmentProfit:${index}`), locked)}
               <input class="numeric-input" type="number" step="any" data-segment-field="expectedPE" data-segment-index="${index}" value="${escapeHtml(segment.expectedPE)}" ${locked}>
               ${segmentForecastYearSelect(segment.forecastYear || form.forecastYear, index, locked)}
-              <input data-segment-field="expectedPERemark" data-segment-index="${index}" value="${escapeHtml(segment.expectedPERemark || "")}" ${locked}>
+              <textarea class="auto-grow-note" rows="1" data-segment-field="expectedPERemark" data-segment-index="${index}" ${locked}>${escapeHtml(segment.expectedPERemark || "")}</textarea>
               <button class="icon" type="button" data-action="removeSegment" data-index="${index}" title="删除分部" ${locked || segments.length <= 1 ? "disabled" : ""}>×</button>
             </div>
           `).join("")}
@@ -3420,6 +3450,7 @@
       document.querySelectorAll("[data-sort]").forEach((el) => {
         el.addEventListener("click", () => toggleSort(el.dataset.sort));
       });
+      bindRowDragEvents();
       const stockConnectTax = document.querySelector("[data-input='stockConnectTax']");
       if (stockConnectTax) {
         stockConnectTax.addEventListener("click", (event) => event.stopPropagation());
@@ -3429,9 +3460,13 @@
         });
       }
       document.querySelectorAll("[data-field]").forEach((el) => {
-        el.addEventListener("input", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
+        el.addEventListener("input", () => {
+          updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value);
+          if (el.matches("textarea.auto-grow-note")) autoGrowTextarea(el);
+        });
         el.addEventListener("change", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
       });
+      document.querySelectorAll("textarea.auto-grow-note").forEach(autoGrowTextarea);
       document.querySelectorAll("[data-amount]").forEach((el) => {
         el.addEventListener("input", () => updateAmountField(el.dataset.amount, el.value));
       });
@@ -3439,7 +3474,10 @@
         el.addEventListener("change", () => updateAmountCurrency(el.dataset.amountCurrency, el.value));
       });
       document.querySelectorAll("[data-segment-field]").forEach((el) => {
-        el.addEventListener("input", () => updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value));
+        el.addEventListener("input", () => {
+          updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value);
+          if (el.matches("textarea.auto-grow-note")) autoGrowTextarea(el);
+        });
         el.addEventListener("change", () => updateSegmentField(Number(el.dataset.segmentIndex), el.dataset.segmentField, el.value));
       });
       document.querySelectorAll("[data-percent-field]").forEach((el) => {
@@ -4182,6 +4220,72 @@
       });
       state.sort = { key: "manual", dir: "asc" };
       render();
+    }
+
+    function autoGrowTextarea(element) {
+      element.style.height = "auto";
+      element.style.height = `${Math.max(30, element.scrollHeight)}px`;
+    }
+
+    function bindRowDragEvents() {
+      let draggedId = "";
+      document.querySelectorAll("[data-drag-id]").forEach((handle) => {
+        handle.addEventListener("dragstart", (event) => {
+          draggedId = handle.dataset.dragId;
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", draggedId);
+          handle.closest("tr")?.classList.add("dragging");
+        });
+        handle.addEventListener("dragend", () => {
+          document.querySelectorAll("tr.stock-row").forEach((row) => row.classList.remove("dragging", "drag-over-before", "drag-over-after"));
+          draggedId = "";
+        });
+      });
+      document.querySelectorAll("tr[data-stock-row]").forEach((row) => {
+        row.addEventListener("dragover", (event) => {
+          if (!draggedId || row.dataset.stockRow === draggedId) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          const before = event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+          document.querySelectorAll("tr.stock-row").forEach((item) => item.classList.remove("drag-over-before", "drag-over-after"));
+          row.classList.add(before ? "drag-over-before" : "drag-over-after");
+        });
+        row.addEventListener("dragleave", () => row.classList.remove("drag-over-before", "drag-over-after"));
+        row.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const sourceId = draggedId || event.dataTransfer.getData("text/plain");
+          const targetId = row.dataset.stockRow;
+          const before = event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+          row.classList.remove("drag-over-before", "drag-over-after");
+          if (sourceId && targetId && sourceId !== targetId) reorderStocksByDrag(sourceId, targetId, before);
+        });
+      });
+    }
+
+    async function reorderStocksByDrag(sourceId, targetId, beforeTarget) {
+      const previousStocks = state.stocks.map((stock) => ({ ...stock }));
+      const ordered = [...state.stocks].sort((a, b) => (Number(a.manualOrder) || 0) - (Number(b.manualOrder) || 0));
+      const sourceIndex = ordered.findIndex((stock) => stock.id === sourceId);
+      if (sourceIndex < 0 || !ordered.some((stock) => stock.id === targetId)) return;
+      const [moved] = ordered.splice(sourceIndex, 1);
+      const targetIndex = ordered.findIndex((stock) => stock.id === targetId);
+      ordered.splice(targetIndex + (beforeTarget ? 0 : 1), 0, moved);
+      const now = new Date().toISOString();
+      const reordered = ordered.map((stock, index) => ({ ...stock, pin: "normal", manualOrder: (index + 1) * 1000, updatedAt: now }));
+      const byId = new Map(reordered.map((stock) => [stock.id, stock]));
+      state.stocks = state.stocks.map((stock) => byId.get(stock.id) || stock);
+      state.sort = { key: "manual", dir: "asc" };
+      render();
+      try {
+        await Promise.all(reordered.map((payload) => supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(payload.id)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ payload: payloadForStockRecord(payload), updated_at: payload.updatedAt })
+        })));
+      } catch (error) {
+        state.stocks = previousStocks;
+        alert(`排序保存失败：${error.message || String(error)}`);
+        render();
+      }
     }
 
     async function deleteStock(stockId) {
