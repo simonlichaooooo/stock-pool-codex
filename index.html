@@ -3006,6 +3006,7 @@
     }
 
     function renderPositionModal(modal) {
+      const portfolio = activePortfolio();
       const isOpen = modal.type === "open";
       const position = modal.position;
       const title = isOpen ? "开仓" : modal.type === "add" ? "加仓" : "减持";
@@ -3018,8 +3019,13 @@
         </div></label>
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
+      const stockMarket = modal.stock?.market || position?.market || "";
+      const stockConnectNote = portfolio?.accountType === "CNY" && stockMarket === "HK"
+        ? `<div class="muted">港股通按港币成交价录入，成交金额将按当前汇率折算为人民币现金。</div>`
+        : "";
       return modalShell(title, `${stockBlock}
         <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格（${currency || "原币"}）</span><input name="price" type="number" min="0.000001" step="any" required></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><input name="shares" type="number" min="1" step="1" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}></label></div>
+        ${stockConnectNote}
         ${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
       `, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入");
     }
@@ -4305,13 +4311,15 @@
       if (!Number.isInteger(shares) || shares <= 0) return showPortfolioError("买卖数量必须为正整数。");
       const stock = modal.type === "open" ? modal.stock : modal.position;
       if (!stock) return showPortfolioError("请先选择股票。");
-      if (portfolio.accountType === "CNY" && stock.market !== "CN") return showPortfolioError("人民币账户只能开仓 A 股。");
+      if (portfolio.accountType === "CNY" && !["CN", "HK"].includes(stock.market)) return showPortfolioError("人民币账户只能开仓 A 股或港股通股票。");
       if (portfolio.accountType === "HKUS" && !["HK", "US"].includes(stock.market)) return showPortfolioError("港美账户只能开仓港股或美股。");
       if (modal.type === "open" && portfolio.positions.some((item) => item.code === stock.code && item.market === stock.market)) return showPortfolioError("该股票已在组合中，请使用加仓。");
       if (modal.type === "reduce" && shares > Number(stock.shares)) return showPortfolioError("减持数量不能超过当前股数。");
       const amount = price * shares;
       const currency = stock.currency || marketCurrency(stock.market);
-      if (modal.type !== "reduce" && Number(portfolio.cash?.[currency] || 0) < amount) return showPortfolioError(`${currencies[currency]?.label || currency}现金余额不足。`);
+      const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : currency;
+      const cashAmount = amount * portfolioFx(currency, cashCurrency);
+      if (modal.type !== "reduce" && Number(portfolio.cash?.[cashCurrency] || 0) < cashAmount) return showPortfolioError(`${currencies[cashCurrency]?.label || cashCurrency}现金余额不足。`);
       updateActivePortfolio((item) => {
         const positions = [...item.positions];
         if (modal.type === "open") {
@@ -4338,8 +4346,8 @@
             };
           }
         }
-        const cashDelta = modal.type === "reduce" ? amount : -amount;
-        return { ...item, positions, cash: { ...item.cash, [currency]: Number(item.cash?.[currency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
+        const cashDelta = modal.type === "reduce" ? cashAmount : -cashAmount;
+        return { ...item, positions, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
       });
       closePortfolioModal();
     }
