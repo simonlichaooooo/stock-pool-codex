@@ -1483,6 +1483,72 @@
       background-size: 400% 100%;
       animation: shimmer 1.25s ease-in-out infinite;
     }
+    .portfolio-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .portfolio-switcher { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .portfolio-switcher select { width: auto; min-width: 220px; }
+    .portfolio-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .portfolio-metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 14px;
+      box-shadow: var(--shadow-soft);
+      min-height: 92px;
+    }
+    .portfolio-metric-label { color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .portfolio-metric-value { font-size: 23px; line-height: 1.15; font-weight: 760; font-variant-numeric: tabular-nums; }
+    .portfolio-metric-sub { color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.5; }
+    .portfolio-cash-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .portfolio-cash-head button { min-height: 26px; padding: 0 8px; }
+    .portfolio-table .actions { white-space: nowrap; }
+    .portfolio-table .stock-name { font-weight: 720; }
+    .portfolio-empty {
+      padding: 56px 20px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .simple-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(16, 24, 40, .42);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .simple-modal {
+      width: min(520px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    .simple-modal-head, .simple-modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; }
+    .simple-modal-head { border-bottom: 1px solid var(--line); }
+    .simple-modal-head h2 { margin: 0; font-size: 18px; }
+    .simple-modal-body { padding: 16px; display: grid; gap: 14px; }
+    .simple-modal-foot { border-top: 1px solid var(--line); justify-content: flex-end; }
+    .simple-modal-error { color: #b42318; background: #fff3f0; border: 1px solid #f6c0b7; padding: 9px 10px; border-radius: 4px; font-size: 13px; }
+    .portfolio-search-results { display: grid; gap: 4px; }
+    .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
     @keyframes shimmer {
       0% { background-position: 100% 0; }
       100% { background-position: 0 0; }
@@ -1502,7 +1568,7 @@
       .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-title-row select { width: 100%; min-width: 0; }
       .page-header-actions { width: 100%; justify-content: flex-start; }
-      .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .nav-pool-controls { width: 100%; justify-content: flex-start; }
       .nav-publisher-select { width: 100%; min-width: 0; max-width: none; flex: 1 1 auto; }
@@ -1562,6 +1628,9 @@
       .drawer-foot button { flex: 1; }
       .drawer-foot .drawer-delete-link { flex: 0; }
       .card-grid { grid-template-columns: 1fr; }
+      .portfolio-summary { grid-template-columns: 1fr 1fr; }
+      .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
+      .portfolio-switcher select, .portfolio-head button { width: 100%; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       table, thead, tbody, tr, th, td { display: block; width: 100%; min-width: 0; }
@@ -1601,6 +1670,9 @@
       .actions { flex-wrap: wrap; justify-content: flex-start; }
       .actions button { min-height: 32px; }
     }
+    @media (max-width: 520px) {
+      .portfolio-summary { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -1613,6 +1685,7 @@
     const AUTH_REDIRECT_URL = appBaseUrl();
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
+    const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const MARKET_CAP_REFRESH_MS = 15 * 60 * 1000;
     let marketCapRefreshTimer = null;
     let marketCapRefreshInFlight = false;
@@ -1652,6 +1725,12 @@
       publisherProfile: null,
       sourceUpdateCount: 0,
       mainView: "pool",
+      portfolios: [],
+      activePortfolioId: "",
+      portfolioModal: null,
+      portfolioSearchResults: [],
+      portfolioSearchLoading: false,
+      portfolioError: "",
       isAdmin: false,
       squareProfiles: [],
       squareSort: "recent",
@@ -2277,6 +2356,7 @@
       const sourceCurrency = marketCurrency(stock.market);
       return {
         ...stock,
+        latestPrice: Number(parts[3]) || Number(stock.latestPrice) || 0,
         latestMarketCapCny: marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1),
         marketCapSourceCurrency: sourceCurrency,
         marketCapUpdatedAt: todayString()
@@ -2510,6 +2590,7 @@
           ${renderDrawer()}
           ${renderPublicationHistory()}
           ${renderDeleteConfirm()}
+          ${renderPortfolioModal()}
         </div>
       `;
       bindEvents();
@@ -2522,6 +2603,7 @@
           <div class="nav-primary">
             <nav class="nav-tabs">
               <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
+              <button class="${state.mainView === "portfolio" ? "active" : ""}" data-action="switchMainView" data-view="portfolio">组合管理</button>
               <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
               ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
             </nav>
@@ -2549,6 +2631,7 @@
     }
 
     function renderCurrentView() {
+      if (state.mainView === "portfolio") return renderPortfolioView();
       if (state.mainView === "square") return renderSquare();
       if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
       return `
@@ -2622,6 +2705,160 @@
           <div class="muted">这是发布者的公开观点视图，内容为个人记录，不构成投资建议。</div>
         </div>
       `;
+    }
+
+    function activePortfolio() {
+      return state.portfolios.find((item) => item.id === state.activePortfolioId) || state.portfolios[0] || null;
+    }
+
+    function portfolioBaseCurrency(portfolio) {
+      return portfolio?.accountType === "HKUS" ? "USD" : "CNY";
+    }
+
+    function portfolioFx(currency, baseCurrency) {
+      if (currency === baseCurrency) return 1;
+      const cnyRate = currencies[currency]?.rateToCny || 1;
+      const baseCnyRate = currencies[baseCurrency]?.rateToCny || 1;
+      return cnyRate / baseCnyRate;
+    }
+
+    function positionBaseValue(position, portfolio) {
+      const price = Number(position.latestPrice) || Number(position.averageCost) || 0;
+      return Number(position.shares || 0) * price * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+    }
+
+    function portfolioMetrics(portfolio) {
+      if (!portfolio) return { positionBase: 0, cashBase: 0, netBase: 0, netCny: 0, positionCny: 0, cashCny: 0, nav: 0 };
+      const base = portfolioBaseCurrency(portfolio);
+      const positionBase = (portfolio.positions || []).reduce((sum, item) => sum + positionBaseValue(item, portfolio), 0);
+      const cash = portfolio.cash || {};
+      const cashBase = portfolio.accountType === "HKUS"
+        ? Number(cash.USD || 0) + Number(cash.HKD || 0) * portfolioFx("HKD", "USD")
+        : Number(cash.CNY || 0);
+      const netBase = positionBase + cashBase;
+      const baseToCny = currencies[base]?.rateToCny || 1;
+      return {
+        positionBase,
+        cashBase,
+        netBase,
+        positionCny: positionBase * baseToCny,
+        cashCny: cashBase * baseToCny,
+        netCny: netBase * baseToCny,
+        nav: Number(portfolio.startBase || 0) ? netBase / Number(portfolio.startBase) : 0
+      };
+    }
+
+    function formatWan(value) {
+      return `${(Number(value || 0) / 10000).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 万元`;
+    }
+
+    function formatPortfolioMoney(value, currency) {
+      const symbols = { CNY: "¥", HKD: "HK$", USD: "$" };
+      return `${symbols[currency] || ""}${Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function renderPortfolioView() {
+      const portfolio = activePortfolio();
+      if (!portfolio) {
+        return `<section class="portfolio-empty"><h2>还没有组合</h2><p>创建一个组合，开始记录现金和实际仓位。</p><button class="primary" data-action="createPortfolio">创建组合</button></section>`;
+      }
+      const metrics = portfolioMetrics(portfolio);
+      const isHkus = portfolio.accountType === "HKUS";
+      return `
+        <div class="portfolio-head">
+          <div class="portfolio-switcher">
+            <select data-input="activePortfolio" aria-label="切换组合">
+              ${state.portfolios.map((item) => `<option value="${item.id}" ${item.id === portfolio.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
+            </select>
+            <span class="badge">${isHkus ? "港美账户 · 美元基准" : "人民币账户"}</span>
+            <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
+          </div>
+          <button class="primary" data-action="openPosition">+ 开仓</button>
+        </div>
+        <section class="portfolio-summary">
+          <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${formatWan(metrics.netCny)}</div><div class="portfolio-metric-sub">统一折算人民币</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${formatWan(metrics.positionCny)}</div><div class="portfolio-metric-sub">${isHkus ? `基准市值 ${formatPortfolioMoney(metrics.positionBase, "USD")}` : "人民币账户"}</div></div>
+          <div class="portfolio-metric">
+            <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
+            <div class="portfolio-metric-value">${formatWan(metrics.cashCny)}</div>
+            <div class="portfolio-metric-sub">${isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`}</div>
+          </div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">${isHkus ? "按美元净资产 / 美元启动金额" : "按人民币净资产 / 人民币启动金额"}</div></div>
+        </section>
+        ${renderPortfolioTable(portfolio, metrics)}
+      `;
+    }
+
+    function renderPortfolioTable(portfolio, metrics) {
+      const positions = [...(portfolio.positions || [])].sort((a, b) => positionBaseValue(b, portfolio) - positionBaseValue(a, portfolio));
+      if (!positions.length) return `<section class="portfolio-empty"><strong>暂无持仓</strong><p>点击“开仓”录入第一只股票。</p><button class="primary" data-action="openPosition">+ 开仓</button></section>`;
+      const base = portfolioBaseCurrency(portfolio);
+      return `
+        <section class="table-panel portfolio-table"><div class="table-scroll"><table>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>仓位比例</th><th>操作</th></tr></thead>
+          <tbody>${positions.map((position) => {
+            const value = positionBaseValue(position, portfolio);
+            const weight = metrics.netBase ? value / metrics.netBase : 0;
+            return `<tr>
+              <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
+              <td data-label="股数">${Number(position.shares).toLocaleString("zh-CN")}</td>
+              <td data-label="摊薄成本">${formatPortfolioMoney(position.averageCost, position.currency)}</td>
+              <td data-label="市值">${base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value)}</td>
+              <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
+              <td data-label="操作"><div class="actions"><button data-action="addPosition" data-id="${position.id}">加仓</button><button data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table></div></section>`;
+    }
+
+    function renderPortfolioModal() {
+      const modal = state.portfolioModal;
+      if (!modal) return "";
+      if (modal.type === "create") return renderCreatePortfolioModal();
+      if (modal.type === "cash") return renderCashModal(modal);
+      return renderPositionModal(modal);
+    }
+
+    function modalShell(title, body, formName, submitText) {
+      return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
+        <div class="simple-modal-head"><h2>${escapeHtml(title)}</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
+        <form data-form="${formName}"><div class="simple-modal-body">${body}${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
+        <div class="simple-modal-foot"><button type="button" data-action="closePortfolioModal">取消</button><button class="primary" type="submit">${escapeHtml(submitText)}</button></div></form>
+      </section></div>`;
+    }
+
+    function renderCreatePortfolioModal() {
+      return modalShell("创建组合", `
+        <label class="field"><span>组合名称</span><input name="name" maxlength="30" required placeholder="例如：长期账户"></label>
+        <label class="field"><span>账户类型</span><select name="accountType" data-input="portfolioAccountType"><option value="CNY">人民币账户</option><option value="HKUS">港美账户</option></select></label>
+        <div data-account-fields="CNY"><label class="field"><span>人民币启动金额</span><input name="startCny" type="number" min="0" step="0.01" value="0" required></label></div>
+        <div data-account-fields="HKUS" style="display:none"><div class="grid-2"><label class="field"><span>港币启动金额</span><input name="startHkd" type="number" min="0" step="0.01" value="0"></label><label class="field"><span>美元启动金额</span><input name="startUsd" type="number" min="0" step="0.01" value="0"></label></div></div>
+      `, "createPortfolio", "创建");
+    }
+
+    function renderCashModal(modal) {
+      const portfolio = activePortfolio();
+      const isHkus = portfolio?.accountType === "HKUS";
+      return modalShell("校准现金", isHkus ? `
+        <div class="grid-2"><label class="field"><span>港币余额</span><input name="cashHkd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.HKD || 0)}" required></label><label class="field"><span>美元余额</span><input name="cashUsd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.USD || 0)}" required></label></div>
+      ` : `<label class="field"><span>人民币余额</span><input name="cashCny" type="number" min="0" step="0.01" value="${Number(portfolio?.cash?.CNY || 0)}" required></label>`, "calibrateCash", "保存");
+    }
+
+    function renderPositionModal(modal) {
+      const isOpen = modal.type === "open";
+      const position = modal.position;
+      const title = isOpen ? "开仓" : modal.type === "add" ? "加仓" : "减持";
+      const stockBlock = isOpen ? `
+        <label class="field"><span>股票代码或名称</span><input data-input="portfolioStockSearch" autocomplete="off" placeholder="搜索 A股、港股或美股" value="${escapeHtml(modal.searchQuery || "")}"></label>
+        ${modal.stock ? `<div class="portfolio-selected-stock"><strong>${escapeHtml(modal.stock.name)}</strong> <span class="stock-code">${escapeHtml(modal.stock.code)} · ${modal.stock.currency}</span></div>` : ""}
+        ${state.portfolioSearchLoading ? `<div class="muted">正在搜索...</div>` : ""}
+        ${state.portfolioSearchResults.length ? `<div class="portfolio-search-results">${state.portfolioSearchResults.map((item, index) => `<button type="button" class="portfolio-search-result" data-action="selectPortfolioStock" data-index="${index}"><strong>${escapeHtml(item.name)}</strong><span class="stock-code">${escapeHtml(item.code)} · ${item.currency}</span></button>`).join("")}</div>` : ""}
+      ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
+      const currency = modal.stock?.currency || position?.currency || "";
+      return modalShell(title, `${stockBlock}
+        <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格（${currency || "原币"}）</span><input name="price" type="number" min="0.000001" step="any" required></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><input name="shares" type="number" min="1" step="1" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}></label></div>
+        ${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
+      `, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入");
     }
 
     function renderSquare() {
@@ -3529,6 +3766,25 @@
       }
       const squareSort = document.querySelector("[data-input='squareSort']");
       if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
+      const activePortfolioSelect = document.querySelector("[data-input='activePortfolio']");
+      if (activePortfolioSelect) activePortfolioSelect.addEventListener("change", (event) => {
+        state.activePortfolioId = event.target.value;
+        savePortfolios();
+        render();
+        refreshPortfolioQuotes();
+      });
+      const portfolioAccountType = document.querySelector("[data-input='portfolioAccountType']");
+      if (portfolioAccountType) portfolioAccountType.addEventListener("change", (event) => {
+        document.querySelectorAll("[data-account-fields]").forEach((el) => { el.style.display = el.dataset.accountFields === event.target.value ? "block" : "none"; });
+      });
+      const portfolioSearch = document.querySelector("[data-input='portfolioStockSearch']");
+      if (portfolioSearch) portfolioSearch.addEventListener("input", onPortfolioStockSearch);
+      const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
+      if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
+      const cashForm = document.querySelector("[data-form='calibrateCash']");
+      if (cashForm) cashForm.addEventListener("submit", submitCalibrateCash);
+      const tradeForm = document.querySelector("[data-form='positionTrade']");
+      if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
       const historyBackdrop = document.querySelector("[data-history-backdrop]");
@@ -3558,10 +3814,19 @@
         state.publisherStocks = [];
         state.publisherProfile = null;
         state.followedPublishers = [];
+        state.portfolios = [];
+        state.activePortfolioId = "";
         render();
       }
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
+      if (action === "createPortfolio") openPortfolioModal("create");
+      if (action === "closePortfolioModal") closePortfolioModal();
+      if (action === "openPosition") openPortfolioModal("open");
+      if (action === "calibrateCash") openPortfolioModal("cash");
+      if (action === "addPosition") openPortfolioModal("add", stockId);
+      if (action === "reducePosition") openPortfolioModal("reduce", stockId);
+      if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index));
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
@@ -3604,7 +3869,190 @@
       if (state.mainView === "square") await loadSquare();
       if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
       if (state.mainView === "pool") await refreshMarketCaps({ renderAfter: false });
+      if (state.mainView === "portfolio") await refreshPortfolioQuotes({ renderAfter: false });
       render();
+    }
+
+    function portfolioStorageKey() {
+      return `${PORTFOLIO_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
+    }
+
+    function loadPortfolios() {
+      const saved = readJson(portfolioStorageKey(), { portfolios: [], activePortfolioId: "" });
+      state.portfolios = Array.isArray(saved?.portfolios) ? saved.portfolios : [];
+      state.activePortfolioId = saved?.activePortfolioId || state.portfolios[0]?.id || "";
+      if (state.activePortfolioId && !state.portfolios.some((item) => item.id === state.activePortfolioId)) {
+        state.activePortfolioId = state.portfolios[0]?.id || "";
+      }
+    }
+
+    function savePortfolios() {
+      writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+    }
+
+    function updateActivePortfolio(updater) {
+      state.portfolios = state.portfolios.map((item) => item.id === state.activePortfolioId ? updater({ ...item, cash: { ...(item.cash || {}) }, positions: [...(item.positions || [])] }) : item);
+      savePortfolios();
+    }
+
+    function openPortfolioModal(type, positionId = "") {
+      const portfolio = activePortfolio();
+      const position = portfolio?.positions?.find((item) => item.id === positionId) || null;
+      state.portfolioError = "";
+      state.portfolioSearchResults = [];
+      state.portfolioSearchLoading = false;
+      state.portfolioModal = { type, position, stock: null, searchQuery: "" };
+      render();
+    }
+
+    function closePortfolioModal() {
+      state.portfolioModal = null;
+      state.portfolioError = "";
+      state.portfolioSearchResults = [];
+      render();
+    }
+
+    async function onPortfolioStockSearch(event) {
+      const query = event.target.value.trim();
+      if (!state.portfolioModal || state.portfolioModal.type !== "open") return;
+      state.portfolioModal.searchQuery = query;
+      state.portfolioModal.stock = null;
+      state.portfolioSearchResults = [];
+      if (!query) return;
+      state.portfolioSearchLoading = true;
+      const expectedQuery = query;
+      try {
+        const results = await searchStocks(query);
+        if (state.portfolioModal?.searchQuery !== expectedQuery) return;
+        state.portfolioSearchResults = results;
+      } finally {
+        state.portfolioSearchLoading = false;
+      }
+      render();
+      requestAnimationFrame(() => {
+        const input = document.querySelector("[data-input='portfolioStockSearch']");
+        if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+      });
+    }
+
+    async function selectPortfolioStock(index) {
+      const selected = state.portfolioSearchResults[index];
+      if (!selected || !state.portfolioModal) return;
+      state.portfolioSearchLoading = true;
+      state.portfolioError = "";
+      render();
+      let quote = selected;
+      try { quote = await fetchQuote(selected); } catch (error) { console.warn("开仓行情读取失败，使用录入价格。", error); }
+      state.portfolioModal = { ...state.portfolioModal, stock: { ...selected, ...quote }, searchQuery: `${selected.name} ${selected.code}` };
+      state.portfolioSearchResults = [];
+      state.portfolioSearchLoading = false;
+      render();
+    }
+
+    function submitCreatePortfolio(event) {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const name = String(form.get("name") || "").trim();
+      const accountType = String(form.get("accountType") || "CNY");
+      const startCny = Number(form.get("startCny") || 0);
+      const startHkd = Number(form.get("startHkd") || 0);
+      const startUsd = Number(form.get("startUsd") || 0);
+      if (!name) return showPortfolioError("请输入组合名称。");
+      if (state.portfolios.some((item) => item.name.trim().toLowerCase() === name.toLowerCase())) return showPortfolioError("组合名称不能重复。");
+      if ([startCny, startHkd, startUsd].some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("启动金额不能小于 0。");
+      const startBase = accountType === "HKUS" ? startUsd + startHkd * portfolioFx("HKD", "USD") : startCny;
+      if (startBase <= 0) return showPortfolioError("组合启动金额必须大于 0。");
+      const portfolio = {
+        id: id("portfolio"), name, accountType,
+        startCny: accountType === "CNY" ? startCny : 0,
+        startHkd: accountType === "HKUS" ? startHkd : 0,
+        startUsd: accountType === "HKUS" ? startUsd : 0,
+        startBase,
+        cash: accountType === "HKUS" ? { CNY: 0, HKD: startHkd, USD: startUsd } : { CNY: startCny, HKD: 0, USD: 0 },
+        positions: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      state.portfolios.push(portfolio);
+      state.activePortfolioId = portfolio.id;
+      savePortfolios();
+      closePortfolioModal();
+    }
+
+    function submitCalibrateCash(event) {
+      event.preventDefault();
+      const portfolio = activePortfolio();
+      if (!portfolio) return;
+      const form = new FormData(event.currentTarget);
+      const next = portfolio.accountType === "HKUS"
+        ? { HKD: Number(form.get("cashHkd")), USD: Number(form.get("cashUsd")) }
+        : { CNY: Number(form.get("cashCny")) };
+      if (Object.values(next).some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("现金余额不能小于 0。");
+      updateActivePortfolio((item) => ({ ...item, cash: { ...item.cash, ...next }, updatedAt: new Date().toISOString() }));
+      closePortfolioModal();
+    }
+
+    function submitPositionTrade(event) {
+      event.preventDefault();
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || !modal) return;
+      const form = new FormData(event.currentTarget);
+      const price = Number(form.get("price"));
+      const shares = Number(form.get("shares"));
+      if (!Number.isFinite(price) || price <= 0) return showPortfolioError("请输入有效价格。");
+      if (!Number.isInteger(shares) || shares <= 0) return showPortfolioError("买卖数量必须为正整数。");
+      const stock = modal.type === "open" ? modal.stock : modal.position;
+      if (!stock) return showPortfolioError("请先选择股票。");
+      if (portfolio.accountType === "CNY" && stock.market !== "CN") return showPortfolioError("人民币账户只能开仓 A 股。");
+      if (portfolio.accountType === "HKUS" && !["HK", "US"].includes(stock.market)) return showPortfolioError("港美账户只能开仓港股或美股。");
+      if (modal.type === "open" && portfolio.positions.some((item) => item.code === stock.code && item.market === stock.market)) return showPortfolioError("该股票已在组合中，请使用加仓。");
+      if (modal.type === "reduce" && shares > Number(stock.shares)) return showPortfolioError("减持数量不能超过当前股数。");
+      const amount = price * shares;
+      const currency = stock.currency || marketCurrency(stock.market);
+      if (modal.type !== "reduce" && Number(portfolio.cash?.[currency] || 0) < amount) return showPortfolioError(`${currencies[currency]?.label || currency}现金余额不足。`);
+      updateActivePortfolio((item) => {
+        const positions = [...item.positions];
+        if (modal.type === "open") {
+          positions.push({
+            id: id("position"), name: stock.name, code: stock.code, rawCode: stock.rawCode || "", market: stock.market,
+            exchange: stock.exchange || "", quoteId: stock.quoteId || "", currency, shares, averageCost: price,
+            latestPrice: Number(stock.latestPrice) || price, priceUpdatedAt: stock.marketCapUpdatedAt || todayString()
+          });
+        } else {
+          const index = positions.findIndex((position) => position.id === stock.id);
+          if (index >= 0 && modal.type === "add") {
+            const old = positions[index];
+            const newShares = Number(old.shares) + shares;
+            positions[index] = { ...old, shares: newShares, averageCost: (Number(old.shares) * Number(old.averageCost) + amount) / newShares, latestPrice: Number(old.latestPrice) || price };
+          }
+          if (index >= 0 && modal.type === "reduce") {
+            const remaining = Number(positions[index].shares) - shares;
+            if (remaining === 0) positions.splice(index, 1);
+            else positions[index] = { ...positions[index], shares: remaining };
+          }
+        }
+        const cashDelta = modal.type === "reduce" ? amount : -amount;
+        return { ...item, positions, cash: { ...item.cash, [currency]: Number(item.cash?.[currency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
+      });
+      closePortfolioModal();
+    }
+
+    function showPortfolioError(message) {
+      state.portfolioError = message;
+      render();
+    }
+
+    async function refreshPortfolioQuotes({ renderAfter = true } = {}) {
+      const portfolio = activePortfolio();
+      if (!portfolio?.positions?.length) return;
+      const updates = await Promise.all(portfolio.positions.map(async (position) => {
+        try { return await fetchQuote(position); }
+        catch { return null; }
+      }));
+      updateActivePortfolio((item) => ({
+        ...item,
+        positions: item.positions.map((position, index) => updates[index]?.latestPrice ? { ...position, latestPrice: updates[index].latestPrice, priceUpdatedAt: updates[index].marketCapUpdatedAt || todayString() } : position)
+      }));
+      if (renderAfter) render();
     }
 
     function openOwnPool() {
@@ -4614,6 +5062,7 @@
     }
 
     async function afterProfileReady() {
+      loadPortfolios();
       await loadAdminMarker();
       await loadFollowedPublishers();
       await loadShareInvite();
@@ -4832,6 +5281,17 @@
 
     async function init() {
       rememberPendingShareFromUrl();
+      const localPortfolioDemo = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).has("portfolio-demo");
+      if (localPortfolioDemo) {
+        state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
+        state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
+        loadPortfolios();
+        await fetchExchangeRates();
+        state.loading = false;
+        state.mainView = "portfolio";
+        render();
+        return;
+      }
       state.session = currentSession();
       if (state.session) {
         try {
