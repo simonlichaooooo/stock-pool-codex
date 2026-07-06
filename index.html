@@ -1514,6 +1514,19 @@
     .portfolio-cash-head button { min-height: 26px; padding: 0 8px; }
     .portfolio-table .actions { white-space: nowrap; }
     .portfolio-table .stock-name { font-weight: 720; }
+    .portfolio-table .trade-add {
+      color: #067647;
+      border-color: #a9d7c2;
+      background: #ecfdf3;
+    }
+    .portfolio-table .trade-add:hover { border-color: #6fc59b; background: #dcfae6; }
+    .portfolio-table .trade-reduce {
+      color: #b42318;
+      border-color: #f3b6ad;
+      background: #fff3f0;
+    }
+    .portfolio-table .trade-reduce:hover { border-color: #e4877b; background: #fee4e2; }
+    .portfolio-sort-indicator { margin-left: 4px; color: var(--brand); font-size: 11px; }
     .portfolio-empty {
       padding: 56px 20px;
       text-align: center;
@@ -1689,8 +1702,11 @@
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const MARKET_CAP_REFRESH_MS = 15 * 60 * 1000;
+    const PORTFOLIO_QUOTE_REFRESH_MS = 60 * 1000;
     let marketCapRefreshTimer = null;
     let marketCapRefreshInFlight = false;
+    let portfolioQuoteRefreshTimer = null;
+    let portfolioQuoteRefreshInFlight = false;
 
     let currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -1735,6 +1751,8 @@
       portfolioSearchComposing: false,
       portfolioError: "",
       portfolioPage: "positions",
+      portfolioSort: { key: "value", dir: "desc" },
+      portfolioQuotesUpdatedAt: "",
       navRange: "3M",
       navYear: "",
       benchmarkCode: "",
@@ -2242,7 +2260,7 @@
       } catch (error) {
         console.warn("腾讯行情接口不可用，尝试东方财富备用行情。", error);
       }
-      const fields = "f57,f58,f116";
+      const fields = "f43,f57,f58,f60,f116,f170";
       const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${encodeURIComponent(stock.quoteId)}&fields=${fields}`;
       try {
         const json = await jsonp(url);
@@ -2251,10 +2269,18 @@
         if (!marketCap || Number.isNaN(marketCap)) throw new Error("行情接口没有返回总市值");
         const sourceCurrency = marketCurrency(stock.market);
         const marketCapCny = marketCap * (currencies[sourceCurrency]?.rateToCny || 1) / 100000000;
+        const latestPrice = Number(data?.f43) / 1000 || Number(stock.latestPrice) || 0;
+        const previousClose = Number(data?.f60) / 1000 || 0;
+        const changePercent = data?.f170 !== null && data?.f170 !== undefined && Number.isFinite(Number(data.f170))
+          ? Number(data.f170) / 100
+          : previousClose ? (latestPrice / previousClose - 1) * 100 : null;
         return {
           ...stock,
           name: data.f58 || stock.name,
           rawCode: data.f57 || stock.rawCode,
+          latestPrice,
+          previousClose,
+          changePercent,
           latestMarketCapCny: marketCapCny,
           marketCapSourceCurrency: sourceCurrency,
           marketCapUpdatedAt: todayString()
@@ -2363,9 +2389,14 @@
       const marketCapYi = Number(parts[45] || parts[44]);
       if (!marketCapYi || Number.isNaN(marketCapYi)) throw new Error("腾讯行情没有返回总市值");
       const sourceCurrency = marketCurrency(stock.market);
+      const latestPrice = Number(parts[3]) || Number(stock.latestPrice) || 0;
+      const previousClose = Number(parts[4]) || 0;
+      const quotedChangePercent = String(parts[32] || "").trim() === "" ? NaN : Number(parts[32]);
       return {
         ...stock,
-        latestPrice: Number(parts[3]) || Number(stock.latestPrice) || 0,
+        latestPrice,
+        previousClose,
+        changePercent: Number.isFinite(quotedChangePercent) ? quotedChangePercent : previousClose ? (latestPrice / previousClose - 1) * 100 : null,
         latestMarketCapCny: marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1),
         marketCapSourceCurrency: sourceCurrency,
         marketCapUpdatedAt: todayString()
@@ -2837,24 +2868,38 @@
     }
 
     function renderPortfolioTable(portfolio, metrics) {
-      const positions = [...(portfolio.positions || [])].sort((a, b) => positionBaseValue(b, portfolio) - positionBaseValue(a, portfolio));
+      const sort = state.portfolioSort || { key: "value", dir: "desc" };
+      const positionWeight = (position) => metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase : 0;
+      const sortValue = (position) => sort.key === "change" ? (position.changePercent == null ? NaN : Number(position.changePercent)) : sort.key === "weight" ? positionWeight(position) : positionBaseValue(position, portfolio);
+      const positions = [...(portfolio.positions || [])].sort((a, b) => {
+        const aValue = sortValue(a), bValue = sortValue(b);
+        const aMissing = !Number.isFinite(aValue), bMissing = !Number.isFinite(bValue);
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        return (aValue - bValue) * (sort.dir === "asc" ? 1 : -1);
+      });
       if (!positions.length) return `<section class="portfolio-empty"><strong>暂无持仓</strong><p>点击“开仓”录入第一只股票。</p><button class="primary" data-action="openPosition">+ 开仓</button></section>`;
       const base = portfolioBaseCurrency(portfolio);
+      const sortIndicator = (key) => sort.key === key ? `<span class="portfolio-sort-indicator">${sort.dir === "asc" ? "▲" : "▼"}</span>` : "";
       return `
         <section class="table-panel portfolio-table"><div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>仓位比例</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
-            const weight = metrics.netBase ? value / metrics.netBase : 0;
+            const weight = positionWeight(position);
+            const change = position.changePercent == null ? NaN : Number(position.changePercent);
+            const changeClass = Number.isFinite(change) ? (change > 0 ? "gain" : change < 0 ? "loss" : "") : "muted";
             return `<tr>
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
               <td data-label="股数">${Number(position.shares).toLocaleString("zh-CN")}</td>
               <td data-label="摊薄成本">${formatPortfolioMoney(position.averageCost, position.currency)}</td>
+              <td data-label="当日股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
+              <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
               <td data-label="市值">${base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value)}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
-              <td data-label="操作"><div class="actions"><button data-action="addPosition" data-id="${position.id}">加仓</button><button data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
             </tr>`;
           }).join("")}</tbody>
+          <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
         </table></div></section>`;
     }
 
@@ -3882,6 +3927,7 @@
       const stockId = event.currentTarget.dataset.id;
       if (action === "logout") {
         stopMarketCapAutoRefresh();
+        stopPortfolioQuoteAutoRefresh();
         writeJson(AUTH_STORAGE_KEY, null);
         state.session = null;
         state.profile = null;
@@ -3899,6 +3945,13 @@
       if (action === "portfolioPage") {
         state.portfolioPage = event.currentTarget.dataset.page;
         if (state.portfolioPage === "performance") await loadPortfolioPerformance();
+        render();
+      }
+      if (action === "sortPortfolio") {
+        const key = event.currentTarget.dataset.sortKey;
+        state.portfolioSort = state.portfolioSort?.key === key
+          ? { key, dir: state.portfolioSort.dir === "asc" ? "desc" : "asc" }
+          : { key, dir: "desc" };
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
@@ -4234,16 +4287,39 @@
 
     async function refreshPortfolioQuotes({ renderAfter = true } = {}) {
       const portfolio = activePortfolio();
-      if (!portfolio?.positions?.length) return;
+      if (portfolioQuoteRefreshInFlight || !portfolio?.positions?.length) return;
+      portfolioQuoteRefreshInFlight = true;
       const updates = await Promise.all(portfolio.positions.map(async (position) => {
         try { return await fetchQuote(position); }
         catch { return null; }
       }));
-      updateActivePortfolio((item) => ({
+      state.portfolios = state.portfolios.map((item) => item.id === portfolio.id ? {
         ...item,
-        positions: item.positions.map((position, index) => updates[index]?.latestPrice ? { ...position, latestPrice: updates[index].latestPrice, priceUpdatedAt: updates[index].marketCapUpdatedAt || todayString() } : position)
-      }));
+        positions: item.positions.map((position, index) => updates[index]?.latestPrice ? {
+          ...position,
+          latestPrice: updates[index].latestPrice,
+          previousClose: updates[index].previousClose,
+          changePercent: updates[index].changePercent,
+          priceUpdatedAt: new Date().toISOString()
+        } : position)
+      } : item);
+      state.portfolioQuotesUpdatedAt = new Date().toISOString();
+      writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+      portfolioQuoteRefreshInFlight = false;
       if (renderAfter) render();
+    }
+
+    function startPortfolioQuoteAutoRefresh() {
+      stopPortfolioQuoteAutoRefresh();
+      portfolioQuoteRefreshTimer = window.setInterval(() => {
+        if (state.mainView === "portfolio" && state.portfolioPage === "positions") refreshPortfolioQuotes();
+      }, PORTFOLIO_QUOTE_REFRESH_MS);
+    }
+
+    function stopPortfolioQuoteAutoRefresh() {
+      if (!portfolioQuoteRefreshTimer) return;
+      window.clearInterval(portfolioQuoteRefreshTimer);
+      portfolioQuoteRefreshTimer = null;
     }
 
     function openOwnPool() {
@@ -5260,6 +5336,7 @@
       await loadStocks();
       await refreshMarketCaps({ renderAfter: false });
       startMarketCapAutoRefresh();
+      startPortfolioQuoteAutoRefresh();
       await openFollowedPendingShare();
     }
 
@@ -5481,6 +5558,8 @@
         state.loading = false;
         state.mainView = "portfolio";
         render();
+        await refreshPortfolioQuotes();
+        startPortfolioQuoteAutoRefresh();
         return;
       }
       state.session = currentSession();
