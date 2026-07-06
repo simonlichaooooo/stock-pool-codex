@@ -2834,6 +2834,25 @@
         : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-5.2 9-5.2 9 5.2 9 5.2-3.5 5.2-9 5.2S3 12 3 12z"/><circle cx="12" cy="12" r="2.4"/></svg>`;
     }
 
+    function previousPortfolioNav() {
+      const today = todayString();
+      const row = [...state.navHistory]
+        .filter((item) => item.nav_date && item.nav_date < today && Number(item.unit_nav) > 0)
+        .sort((a, b) => b.nav_date.localeCompare(a.nav_date))[0];
+      return row ? Number(row.unit_nav) : null;
+    }
+
+    function renderPortfolioNavChange(currentNav) {
+      if (state.portfolioPrivacyMode) return `<span class="muted">较昨日 ****</span>`;
+      const previousNav = previousPortfolioNav();
+      if (!previousNav) return `<span class="muted">较昨日 --</span>`;
+      const delta = Number(currentNav) - previousNav;
+      const change = delta / previousNav * 100;
+      const sign = delta > 0 ? "+" : "";
+      const className = delta > 0 ? "gain" : delta < 0 ? "loss" : "muted";
+      return `<span class="${className}">较昨日 ${sign}${delta.toFixed(4)}（${sign}${change.toFixed(2)}%）</span>`;
+    }
+
     function renderPortfolioView() {
       const portfolio = activePortfolio();
       if (!portfolio) {
@@ -2866,7 +2885,7 @@
             <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
             <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}% · ${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${portfolioPrivate(Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }))}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav)}<br>总份额 ${portfolioPrivate(Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }))}</div></div>
         </section>
         <div class="segmented" style="margin-bottom:12px"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
@@ -3911,11 +3930,14 @@
       const squareSort = document.querySelector("[data-input='squareSort']");
       if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
       const activePortfolioSelect = document.querySelector("[data-input='activePortfolio']");
-      if (activePortfolioSelect) activePortfolioSelect.addEventListener("change", (event) => {
+      if (activePortfolioSelect) activePortfolioSelect.addEventListener("change", async (event) => {
         state.activePortfolioId = event.target.value;
+        state.navHistory = [];
+        state.benchmarkHistory = [];
         savePortfolios();
         render();
-        refreshPortfolioQuotes();
+        await Promise.all([refreshPortfolioQuotes({ renderAfter: false }), loadPortfolioPerformance()]);
+        render();
       });
       const navYear = document.querySelector("[data-input='navYear']");
       if (navYear) navYear.addEventListener("change", (event) => { state.navYear = event.target.value; state.navRange = event.target.value ? "YEAR" : "ALL"; render(); });
@@ -4049,7 +4071,7 @@
       if (state.mainView === "square") await loadSquare();
       if (state.mainView === "admin" && state.isAdmin) await loadAdmin();
       if (state.mainView === "pool") await refreshMarketCaps({ renderAfter: false });
-      if (state.mainView === "portfolio") await refreshPortfolioQuotes({ renderAfter: false });
+      if (state.mainView === "portfolio") await Promise.all([refreshPortfolioQuotes({ renderAfter: false }), loadPortfolioPerformance()]);
       render();
     }
 
@@ -5597,6 +5619,9 @@
         state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
         await loadPortfolios();
         await fetchExchangeRates();
+        const demoPreviousDate = new Date();
+        demoPreviousDate.setDate(demoPreviousDate.getDate() - 1);
+        state.navHistory = [{ nav_date: demoPreviousDate.toISOString().slice(0, 10), unit_nav: 0.98 }];
         state.loading = false;
         state.mainView = "portfolio";
         render();
