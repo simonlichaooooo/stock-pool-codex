@@ -4040,9 +4040,14 @@
             positions[index] = { ...old, shares: newShares, averageCost: (Number(old.shares) * Number(old.averageCost) + amount) / newShares, latestPrice: Number(old.latestPrice) || price };
           }
           if (index >= 0 && modal.type === "reduce") {
-            const remaining = Number(positions[index].shares) - shares;
+            const oldPosition = positions[index];
+            const remaining = Number(oldPosition.shares) - shares;
             if (remaining === 0) positions.splice(index, 1);
-            else positions[index] = { ...positions[index], shares: remaining };
+            else positions[index] = {
+              ...oldPosition,
+              shares: remaining,
+              averageCost: (Number(oldPosition.shares) * Number(oldPosition.averageCost) - amount) / remaining
+            };
           }
         }
         const cashDelta = modal.type === "reduce" ? amount : -amount;

@@ -30,7 +30,7 @@ create table if not exists public.portfolio_positions (
   quote_id text,
   currency text not null check (currency in ('CNY', 'HKD', 'USD')),
   shares numeric not null check (shares > 0 and shares = trunc(shares)),
-  average_cost numeric not null check (average_cost > 0),
+  average_cost numeric not null,
   latest_price numeric not null default 0 check (latest_price >= 0),
   price_updated_at timestamptz,
   created_at timestamptz not null default now(),
