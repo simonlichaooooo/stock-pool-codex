@@ -2745,7 +2745,7 @@
         positionCny: positionBase * baseToCny,
         cashCny: cashBase * baseToCny,
         netCny: netBase * baseToCny,
-        nav: Number(portfolio.startBase || 0) ? netBase / Number(portfolio.startBase) : 0
+        nav: Number(portfolio.totalUnits || portfolio.startBase || 0) ? netBase / Number(portfolio.totalUnits || portfolio.startBase) : 0
       };
     }
 
@@ -2779,7 +2779,7 @@
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
             <button class="danger" data-action="deletePortfolio">删除组合</button>
           </div>
-          <button class="primary" data-action="openPosition">+ 开仓</button>
+          <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
         </div>
         <section class="portfolio-summary">
           <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${formatSummaryWan(metrics.netCny)}</div><div class="portfolio-metric-sub">统一折算人民币</div></div>
@@ -2789,7 +2789,7 @@
             <div class="portfolio-metric-value">${formatSummaryWan(metrics.cashCny)}</div>
             <div class="portfolio-metric-sub">${isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`}</div>
           </div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">${isHkus ? "按美元净资产 / 美元启动金额" : "按人民币净资产 / 人民币启动金额"}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}</div></div>
         </section>
         ${renderPortfolioTable(portfolio, metrics)}
       `;
@@ -2822,6 +2822,7 @@
       if (!modal) return "";
       if (modal.type === "create") return renderCreatePortfolioModal();
       if (modal.type === "cash") return renderCashModal(modal);
+      if (modal.type === "subscription" || modal.type === "redemption") return renderCashFlowModal(modal);
       return renderPositionModal(modal);
     }
 
@@ -2848,6 +2849,17 @@
       return modalShell("校准现金", isHkus ? `
         <div class="grid-2"><label class="field"><span>港币余额</span><input name="cashHkd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.HKD || 0)}" required></label><label class="field"><span>美元余额</span><input name="cashUsd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.USD || 0)}" required></label></div>
       ` : `<label class="field"><span>人民币余额</span><input name="cashCny" type="number" min="0" step="0.01" value="${Number(portfolio?.cash?.CNY || 0)}" required></label>`, "calibrateCash", "保存");
+    }
+
+    function renderCashFlowModal(modal) {
+      const portfolio = activePortfolio();
+      const isSubscription = modal.type === "subscription";
+      const currenciesForAccount = portfolio?.accountType === "HKUS" ? ["HKD", "USD"] : ["CNY"];
+      return modalShell(isSubscription ? "申购" : "赎回", `
+        <label class="field"><span>币种</span><select name="currency">${currenciesForAccount.map((currency) => `<option value="${currency}">${currencies[currency].label}</option>`).join("")}</select></label>
+        <label class="field"><span>${isSubscription ? "申购" : "赎回"}金额（原币）</span><input name="amount" type="number" min="0.01" step="0.01" required></label>
+        <div class="muted">按操作前盘中估算净值折算份额；${isSubscription ? "资金增加、份额增加" : "资金减少、份额减少"}，单位净值不因资金流入流出突变。</div>
+      `, "portfolioCashFlow", isSubscription ? "确认申购" : "确认赎回");
     }
 
     function renderPositionModal(modal) {
@@ -3800,6 +3812,8 @@
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
       const cashForm = document.querySelector("[data-form='calibrateCash']");
       if (cashForm) cashForm.addEventListener("submit", submitCalibrateCash);
+      const cashFlowForm = document.querySelector("[data-form='portfolioCashFlow']");
+      if (cashFlowForm) cashFlowForm.addEventListener("submit", submitPortfolioCashFlow);
       const tradeForm = document.querySelector("[data-form='positionTrade']");
       if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
       const stockSearch = document.querySelector("[data-input='stockSearch']");
@@ -3842,6 +3856,8 @@
       if (action === "closePortfolioModal") closePortfolioModal();
       if (action === "openPosition") openPortfolioModal("open");
       if (action === "calibrateCash") openPortfolioModal("cash");
+      if (action === "subscribePortfolio") openPortfolioModal("subscription");
+      if (action === "redeemPortfolio") openPortfolioModal("redemption");
       if (action === "addPosition") openPortfolioModal("add", stockId);
       if (action === "reducePosition") openPortfolioModal("reduce", stockId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index));
@@ -4042,6 +4058,7 @@
         startHkd: accountType === "HKUS" ? startHkd : 0,
         startUsd: accountType === "HKUS" ? startUsd : 0,
         startBase,
+        totalUnits: startBase,
         cash: accountType === "HKUS" ? { CNY: 0, HKD: startHkd, USD: startUsd } : { CNY: startCny, HKD: 0, USD: 0 },
         positions: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
@@ -4061,6 +4078,38 @@
         : { CNY: Number(form.get("cashCny")) };
       if (Object.values(next).some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("现金余额不能小于 0。");
       updateActivePortfolio((item) => ({ ...item, cash: { ...item.cash, ...next }, updatedAt: new Date().toISOString() }));
+      closePortfolioModal();
+    }
+
+    function submitPortfolioCashFlow(event) {
+      event.preventDefault();
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || !["subscription", "redemption"].includes(modal?.type)) return;
+      const form = new FormData(event.currentTarget);
+      const currency = String(form.get("currency") || portfolioBaseCurrency(portfolio));
+      const amount = Number(form.get("amount"));
+      if (!Number.isFinite(amount) || amount <= 0) return showPortfolioError("请输入有效金额。");
+      const metrics = portfolioMetrics(portfolio);
+      if (metrics.nav <= 0) return showPortfolioError("当前净值无效，无法计算份额。");
+      if (modal.type === "redemption" && Number(portfolio.cash?.[currency] || 0) < amount) return showPortfolioError(`${currencies[currency].label}现金余额不足。`);
+      const baseAmount = amount * portfolioFx(currency, portfolioBaseCurrency(portfolio));
+      const unitsChanged = baseAmount / metrics.nav;
+      const oldUnits = Number(portfolio.totalUnits || portfolio.startBase || 0);
+      if (modal.type === "redemption" && unitsChanged >= oldUnits) return showPortfolioError("赎回份额必须小于当前总份额。");
+      updateActivePortfolio((item) => ({
+        ...item,
+        totalUnits: oldUnits + (modal.type === "subscription" ? unitsChanged : -unitsChanged),
+        cash: { ...item.cash, [currency]: Number(item.cash?.[currency] || 0) + (modal.type === "subscription" ? amount : -amount) },
+        cashFlows: [...(item.cashFlows || []), { id: id("flow"), type: modal.type, currency, amount, navBefore: metrics.nav, unitsChanged, occurredAt: new Date().toISOString() }],
+        updatedAt: new Date().toISOString()
+      }));
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        supabaseRequest("/rest/v1/portfolio_cash_flows", { method: "POST", body: JSON.stringify({
+          portfolio_id: portfolio.id, user_id: state.session.user.id, flow_type: modal.type,
+          currency, amount, nav_before: metrics.nav, units_changed: unitsChanged
+        }) }).catch((error) => console.warn("申购赎回流水保存失败。", error));
+      }
       closePortfolioModal();
     }
 
