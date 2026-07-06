@@ -1730,6 +1730,7 @@
       portfolioModal: null,
       portfolioSearchResults: [],
       portfolioSearchLoading: false,
+      portfolioSearchComposing: false,
       portfolioError: "",
       isAdmin: false,
       squareProfiles: [],
@@ -2854,10 +2855,13 @@
       const position = modal.position;
       const title = isOpen ? "开仓" : modal.type === "add" ? "加仓" : "减持";
       const stockBlock = isOpen ? `
-        <label class="field"><span>股票代码或名称</span><input data-input="portfolioStockSearch" autocomplete="off" placeholder="搜索 A股、港股或美股" value="${escapeHtml(modal.searchQuery || "")}"></label>
-        ${modal.stock ? `<div class="portfolio-selected-stock"><strong>${escapeHtml(modal.stock.name)}</strong> <span class="stock-code">${escapeHtml(modal.stock.code)} · ${modal.stock.currency}</span></div>` : ""}
-        ${state.portfolioSearchLoading ? `<div class="muted">正在搜索...</div>` : ""}
-        ${state.portfolioSearchResults.length ? `<div class="portfolio-search-results">${state.portfolioSearchResults.map((item, index) => `<button type="button" class="portfolio-search-result" data-action="selectPortfolioStock" data-index="${index}"><strong>${escapeHtml(item.name)}</strong><span class="stock-code">${escapeHtml(item.code)} · ${item.currency}</span></button>`).join("")}</div>` : ""}
+        <label class="field"><span>股票名称/代码搜索</span><div class="search-combobox">
+          <input data-input="portfolioStockSearch" autocomplete="off" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" value="${escapeHtml(modal.searchQuery || "")}">
+          ${(state.portfolioSearchLoading || state.portfolioSearchResults.length || (modal.searchQuery && !modal.stock)) ? `<div class="search-results show">
+            ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配股票...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">没有匹配结果，请尝试其他名称或代码。</div>`}
+          </div>` : ""}
+        </div></label>
+        ${modal.stock ? `<div class="portfolio-selected-stock"><strong>已选择：${escapeHtml(modal.stock.name)}</strong> <span class="stock-code">${escapeHtml(modal.stock.code)} · ${marketLabel(modal.stock.market)}</span></div>` : ""}
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
       return modalShell(title, `${stockBlock}
@@ -3783,7 +3787,16 @@
         document.querySelectorAll("[data-account-fields]").forEach((el) => { el.style.display = el.dataset.accountFields === event.target.value ? "block" : "none"; });
       });
       const portfolioSearch = document.querySelector("[data-input='portfolioStockSearch']");
-      if (portfolioSearch) portfolioSearch.addEventListener("input", onPortfolioStockSearch);
+      if (portfolioSearch) {
+        portfolioSearch.addEventListener("compositionstart", () => { state.portfolioSearchComposing = true; });
+        portfolioSearch.addEventListener("compositionend", (event) => {
+          state.portfolioSearchComposing = false;
+          onPortfolioStockSearch(event);
+        });
+        portfolioSearch.addEventListener("input", (event) => {
+          if (!state.portfolioSearchComposing && !event.isComposing) onPortfolioStockSearch(event);
+        });
+      }
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
       const cashForm = document.querySelector("[data-form='calibrateCash']");
@@ -3957,6 +3970,7 @@
       state.portfolioError = "";
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
+      state.portfolioSearchComposing = false;
       state.portfolioModal = { type, position, stock: null, searchQuery: "" };
       render();
     }
@@ -3974,15 +3988,20 @@
       state.portfolioModal.searchQuery = query;
       state.portfolioModal.stock = null;
       state.portfolioSearchResults = [];
-      if (!query) return;
+      if (!query) {
+        state.portfolioSearchLoading = false;
+        render();
+        return;
+      }
       state.portfolioSearchLoading = true;
       const expectedQuery = query;
+      render();
       try {
         const results = await searchStocks(query);
         if (state.portfolioModal?.searchQuery !== expectedQuery) return;
         state.portfolioSearchResults = results;
       } finally {
-        state.portfolioSearchLoading = false;
+        if (state.portfolioModal?.searchQuery === expectedQuery) state.portfolioSearchLoading = false;
       }
       render();
       requestAnimationFrame(() => {
