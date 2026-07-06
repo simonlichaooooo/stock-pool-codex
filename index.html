@@ -2792,8 +2792,19 @@
       return `${(Number(value || 0) / 10000).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 万元`;
     }
 
-    function formatSummaryWan(value) {
-      return `${Math.round(Number(value || 0) / 10000).toLocaleString("zh-CN")} 万元`;
+    function formatPortfolioSummary(value, portfolio, { signed = false } = {}) {
+      const amount = Number(value || 0) / 10000;
+      const sign = signed && amount > 0 ? "+" : "";
+      const unit = portfolio?.accountType === "HKUS" ? "万美元" : "万元";
+      return `${sign}${amount.toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${unit}`;
+    }
+
+    function portfolioTotalProfit(portfolio, metrics) {
+      const flowCapital = (portfolio.cashFlows || []).reduce((sum, flow) => {
+        const baseAmount = Number(flow.unitsChanged || 0) * Number(flow.navBefore || 0);
+        return sum + (flow.type === "redemption" ? -baseAmount : baseAmount);
+      }, 0);
+      return metrics.netBase - Number(portfolio.startBase || 0) - flowCapital;
     }
 
     function formatPortfolioMoney(value, currency) {
@@ -2808,6 +2819,10 @@
       }
       const metrics = portfolioMetrics(portfolio);
       const isHkus = portfolio.accountType === "HKUS";
+      const positionRatio = metrics.netBase ? metrics.positionBase / metrics.netBase : 0;
+      const cashRatio = metrics.netBase ? metrics.cashBase / metrics.netBase : 0;
+      const totalProfit = portfolioTotalProfit(portfolio, metrics);
+      const profitClass = totalProfit > 0 ? "gain" : totalProfit < 0 ? "loss" : "muted";
       return `
         <div class="portfolio-head">
           <div class="portfolio-switcher">
@@ -2821,12 +2836,12 @@
           <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
         </div>
         <section class="portfolio-summary">
-          <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${formatSummaryWan(metrics.netCny)}</div><div class="portfolio-metric-sub">统一折算人民币</div></div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${formatSummaryWan(metrics.positionCny)}</div><div class="portfolio-metric-sub">${isHkus ? "港美账户 · 美元基准净值" : "人民币账户"}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${formatPortfolioSummary(metrics.netBase, portfolio)}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${formatPortfolioSummary(totalProfit, portfolio, { signed: true })}</span></div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${formatPortfolioSummary(metrics.positionBase, portfolio)}</div><div class="portfolio-metric-sub">仓位比例 ${(positionRatio * 100).toFixed(2)}%</div></div>
           <div class="portfolio-metric">
             <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
-            <div class="portfolio-metric-value">${formatSummaryWan(metrics.cashCny)}</div>
-            <div class="portfolio-metric-sub">${isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`}</div>
+            <div class="portfolio-metric-value">${formatPortfolioSummary(metrics.cashBase, portfolio)}</div>
+            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}% · ${isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`}</div>
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}</div></div>
         </section>
