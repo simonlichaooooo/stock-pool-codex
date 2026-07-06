@@ -1573,6 +1573,8 @@
     .simple-modal-body { padding: 16px; display: grid; gap: 14px; }
     .simple-modal-foot { border-top: 1px solid var(--line); justify-content: flex-end; }
     .simple-modal-error { color: #b42318; background: #fff3f0; border: 1px solid #f6c0b7; padding: 9px 10px; border-radius: 4px; font-size: 13px; }
+    .position-history-table { min-width: 100%; }
+    .position-history-table th, .position-history-table td { padding: 9px 8px; }
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
@@ -2966,7 +2968,7 @@
               <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
-              <td data-label="操作"><div class="actions"><button data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
+              <td data-label="操作"><div class="actions"><button data-action="positionHistory" data-id="${position.id}">历史</button><button data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
             </tr>`;
           }).join("")}</tbody>
           <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
@@ -2979,7 +2981,25 @@
       if (modal.type === "create") return renderCreatePortfolioModal();
       if (modal.type === "cash") return renderCashModal(modal);
       if (modal.type === "subscription" || modal.type === "redemption") return renderCashFlowModal(modal);
+      if (modal.type === "history") return renderPositionHistoryModal(modal);
       return renderPositionModal(modal);
+    }
+
+    function renderPositionHistoryModal(modal) {
+      const portfolio = activePortfolio();
+      const position = modal.position;
+      const rows = (portfolio?.tradeHistory || [])
+        .filter((item) => item.positionId === position?.id || (!item.positionId && item.code === position?.code))
+        .sort((a, b) => String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")));
+      const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
+        <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th></tr></thead>
+        <tbody>${rows.map((item) => `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td></tr>`).join("")}</tbody>
+      </table></div>` : `<div class="empty" style="padding:28px 12px">暂无加仓或减持记录。</div>`;
+      return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
+        <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
+        <div class="simple-modal-body">${body}</div>
+        <div class="simple-modal-foot"><button data-action="closePortfolioModal">关闭</button></div>
+      </section></div>`;
     }
 
     function modalShell(title, body, formName, submitText) {
@@ -4051,6 +4071,7 @@
       if (action === "addPosition") openPortfolioModal("add", stockId);
       if (action === "reducePosition") openPortfolioModal("reduce", stockId);
       if (action === "editPosition") openPortfolioModal("edit", stockId);
+      if (action === "positionHistory") openPortfolioModal("history", stockId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index));
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
@@ -4373,7 +4394,10 @@
           }
         }
         const cashDelta = modal.type === "reduce" ? cashAmount : -cashAmount;
-        return { ...item, positions, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
+        const tradeHistory = modal.type === "add" || modal.type === "reduce"
+          ? [...(item.tradeHistory || []), { id: id("trade"), positionId: stock.id, code: stock.code, type: modal.type, currency, price, shares, occurredAt: new Date().toISOString() }]
+          : [...(item.tradeHistory || [])];
+        return { ...item, positions, tradeHistory, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
       });
       closePortfolioModal();
     }
