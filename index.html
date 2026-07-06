@@ -1487,18 +1487,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
       flex-wrap: wrap;
     }
-    .portfolio-switcher { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .portfolio-tabs { display: inline-flex; gap: 4px; flex-wrap: wrap; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
-    .portfolio-tabs button { min-height: 30px; padding: 0 11px; border-color: transparent; background: transparent; color: #667085; }
+    .portfolio-switcher { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .portfolio-tabs { display: inline-flex; gap: 3px; flex-wrap: wrap; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+    .portfolio-tabs button { min-height: 28px; padding: 0 10px; border-color: transparent; background: transparent; color: #667085; }
     .portfolio-tabs button:hover { color: var(--brand); background: #fff; }
     .portfolio-tabs button.active { color: var(--brand-strong); background: #fff; border-color: #a9c9c4; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); font-weight: 750; }
     .portfolio-privacy-toggle {
-      width: 34px;
-      min-width: 34px;
+      width: 30px;
+      min-width: 30px;
+      min-height: 30px;
       padding: 0;
       display: inline-flex;
       align-items: center;
@@ -1506,26 +1507,28 @@
       color: #475467;
     }
     .portfolio-privacy-toggle.active { color: var(--brand); background: var(--brand-soft); border-color: #9fc8c2; }
-    .portfolio-privacy-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .portfolio-privacy-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-summary {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .portfolio-metric {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 6px;
-      padding: 14px;
+      padding: 7px 10px;
       box-shadow: var(--shadow-soft);
-      min-height: 92px;
+      min-height: 70px;
     }
-    .portfolio-metric-label { color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-    .portfolio-metric-value { font-size: 23px; line-height: 1.15; font-weight: 760; font-variant-numeric: tabular-nums; }
-    .portfolio-metric-sub { color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.5; }
+    .portfolio-metric-label { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+    .portfolio-metric-value { font-size: 19px; line-height: 1.1; font-weight: 760; font-variant-numeric: tabular-nums; }
+    .portfolio-metric-sub { color: var(--muted); font-size: 10.5px; margin-top: 3px; line-height: 1.25; }
     .portfolio-cash-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .portfolio-cash-head button { min-height: 26px; padding: 0 8px; }
+    .portfolio-cash-head .portfolio-metric-label { margin-bottom: 0; }
+    .portfolio-cash-head button { min-height: 20px; padding: 0 6px; font-size: 10.5px; }
+    .portfolio-view-tabs { margin-bottom: 8px; }
     .portfolio-table .actions { white-space: nowrap; }
     .portfolio-table .stock-name { font-weight: 720; }
     .portfolio-table .trade-add {
@@ -2893,7 +2896,7 @@
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}</div></div>
         </section>
-        <div class="segmented" style="margin-bottom:12px"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
+        <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
       `;
     }
