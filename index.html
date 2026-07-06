@@ -1492,7 +1492,10 @@
       flex-wrap: wrap;
     }
     .portfolio-switcher { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .portfolio-switcher select { width: auto; min-width: 220px; }
+    .portfolio-tabs { display: inline-flex; gap: 4px; flex-wrap: wrap; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+    .portfolio-tabs button { min-height: 30px; padding: 0 11px; border-color: transparent; background: transparent; color: #667085; }
+    .portfolio-tabs button:hover { color: var(--brand); background: #fff; }
+    .portfolio-tabs button.active { color: var(--brand-strong); background: #fff; border-color: #a9c9c4; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); font-weight: 750; }
     .portfolio-privacy-toggle {
       width: 34px;
       min-width: 34px;
@@ -2842,15 +2845,16 @@
       return row ? Number(row.unit_nav) : null;
     }
 
-    function renderPortfolioNavChange(currentNav) {
-      if (state.portfolioPrivacyMode) return `<span class="muted">较昨日 ****</span>`;
+    function renderPortfolioNavChange(currentNav, portfolio) {
+      if (state.portfolioPrivacyMode) return `<span class="muted">当日盈亏 **** · 较昨日 ****</span>`;
       const previousNav = previousPortfolioNav();
-      if (!previousNav) return `<span class="muted">较昨日 --</span>`;
+      if (!previousNav) return `<span class="muted">当日盈亏 -- · 较昨日 --</span>`;
       const delta = Number(currentNav) - previousNav;
       const change = delta / previousNav * 100;
+      const profitAmount = delta * Number(portfolio.totalUnits || portfolio.startBase || 0);
       const sign = delta > 0 ? "+" : "";
       const className = delta > 0 ? "gain" : delta < 0 ? "loss" : "muted";
-      return `<span class="${className}">较昨日 ${sign}${delta.toFixed(4)}（${sign}${change.toFixed(2)}%）</span>`;
+      return `<span class="${className}">当日盈亏 ${formatPortfolioSummary(profitAmount, portfolio, { signed: true })} · 较昨日 ${sign}${delta.toFixed(4)}（${sign}${change.toFixed(2)}%）</span>`;
     }
 
     function renderPortfolioView() {
@@ -2867,9 +2871,9 @@
       return `
         <div class="portfolio-head">
           <div class="portfolio-switcher">
-            <select data-input="activePortfolio" aria-label="切换组合">
-              ${state.portfolios.map((item) => `<option value="${item.id}" ${item.id === portfolio.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
-            </select>
+            <div class="portfolio-tabs" role="tablist" aria-label="选择组合">
+              ${state.portfolios.map((item) => `<button role="tab" aria-selected="${item.id === portfolio.id}" class="${item.id === portfolio.id ? "active" : ""}" data-action="selectPortfolio" data-id="${item.id}">${escapeHtml(item.name)}</button>`).join("")}
+            </div>
             <span class="badge">${isHkus ? "港美账户 · 美元基准" : "人民币账户"}</span>
             <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
@@ -2883,9 +2887,9 @@
           <div class="portfolio-metric">
             <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
             <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
-            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}% · ${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
+            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav)}<br>总份额 ${portfolioPrivate(Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }))}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}</div></div>
         </section>
         <div class="segmented" style="margin-bottom:12px"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
@@ -3935,16 +3939,6 @@
       }
       const squareSort = document.querySelector("[data-input='squareSort']");
       if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
-      const activePortfolioSelect = document.querySelector("[data-input='activePortfolio']");
-      if (activePortfolioSelect) activePortfolioSelect.addEventListener("change", async (event) => {
-        state.activePortfolioId = event.target.value;
-        state.navHistory = [];
-        state.benchmarkHistory = [];
-        savePortfolios();
-        render();
-        await Promise.all([refreshPortfolioQuotes({ renderAfter: false }), loadPortfolioPerformance()]);
-        render();
-      });
       const navYear = document.querySelector("[data-input='navYear']");
       if (navYear) navYear.addEventListener("change", (event) => { state.navYear = event.target.value; state.navRange = event.target.value ? "YEAR" : "ALL"; render(); });
       const benchmark = document.querySelector("[data-input='benchmark']");
@@ -4008,6 +4002,15 @@
       }
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
+      if (action === "selectPortfolio") {
+        state.activePortfolioId = stockId;
+        state.navHistory = [];
+        state.benchmarkHistory = [];
+        savePortfolios();
+        render();
+        await Promise.all([refreshPortfolioQuotes({ renderAfter: false }), loadPortfolioPerformance()]);
+        render();
+      }
       if (action === "portfolioPage") {
         state.portfolioPage = event.currentTarget.dataset.page;
         if (state.portfolioPage === "performance") await loadPortfolioPerformance();
