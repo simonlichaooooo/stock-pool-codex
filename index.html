@@ -2943,21 +2943,30 @@
       const sortIndicator = (key) => sort.key === key ? `<span class="portfolio-sort-indicator">${sort.dir === "asc" ? "▲" : "▼"}</span>` : "";
       return `
         <section class="table-panel portfolio-table"><div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
             const change = position.changePercent == null ? NaN : Number(position.changePercent);
             const changeClass = Number.isFinite(change) ? (change > 0 ? "gain" : change < 0 ? "loss" : "") : "muted";
+            const previousClose = Number(position.previousClose);
+            const dailyProfit = previousClose > 0 && Number(position.latestPrice) > 0
+              ? (Number(position.latestPrice) - previousClose) * Number(position.shares || 0) * portfolioFx(position.currency, base)
+              : NaN;
+            const dailyProfitClass = state.portfolioPrivacyMode ? "muted" : Number.isFinite(dailyProfit) ? (dailyProfit > 0 ? "gain" : dailyProfit < 0 ? "loss" : "") : "muted";
+            const dailyProfitText = Number.isFinite(dailyProfit)
+              ? `${dailyProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioMoney(dailyProfit, "USD") : formatWan(dailyProfit)}`
+              : "--";
             return `<tr>
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
               <td data-label="摊薄成本">${portfolioPrivate(formatPortfolioMoney(position.averageCost, position.currency))}</td>
               <td data-label="当日股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
+              <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
-              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
+              <td data-label="操作"><div class="actions"><button data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
             </tr>`;
           }).join("")}</tbody>
           <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
@@ -3023,6 +3032,10 @@
         </div></label>
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
+      if (modal.type === "edit") return modalShell("编辑持仓", `${stockBlock}
+        <div class="grid-2"><label class="field"><span>摊薄成本（${currency}/股）</span><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required></label><label class="field"><span>持股数</span><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required></label></div>
+        <div class="muted">直接校准持仓数据，不影响现金余额。</div>
+      `, "positionTrade", "保存");
       const stockMarket = modal.stock?.market || position?.market || "";
       const stockConnectNote = portfolio?.accountType === "CNY" && stockMarket === "HK"
         ? `<div class="muted">港股通按港币成交价录入，成交金额将按当前汇率折算为人民币现金。</div>`
@@ -4037,6 +4050,7 @@
       if (action === "redeemPortfolio") openPortfolioModal("redemption");
       if (action === "addPosition") openPortfolioModal("add", stockId);
       if (action === "reducePosition") openPortfolioModal("reduce", stockId);
+      if (action === "editPosition") openPortfolioModal("edit", stockId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index));
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
@@ -4314,6 +4328,15 @@
       if (!Number.isInteger(shares) || shares <= 0) return showPortfolioError("买卖数量必须为正整数。");
       const stock = modal.type === "open" ? modal.stock : modal.position;
       if (!stock) return showPortfolioError("请先选择股票。");
+      if (modal.type === "edit") {
+        updateActivePortfolio((item) => ({
+          ...item,
+          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price } : position),
+          updatedAt: new Date().toISOString()
+        }));
+        closePortfolioModal();
+        return;
+      }
       if (portfolio.accountType === "CNY" && !["CN", "HK"].includes(stock.market)) return showPortfolioError("人民币账户只能开仓 A 股或港股通股票。");
       if (portfolio.accountType === "HKUS" && !["HK", "US"].includes(stock.market)) return showPortfolioError("港美账户只能开仓港股或美股。");
       if (modal.type === "open" && portfolio.positions.some((item) => item.code === stock.code && item.market === stock.market)) return showPortfolioError("该股票已在组合中，请使用加仓。");
