@@ -2888,8 +2888,8 @@
       const portfolio = activePortfolio();
       const isHkus = portfolio?.accountType === "HKUS";
       return modalShell("校准现金", isHkus ? `
-        <div class="grid-2"><label class="field"><span>港币余额</span><input name="cashHkd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.HKD || 0)}" required></label><label class="field"><span>美元余额</span><input name="cashUsd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.USD || 0)}" required></label></div>
-      ` : `<label class="field"><span>人民币余额</span><input name="cashCny" type="number" min="0" step="0.01" value="${Number(portfolio?.cash?.CNY || 0)}" required></label>`, "calibrateCash", "保存");
+        <div class="grid-2"><label class="field"><span>港币余额（万港币）</span><input name="cashHkd" type="number" min="0" step="any" value="${Number(portfolio.cash?.HKD || 0) / 10000}" required></label><label class="field"><span>美元余额（万美元）</span><input name="cashUsd" type="number" min="0" step="any" value="${Number(portfolio.cash?.USD || 0) / 10000}" required></label></div>
+      ` : `<label class="field"><span>人民币余额（万元）</span><input name="cashCny" type="number" min="0" step="any" value="${Number(portfolio?.cash?.CNY || 0) / 10000}" required></label>`, "calibrateCash", "保存");
     }
 
     function renderCashFlowModal(modal) {
@@ -2898,7 +2898,7 @@
       const currenciesForAccount = portfolio?.accountType === "HKUS" ? ["HKD", "USD"] : ["CNY"];
       return modalShell(isSubscription ? "申购" : "赎回", `
         <label class="field"><span>币种</span><select name="currency">${currenciesForAccount.map((currency) => `<option value="${currency}">${currencies[currency].label}</option>`).join("")}</select></label>
-        <label class="field"><span>${isSubscription ? "申购" : "赎回"}金额（原币）</span><input name="amount" type="number" min="0.01" step="0.01" required></label>
+        <label class="field"><span>${isSubscription ? "申购" : "赎回"}金额（万原币）</span><input name="amount" type="number" min="0.000001" step="any" required></label>
         <div class="muted">按操作前盘中估算净值折算份额；${isSubscription ? "资金增加、份额增加" : "资金减少、份额减少"}，单位净值不因资金流入流出突变。</div>
       `, "portfolioCashFlow", isSubscription ? "确认申购" : "确认赎回");
     }
@@ -4137,8 +4137,8 @@
       if (!portfolio) return;
       const form = new FormData(event.currentTarget);
       const next = portfolio.accountType === "HKUS"
-        ? { HKD: Number(form.get("cashHkd")), USD: Number(form.get("cashUsd")) }
-        : { CNY: Number(form.get("cashCny")) };
+        ? { HKD: Number(form.get("cashHkd")) * 10000, USD: Number(form.get("cashUsd")) * 10000 }
+        : { CNY: Number(form.get("cashCny")) * 10000 };
       if (Object.values(next).some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("现金余额不能小于 0。");
       updateActivePortfolio((item) => ({ ...item, cash: { ...item.cash, ...next }, updatedAt: new Date().toISOString() }));
       closePortfolioModal();
@@ -4151,7 +4151,7 @@
       if (!portfolio || !["subscription", "redemption"].includes(modal?.type)) return;
       const form = new FormData(event.currentTarget);
       const currency = String(form.get("currency") || portfolioBaseCurrency(portfolio));
-      const amount = Number(form.get("amount"));
+      const amount = Number(form.get("amount")) * 10000;
       if (!Number.isFinite(amount) || amount <= 0) return showPortfolioError("请输入有效金额。");
       const metrics = portfolioMetrics(portfolio);
       if (metrics.nav <= 0) return showPortfolioError("当前净值无效，无法计算份额。");
