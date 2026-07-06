@@ -12,6 +12,7 @@ create table if not exists public.portfolios (
 
 alter table public.portfolios enable row level security;
 grant select, insert, update, delete on public.portfolios to authenticated;
+grant select on public.portfolios to service_role;
 
 drop policy if exists "Users manage own portfolios" on public.portfolios;
 create policy "Users manage own portfolios"

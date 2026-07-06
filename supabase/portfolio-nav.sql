@@ -49,6 +49,8 @@ alter table public.benchmark_daily_close enable row level security;
 grant select, insert on public.portfolio_cash_flows to authenticated;
 grant select on public.portfolio_daily_nav to authenticated;
 grant select on public.benchmark_daily_close to authenticated;
+grant select, insert, update on public.portfolio_daily_nav to service_role;
+grant select, insert, update on public.benchmark_daily_close to service_role;
 
 create policy "Users manage own portfolio cash flows" on public.portfolio_cash_flows
 for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -59,4 +61,3 @@ for select to authenticated using (true);
 
 create index if not exists portfolio_cash_flows_portfolio_idx on public.portfolio_cash_flows(portfolio_id, occurred_at);
 create index if not exists portfolio_daily_nav_user_date_idx on public.portfolio_daily_nav(user_id, nav_date);
-
