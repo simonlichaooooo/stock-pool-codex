@@ -3879,17 +3879,50 @@
       return `${PORTFOLIO_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
     }
 
-    function loadPortfolios() {
+    async function loadPortfolios() {
       const saved = readJson(portfolioStorageKey(), { portfolios: [], activePortfolioId: "" });
       state.portfolios = Array.isArray(saved?.portfolios) ? saved.portfolios : [];
       state.activePortfolioId = saved?.activePortfolioId || state.portfolios[0]?.id || "";
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        try {
+          const rows = await supabaseRequest(`/rest/v1/portfolios?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,payload&order=created_at.asc`);
+          const cloudPortfolios = (rows || []).map((row) => ({ ...(row.payload || {}), id: row.id }));
+          if (cloudPortfolios.length) {
+            state.portfolios = cloudPortfolios;
+          } else if (state.portfolios.length) {
+            await persistPortfoliosToCloud(state.portfolios);
+          }
+        } catch (error) {
+          console.warn("组合云端表尚未就绪，暂时使用本地数据。", error);
+        }
+      }
       if (state.activePortfolioId && !state.portfolios.some((item) => item.id === state.activePortfolioId)) {
         state.activePortfolioId = state.portfolios[0]?.id || "";
       }
+      if (!state.activePortfolioId) state.activePortfolioId = state.portfolios[0]?.id || "";
+      writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
     }
 
     function savePortfolios() {
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        persistPortfoliosToCloud(state.portfolios).catch((error) => console.warn("组合云端保存失败。", error));
+      }
+    }
+
+    async function persistPortfoliosToCloud(portfolios) {
+      if (!portfolios?.length) return;
+      await supabaseRequest("/rest/v1/portfolios?on_conflict=id", {
+        method: "POST",
+        prefer: "resolution=merge-duplicates",
+        body: JSON.stringify(portfolios.map((portfolio) => ({
+          id: portfolio.id,
+          user_id: state.session.user.id,
+          name: portfolio.name,
+          payload: { ...portfolio, id: undefined },
+          updated_at: new Date().toISOString()
+        })))
+      });
     }
 
     function updateActivePortfolio(updater) {
@@ -3907,6 +3940,10 @@
       state.portfolios = state.portfolios.filter((item) => item.id !== portfolio.id);
       state.activePortfolioId = state.portfolios[index]?.id || state.portfolios[index - 1]?.id || state.portfolios[0]?.id || "";
       savePortfolios();
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        supabaseRequest(`/rest/v1/portfolios?id=eq.${encodeURIComponent(portfolio.id)}`, { method: "DELETE" })
+          .catch((error) => console.warn("组合云端删除失败。", error));
+      }
       render();
     }
 
@@ -5082,7 +5119,7 @@
     }
 
     async function afterProfileReady() {
-      loadPortfolios();
+      await loadPortfolios();
       await loadAdminMarker();
       await loadFollowedPublishers();
       await loadShareInvite();
@@ -5305,7 +5342,7 @@
       if (localPortfolioDemo) {
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
         state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
-        loadPortfolios();
+        await loadPortfolios();
         await fetchExchangeRates();
         state.loading = false;
         state.mainView = "portfolio";
