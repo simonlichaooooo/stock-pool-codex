@@ -1549,6 +1549,8 @@
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
+    .nav-chart { width: 100%; height: 300px; display: block; background: #fff; }
+    .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     @keyframes shimmer {
       0% { background-position: 100% 0; }
       100% { background-position: 0 0; }
@@ -1732,6 +1734,12 @@
       portfolioSearchLoading: false,
       portfolioSearchComposing: false,
       portfolioError: "",
+      portfolioPage: "positions",
+      navRange: "3M",
+      navYear: "",
+      benchmarkCode: "",
+      navHistory: [],
+      benchmarkHistory: [],
       isAdmin: false,
       squareProfiles: [],
       squareSort: "recent",
@@ -2791,8 +2799,41 @@
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}</div></div>
         </section>
-        ${renderPortfolioTable(portfolio, metrics)}
+        <div class="segmented" style="margin-bottom:12px"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
+        ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
       `;
+    }
+
+    function filteredNavHistory() {
+      const rows = [...state.navHistory].sort((a, b) => a.nav_date.localeCompare(b.nav_date));
+      if (!rows.length || state.navRange === "ALL") return rows;
+      if (state.navRange === "YEAR") return rows.filter((row) => row.nav_date.startsWith(state.navYear));
+      const start = new Date(`${rows.at(-1).nav_date}T00:00:00`);
+      if (state.navRange === "3M") start.setMonth(start.getMonth() - 3); else start.setMonth(0, 1);
+      return rows.filter((row) => new Date(`${row.nav_date}T00:00:00`) >= start);
+    }
+
+    function performanceStats(rows) {
+      if (rows.length < 2) return { total: null, drawdown: null, sharpe: null };
+      let peak = Number(rows[0].unit_nav), drawdown = 0; const returns = [];
+      rows.forEach((row, index) => { const nav = Number(row.unit_nav); peak = Math.max(peak, nav); drawdown = Math.min(drawdown, nav / peak - 1); if (index) returns.push(nav / Number(rows[index - 1].unit_nav) - 1); });
+      const mean = returns.reduce((a,b)=>a+b,0) / returns.length; const variance = returns.reduce((s,v)=>s+(v-mean)**2,0) / Math.max(1, returns.length-1);
+      return { total: Number(rows.at(-1).unit_nav) / Number(rows[0].unit_nav) - 1, drawdown, sharpe: variance ? mean / Math.sqrt(variance) * Math.sqrt(252) : null };
+    }
+
+    function renderNavSvg(rows) {
+      if (rows.length < 2) return `<div class="empty">暂无足够的日终净值数据。</div>`;
+      const values = rows.map((row) => Number(row.unit_nav) / Number(rows[0].unit_nav));
+      const bm = new Map(state.benchmarkHistory.filter((row)=>row.benchmark_code===state.benchmarkCode).map((row)=>[row.trade_date,Number(row.close_value)])); const firstBm = rows.map((row)=>bm.get(row.nav_date)).find(Boolean); const bmValues = rows.map((row)=>firstBm && bm.get(row.nav_date) ? bm.get(row.nav_date)/firstBm : null);
+      const all=[...values,...bmValues.filter(Boolean)], min = Math.min(...all), max = Math.max(...all), span=max-min||.01; const makePath=(series)=>series.map((value,index)=>value==null?"":`${index ? "L" : "M"}${(index/(series.length-1)*960+20).toFixed(1)},${(280-(value-min)/span*240).toFixed(1)}`).join(" ");
+      return `<div class="muted" style="margin-bottom:8px">绿色：组合${firstBm ? `　蓝色：${state.benchmarkCode}` : ""}</div><svg class="nav-chart" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="${makePath(values)}" fill="none" stroke="#0f5f55" stroke-width="3" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#2f5f98" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}</svg>`;
+    }
+
+    function renderPortfolioPerformance(portfolio) {
+      const rows = filteredNavHistory(), stats = performanceStats(rows); const years = [...new Set(state.navHistory.map((row)=>row.nav_date.slice(0,4)))].sort().reverse();
+      const benchmarks = portfolio.accountType === "HKUS" ? [["HSI","恒生指数"],["HSTECH","恒生科技"],["SP500","标普500"],["NDX100","纳斯达克100"]] : [["CSI300","沪深300"]];
+      if (!state.benchmarkCode || !benchmarks.some(([code])=>code===state.benchmarkCode)) state.benchmarkCode = benchmarks[0][0];
+      return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>`;
     }
 
     function renderPortfolioTable(portfolio, metrics) {
@@ -3793,6 +3834,10 @@
         render();
         refreshPortfolioQuotes();
       });
+      const navYear = document.querySelector("[data-input='navYear']");
+      if (navYear) navYear.addEventListener("change", (event) => { state.navYear = event.target.value; state.navRange = event.target.value ? "YEAR" : "ALL"; render(); });
+      const benchmark = document.querySelector("[data-input='benchmark']");
+      if (benchmark) benchmark.addEventListener("change", (event) => { state.benchmarkCode = event.target.value; render(); });
       const portfolioAccountType = document.querySelector("[data-input='portfolioAccountType']");
       if (portfolioAccountType) portfolioAccountType.addEventListener("change", (event) => {
         document.querySelectorAll("[data-account-fields]").forEach((el) => { el.style.display = el.dataset.accountFields === event.target.value ? "block" : "none"; });
@@ -3851,6 +3896,12 @@
       }
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
+      if (action === "portfolioPage") {
+        state.portfolioPage = event.currentTarget.dataset.page;
+        if (state.portfolioPage === "performance") await loadPortfolioPerformance();
+        render();
+      }
+      if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
       if (action === "createPortfolio") openPortfolioModal("create");
       if (action === "deletePortfolio") deleteActivePortfolio();
       if (action === "closePortfolioModal") closePortfolioModal();
@@ -3905,6 +3956,18 @@
       if (state.mainView === "pool") await refreshMarketCaps({ renderAfter: false });
       if (state.mainView === "portfolio") await refreshPortfolioQuotes({ renderAfter: false });
       render();
+    }
+
+    async function loadPortfolioPerformance() {
+      const portfolio = activePortfolio();
+      if (!portfolio || !state.session?.access_token || state.session.access_token === "local-demo") return;
+      try {
+        const [navRows, benchmarkRows] = await Promise.all([
+          supabaseRequest(`/rest/v1/portfolio_daily_nav?portfolio_id=eq.${encodeURIComponent(portfolio.id)}&select=nav_date,unit_nav,total_assets,total_units&order=nav_date.asc`),
+          supabaseRequest(`/rest/v1/benchmark_daily_close?select=benchmark_code,trade_date,close_value&order=trade_date.asc`)
+        ]);
+        state.navHistory = navRows || []; state.benchmarkHistory = benchmarkRows || [];
+      } catch (error) { console.warn("净值历史表尚未就绪。", error); state.navHistory = []; state.benchmarkHistory = []; }
     }
 
     function portfolioStorageKey() {
