@@ -1493,6 +1493,17 @@
     }
     .portfolio-switcher { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .portfolio-switcher select { width: auto; min-width: 220px; }
+    .portfolio-privacy-toggle {
+      width: 34px;
+      min-width: 34px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #475467;
+    }
+    .portfolio-privacy-toggle.active { color: var(--brand); background: var(--brand-soft); border-color: #9fc8c2; }
+    .portfolio-privacy-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-summary {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1753,6 +1764,7 @@
       portfolioPage: "positions",
       portfolioSort: { key: "value", dir: "desc" },
       portfolioQuotesUpdatedAt: "",
+      portfolioPrivacyMode: false,
       navRange: "3M",
       navYear: "",
       benchmarkCode: "",
@@ -2812,6 +2824,16 @@
       return `${symbols[currency] || ""}${Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
+    function portfolioPrivate(value) {
+      return state.portfolioPrivacyMode ? "****" : value;
+    }
+
+    function portfolioPrivacyIcon() {
+      return state.portfolioPrivacyMode
+        ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c5.5 0 9 5.2 9 5.2a16 16 0 0 1-2.1 2.6M6.2 6.2A15.3 15.3 0 0 0 3 9.2S6.5 14.4 12 14.4c1 0 1.9-.2 2.7-.5"/></svg>`
+        : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-5.2 9-5.2 9 5.2 9 5.2-3.5 5.2-9 5.2S3 12 3 12z"/><circle cx="12" cy="12" r="2.4"/></svg>`;
+    }
+
     function renderPortfolioView() {
       const portfolio = activePortfolio();
       if (!portfolio) {
@@ -2822,7 +2844,7 @@
       const positionRatio = metrics.netBase ? metrics.positionBase / metrics.netBase : 0;
       const cashRatio = metrics.netBase ? metrics.cashBase / metrics.netBase : 0;
       const totalProfit = portfolioTotalProfit(portfolio, metrics);
-      const profitClass = totalProfit > 0 ? "gain" : totalProfit < 0 ? "loss" : "muted";
+      const profitClass = state.portfolioPrivacyMode ? "muted" : totalProfit > 0 ? "gain" : totalProfit < 0 ? "loss" : "muted";
       return `
         <div class="portfolio-head">
           <div class="portfolio-switcher">
@@ -2830,20 +2852,21 @@
               ${state.portfolios.map((item) => `<option value="${item.id}" ${item.id === portfolio.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
             </select>
             <span class="badge">${isHkus ? "港美账户 · 美元基准" : "人民币账户"}</span>
+            <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
             <button class="danger" data-action="deletePortfolio">删除组合</button>
           </div>
           <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
         </div>
         <section class="portfolio-summary">
-          <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${formatPortfolioSummary(metrics.netBase, portfolio)}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${formatPortfolioSummary(totalProfit, portfolio, { signed: true })}</span></div></div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${formatPortfolioSummary(metrics.positionBase, portfolio)}</div><div class="portfolio-metric-sub">仓位比例 ${(positionRatio * 100).toFixed(2)}%</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.netBase, portfolio))}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${portfolioPrivate(formatPortfolioSummary(totalProfit, portfolio, { signed: true }))}</span></div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.positionBase, portfolio))}</div><div class="portfolio-metric-sub">仓位比例 ${(positionRatio * 100).toFixed(2)}%</div></div>
           <div class="portfolio-metric">
             <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
-            <div class="portfolio-metric-value">${formatPortfolioSummary(metrics.cashBase, portfolio)}</div>
-            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}% · ${isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`}</div>
+            <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
+            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}% · ${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${metrics.nav.toFixed(4)}</div><div class="portfolio-metric-sub">总份额 ${portfolioPrivate(Number(portfolio.totalUnits || portfolio.startBase || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }))}</div></div>
         </section>
         <div class="segmented" style="margin-bottom:12px"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
@@ -2905,11 +2928,11 @@
             const changeClass = Number.isFinite(change) ? (change > 0 ? "gain" : change < 0 ? "loss" : "") : "muted";
             return `<tr>
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
-              <td data-label="股数">${Number(position.shares).toLocaleString("zh-CN")}</td>
-              <td data-label="摊薄成本">${formatPortfolioMoney(position.averageCost, position.currency)}</td>
+              <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
+              <td data-label="摊薄成本">${portfolioPrivate(formatPortfolioMoney(position.averageCost, position.currency))}</td>
               <td data-label="当日股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
-              <td data-label="市值">${base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value)}</td>
+              <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
               <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
             </tr>`;
@@ -3967,6 +3990,10 @@
         state.portfolioSort = state.portfolioSort?.key === key
           ? { key, dir: state.portfolioSort.dir === "asc" ? "desc" : "asc" }
           : { key, dir: "desc" };
+        render();
+      }
+      if (action === "togglePortfolioPrivacy") {
+        state.portfolioPrivacyMode = !state.portfolioPrivacyMode;
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
