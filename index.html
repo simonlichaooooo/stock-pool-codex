@@ -2772,6 +2772,7 @@
             </select>
             <span class="badge">${isHkus ? "港美账户 · 美元基准" : "人民币账户"}</span>
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
+            <button class="danger" data-action="deletePortfolio">删除组合</button>
           </div>
           <button class="primary" data-action="openPosition">+ 开仓</button>
         </div>
@@ -3821,6 +3822,7 @@
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
       if (action === "createPortfolio") openPortfolioModal("create");
+      if (action === "deletePortfolio") deleteActivePortfolio();
       if (action === "closePortfolioModal") closePortfolioModal();
       if (action === "openPosition") openPortfolioModal("open");
       if (action === "calibrateCash") openPortfolioModal("cash");
@@ -3893,6 +3895,19 @@
     function updateActivePortfolio(updater) {
       state.portfolios = state.portfolios.map((item) => item.id === state.activePortfolioId ? updater({ ...item, cash: { ...(item.cash || {}) }, positions: [...(item.positions || [])] }) : item);
       savePortfolios();
+    }
+
+    function deleteActivePortfolio() {
+      const portfolio = activePortfolio();
+      if (!portfolio) return;
+      const positionCount = portfolio.positions?.length || 0;
+      const detail = positionCount ? `，其中包含 ${positionCount} 只持仓` : "";
+      if (!confirm(`确定删除组合“${portfolio.name}”吗？${detail}，现金和持仓数据将一并删除，且无法恢复。`)) return;
+      const index = state.portfolios.findIndex((item) => item.id === portfolio.id);
+      state.portfolios = state.portfolios.filter((item) => item.id !== portfolio.id);
+      state.activePortfolioId = state.portfolios[index]?.id || state.portfolios[index - 1]?.id || state.portfolios[0]?.id || "";
+      savePortfolios();
+      render();
     }
 
     function openPortfolioModal(type, positionId = "") {
