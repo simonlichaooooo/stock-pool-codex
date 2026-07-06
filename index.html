@@ -2861,7 +2861,6 @@
             ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配股票...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">没有匹配结果，请尝试其他名称或代码。</div>`}
           </div>` : ""}
         </div></label>
-        ${modal.stock ? `<div class="portfolio-selected-stock"><strong>已选择：${escapeHtml(modal.stock.name)}</strong> <span class="stock-code">${escapeHtml(modal.stock.code)} · ${marketLabel(modal.stock.market)}</span></div>` : ""}
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
       return modalShell(title, `${stockBlock}
