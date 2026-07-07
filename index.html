@@ -3176,7 +3176,7 @@
       const suggestion = !isOpen ? positionTradeSuggestion(position, portfolio, modal.type) : null;
       const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
       const defaultTradeShares = modal.type === "add" ? "" : (suggestedShares || "");
-      const suggestionBlock = suggestion ? `<div class="trade-suggestion"><strong>目标仓位建议</strong><br>当前 ${suggestion.currentWeight.toFixed(2)}% · 目标 ${suggestion.targetWeight.toFixed(2)}% · 差额 ${suggestion.gapPercent > 0 ? "+" : ""}${suggestion.gapPercent.toFixed(2)}%<br>${suggestion.targetWeight <= 0 ? "尚未设置有效目标仓位，请先在“编辑”中设置。" : suggestion.action === "hold" ? "当前已接近目标仓位，暂不建议交易。" : `建议${suggestion.action === "add" ? "买入" : "卖出"}约 <strong>${suggestion.fullShares.toLocaleString("zh-CN")} 股</strong>到达目标；按四档网格分批，本次建议 <strong>${suggestion.gridShares.toLocaleString("zh-CN")} 股</strong>。`}</div>` : "";
+      const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>`;
       const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
       const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
@@ -3190,6 +3190,25 @@
         return { price: Number(row?.price) || "", shares: Number(row?.shares) || "", done: Boolean(row?.done) };
       });
       return { buy: normalizeSide("buy"), sell: normalizeSide("sell") };
+    }
+
+    function renderPositionTradeSuggestion(suggestion, type) {
+      const isAdd = type === "add";
+      const title = isAdd ? "加仓建议" : "减仓建议";
+      const summary = `当前 ${suggestion.currentWeight.toFixed(2)}% · 目标 ${suggestion.targetWeight.toFixed(2)}% · 差额 ${suggestion.gapPercent > 0 ? "+" : ""}${suggestion.gapPercent.toFixed(2)}%`;
+      let message = "";
+      if (suggestion.targetWeight <= 0) {
+        message = "尚未设置有效目标仓位，暂不提供建议。";
+      } else if (suggestion.action === type) {
+        message = `建议${isAdd ? "买入" : "卖出"}约 <strong>${suggestion.fullShares.toLocaleString("zh-CN")} 股</strong>到达目标；按四档网格分批，本次建议 <strong>${suggestion.gridShares.toLocaleString("zh-CN")} 股</strong>。`;
+      } else if (isAdd && suggestion.gapPercent < 0) {
+        message = `当前仓位已超配 ${Math.abs(suggestion.gapPercent).toFixed(2)}%，不建议加仓。`;
+      } else if (!isAdd && suggestion.gapPercent > 0) {
+        message = `当前仓位仍低配 ${suggestion.gapPercent.toFixed(2)}%，不建议减仓。`;
+      } else {
+        message = `当前仓位已接近目标，不建议${isAdd ? "加仓" : "减仓"}。`;
+      }
+      return `<div class="trade-suggestion"><strong>${title}</strong><br>${summary}<br>${message}</div>`;
     }
 
     function parsePositionTargetWeight(value) {
