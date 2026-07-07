@@ -1833,6 +1833,7 @@
       navYear: "",
       benchmarkCode: "",
       navHistory: [],
+      navHistoryPortfolioId: "",
       benchmarkHistory: [],
       isAdmin: false,
       squareProfiles: [],
@@ -2925,6 +2926,7 @@
     }
 
     function previousPortfolioNav() {
+      if (state.navHistoryPortfolioId && state.navHistoryPortfolioId !== state.activePortfolioId) return null;
       const today = todayString();
       const row = [...state.navHistory]
         .filter((item) => item.nav_date && item.nav_date < today && Number(item.unit_nav) > 0)
@@ -3054,7 +3056,7 @@
             </button>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本</th><th>实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏</th><th>市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
@@ -3072,13 +3074,13 @@
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
               <td data-label="摊薄成本">${portfolioPrivate(formatPortfolioMoney(position.averageCost, position.currency))}</td>
-              <td data-label="当日股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
+              <td data-label="实时股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
               <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
-              <td data-label="操作"><div class="actions"><button data-action="positionHistory" data-id="${position.id}">历史</button><button data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button data-action="editPosition" data-id="${position.id}">编辑</button><button data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
           <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
@@ -4226,6 +4228,7 @@
       if (action === "selectPortfolio") {
         state.activePortfolioId = stockId;
         state.navHistory = [];
+        state.navHistoryPortfolioId = "";
         state.benchmarkHistory = [];
         savePortfolios();
         render();
@@ -4313,13 +4316,23 @@
     async function loadPortfolioPerformance() {
       const portfolio = activePortfolio();
       if (!portfolio || !state.session?.access_token || state.session.access_token === "local-demo") return;
+      const requestedPortfolioId = portfolio.id;
       try {
         const [navRows, benchmarkRows] = await Promise.all([
           supabaseRequest(`/rest/v1/portfolio_daily_nav?portfolio_id=eq.${encodeURIComponent(portfolio.id)}&select=nav_date,unit_nav,total_assets,total_units&order=nav_date.asc`),
           supabaseRequest(`/rest/v1/benchmark_daily_close?select=benchmark_code,trade_date,close_value&order=trade_date.asc`)
         ]);
-        state.navHistory = navRows || []; state.benchmarkHistory = benchmarkRows || [];
-      } catch (error) { console.warn("净值历史表尚未就绪。", error); state.navHistory = []; state.benchmarkHistory = []; }
+        if (state.activePortfolioId !== requestedPortfolioId) return;
+        state.navHistory = navRows || [];
+        state.navHistoryPortfolioId = requestedPortfolioId;
+        state.benchmarkHistory = benchmarkRows || [];
+      } catch (error) {
+        console.warn("净值历史表尚未就绪。", error);
+        if (state.activePortfolioId !== requestedPortfolioId) return;
+        state.navHistory = [];
+        state.navHistoryPortfolioId = requestedPortfolioId;
+        state.benchmarkHistory = [];
+      }
     }
 
     function portfolioStorageKey() {
@@ -5963,6 +5976,7 @@
         const demoPreviousDate = new Date();
         demoPreviousDate.setDate(demoPreviousDate.getDate() - 1);
         state.navHistory = [{ nav_date: demoPreviousDate.toISOString().slice(0, 10), unit_nav: 0.98 }];
+        state.navHistoryPortfolioId = state.activePortfolioId;
         state.loading = false;
         state.mainView = "portfolio";
         render();
