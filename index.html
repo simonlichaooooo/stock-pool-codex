@@ -2288,6 +2288,12 @@
     }
 
     async function fetchQuote(stock) {
+      let triedTencent = false;
+      if (stock.market === "HK") {
+        triedTencent = true;
+        try { return await fetchTencentQuote(stock); }
+        catch (error) { console.warn("腾讯港股实时行情不可用，尝试东方财富备用行情。", error); }
+      }
       const quoteId = stockQuoteId(stock);
       const fields = "f43,f57,f58,f60,f116,f170";
       if (quoteId) {
@@ -2322,8 +2328,10 @@
           console.warn("东方财富行情接口不可用，尝试腾讯备用行情。", error);
         }
       }
-      try { return await fetchTencentQuote(stock); }
-      catch (error) { console.warn("腾讯行情接口不可用，保留最近行情。", error); }
+      if (!triedTencent) {
+        try { return await fetchTencentQuote(stock); }
+        catch (error) { console.warn("腾讯行情接口不可用，保留最近行情。", error); }
+      }
       return {
         ...stock,
         latestMarketCapCny: Number(stock.latestMarketCapCny) || stock.marketCapCny || 0,
@@ -2415,13 +2423,21 @@
     async function fetchTencentQuote(stock) {
       const symbol = tencentSymbol(stock);
       if (!symbol) throw new Error("无法识别腾讯行情代码");
-      const variableName = `v_${symbol}`;
-      delete window[variableName];
-      await loadScript(`https://qt.gtimg.cn/q=${symbol}&_=${Date.now()}`);
-      const text = window[variableName];
-      delete window[variableName];
-      if (!text) throw new Error("腾讯行情没有返回数据");
-      const parts = text.split("~");
+      let parts = null;
+      if (stock.market === "HK") {
+        const response = await fetchWithTimeout(`https://web.ifzq.gtimg.cn/appstock/app/hkMinute/query?code=${encodeURIComponent(symbol)}&_=${Date.now()}`, 8000);
+        if (!response.ok) throw new Error(`腾讯港股实时行情 HTTP ${response.status}`);
+        const json = await response.json();
+        parts = json?.data?.[symbol]?.qt?.[symbol] || null;
+      } else {
+        const variableName = `v_${symbol}`;
+        delete window[variableName];
+        await loadScript(`https://qt.gtimg.cn/q=${symbol}&_=${Date.now()}`);
+        const text = window[variableName];
+        delete window[variableName];
+        parts = text ? text.split("~") : null;
+      }
+      if (!parts?.length) throw new Error("腾讯行情没有返回数据");
       const marketCapYi = Number(parts[45] || parts[44]);
       if (!marketCapYi || Number.isNaN(marketCapYi)) throw new Error("腾讯行情没有返回总市值");
       const sourceCurrency = marketCurrency(stock.market);
