@@ -1537,7 +1537,8 @@
     .portfolio-list-refresh svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-list-refresh:disabled svg { animation: portfolio-refresh-spin .8s linear infinite; }
     @keyframes portfolio-refresh-spin { to { transform: rotate(360deg); } }
-    .portfolio-table .actions { white-space: nowrap; }
+    .portfolio-table .actions { white-space: nowrap; gap: 5px; }
+    .portfolio-table .actions button { min-height: 27px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
     .portfolio-table .table-scroll { overflow-x: auto; overflow-y: visible; max-height: none; }
     .portfolio-table .stock-name { font-weight: 720; }
     .portfolio-table .trade-add {
@@ -1552,6 +1553,11 @@
       background: #ecfdf3;
     }
     .portfolio-table .trade-reduce:hover { border-color: #6fc59b; background: #dcfae6; }
+    .portfolio-table .trade-edit { color: #245a8d; border-color: #b8cee4; background: #f0f7ff; }
+    .portfolio-table .trade-edit:hover { border-color: #7da8d1; background: #e3f0fc; }
+    .portfolio-table .trade-history { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
+    .portfolio-table .trade-history:hover { border-color: #ab8bd0; background: #f0e9f8; }
+    .portfolio-holding-profit-rate { margin-top: 2px; font-size: 10.5px; opacity: .82; }
     .portfolio-sort-indicator { margin-left: 4px; color: var(--brand); font-size: 11px; }
     .portfolio-empty {
       padding: 56px 20px;
@@ -3056,7 +3062,7 @@
             </button>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本</th><th>实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏</th><th>市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本</th><th>实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏</th><th>持仓盈亏</th><th>市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
@@ -3070,6 +3076,19 @@
             const dailyProfitText = Number.isFinite(dailyProfit)
               ? `${dailyProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioMoney(dailyProfit, "USD") : formatWan(dailyProfit)}`
               : "--";
+            const averageCost = Number(position.averageCost);
+            const latestPrice = Number(position.latestPrice);
+            const holdingProfit = averageCost > 0 && latestPrice > 0
+              ? (latestPrice - averageCost) * Number(position.shares || 0) * portfolioFx(position.currency, base)
+              : NaN;
+            const holdingReturn = averageCost > 0 && latestPrice > 0 ? (latestPrice / averageCost - 1) * 100 : NaN;
+            const holdingProfitClass = state.portfolioPrivacyMode ? "muted" : Number.isFinite(holdingProfit) ? (holdingProfit > 0 ? "gain" : holdingProfit < 0 ? "loss" : "") : "muted";
+            const holdingProfitText = Number.isFinite(holdingProfit)
+              ? `${holdingProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioMoney(holdingProfit, "USD") : formatWan(holdingProfit)}`
+              : "--";
+            const holdingProfitCell = state.portfolioPrivacyMode
+              ? "****"
+              : `${holdingProfitText}${Number.isFinite(holdingReturn) ? `<div class="portfolio-holding-profit-rate">${holdingReturn > 0 ? "+" : ""}${holdingReturn.toFixed(2)}%</div>` : ""}`;
             return `<tr>
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
@@ -3077,10 +3096,11 @@
               <td data-label="实时股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
               <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
+              <td data-label="持仓盈亏" class="${holdingProfitClass}">${holdingProfitCell}</td>
               <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
-              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button data-action="editPosition" data-id="${position.id}">编辑</button><button data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
           <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
