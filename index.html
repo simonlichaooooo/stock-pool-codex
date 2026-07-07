@@ -4425,8 +4425,6 @@
       if (modal.type === "edit") {
         const targetWeight = Number(form.get("targetWeight"));
         if (!Number.isFinite(targetWeight) || targetWeight < 0 || targetWeight > 100) return showPortfolioError("目标仓位请输入 0 到 100 之间的百分比。");
-        const otherTargets = portfolio.positions.reduce((sum, position) => position.id === stock.id ? sum : sum + (Number(position.targetWeight) || 0), 0);
-        if (otherTargets + targetWeight > 100.000001) return showPortfolioError(`全部持仓的目标仓位合计不能超过 100%（当前将达到 ${(otherTargets + targetWeight).toFixed(2)}%）。`);
         updateActivePortfolio((item) => ({
           ...item,
           positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price, targetWeight } : position),
