@@ -1596,20 +1596,26 @@
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
     .position-edit-main { display: grid; gap: 14px; min-width: 0; }
     .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
-    .position-target-control { width: 150px; }
-    .position-target-control input { width: 150px; min-height: 30px; padding: 4px 8px; text-align: center; font-variant-numeric: tabular-nums; }
-    .position-target-quick { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .position-target-quick button { min-width: 34px; min-height: 24px; padding: 0 6px; border-color: #e1e6ec; background: #f8fafc; color: var(--muted); font-size: 11px; font-weight: 500; }
-    .position-target-quick button:hover { color: var(--brand); border-color: #b8cec9; background: var(--brand-soft); }
+    .position-target-control { width: 150px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; }
+    .position-target-control input, .position-target-control button { min-height: 30px; border-radius: 0; }
+    .position-target-control input { width: 86px; padding: 4px; text-align: center; font-variant-numeric: tabular-nums; border-left: 0; border-right: 0; }
+    .position-target-control button { min-width: 32px; padding: 0; font-size: 16px; font-weight: 750; }
+    .position-target-control button:first-child { border-radius: 4px 0 0 4px; }
+    .position-target-control button:last-child { border-radius: 0 4px 4px 0; }
     .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; }
     .position-plan h3 { margin: 0 0 4px; font-size: 14px; }
-    .position-plan-note { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
     .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 124px 124px 38px; gap: 7px; align-items: center; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
+    .position-plan-head span:nth-child(2), .position-plan-head span:nth-child(3) { text-align: right; padding-right: 7px; }
+    .position-plan-head span:last-child { text-align: center; }
     .position-plan-row { margin-bottom: 7px; }
     .position-plan-row span { font-size: 12px; font-weight: 700; }
-    .position-plan-row input { min-height: 32px; padding: 5px 7px; }
+    .position-plan-row input { min-height: 32px; padding: 5px 7px; text-align: right; }
+    .position-plan-row input::placeholder { font-size: 11px; }
     .position-plan-row input[type="checkbox"] { width: 18px; min-height: 18px; margin: 0 auto; accent-color: var(--brand); }
+    .position-plan-readonly { border: 1px solid var(--line); border-radius: 5px; padding: 10px 11px 4px; background: #f8fafc; }
+    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px minmax(80px, 1fr) minmax(70px, .8fr) 38px; }
+    .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-row.plan-sell span { color: #b42318; }
     .position-plan-row.plan-buy span { color: #067647; }
     .nav-chart { width: 100%; height: 300px; display: block; background: #fff; }
@@ -3144,8 +3150,7 @@
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
           <div class="grid-2 position-edit-fields"><label class="field"><span>摊薄成本（HKD）</span><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required></label><label class="field"><span>持股数</span><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required></label></div>
-          <label class="field"><span>目标仓位</span><div class="position-target-control"><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
-          <div class="muted">直接校准持仓数据，不影响现金余额。</div>
+          <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div></label>
         </div>
         ${renderPositionTradePlan(position)}
       </div>`, "positionTrade", "保存", "position-edit-modal");
@@ -3157,6 +3162,7 @@
       const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
       const suggestionBlock = suggestion ? `<div class="trade-suggestion"><strong>目标仓位建议</strong><br>当前 ${suggestion.currentWeight.toFixed(2)}% · 目标 ${suggestion.targetWeight.toFixed(2)}% · 差额 ${suggestion.gapPercent > 0 ? "+" : ""}${suggestion.gapPercent.toFixed(2)}%<br>${suggestion.targetWeight <= 0 ? "尚未设置有效目标仓位，请先在“编辑”中设置。" : suggestion.action === "hold" ? "当前已接近目标仓位，暂不建议交易。" : `建议${suggestion.action === "add" ? "买入" : "卖出"}约 <strong>${suggestion.fullShares.toLocaleString("zh-CN")} 股</strong>到达目标；按四档网格分批，本次建议 <strong>${suggestion.gridShares.toLocaleString("zh-CN")} 股</strong>。`}</div>` : "";
       return modalShell(title, `${stockBlock}
+        ${!isOpen ? renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy") : ""}
         ${suggestionBlock}
         <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格（${currency || "原币"}）</span><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><input name="shares" type="number" min="1" step="1" value="${suggestedShares || ""}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}></label></div>
         ${stockConnectNote}
@@ -3191,7 +3197,14 @@
         <input name="plan_${side}_${index}_shares" type="number" min="0" step="1" value="${row.shares}" placeholder="股数" aria-label="${label}${index + 1}股数">
         <input name="plan_${side}_${index}_done" type="checkbox" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成">
       </div>`).join("");
-      return `<section class="position-plan"><h3>加减仓计划</h3><div class="position-plan-note">预设价格与股数，执行后勾选完成。</div><div class="position-plan-head"><span>档位</span><span>价格</span><span>股数</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
+      return `<section class="position-plan"><h3>加减仓计划</h3><div class="position-plan-head"><span>计划</span><span>价格</span><span>股数</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
+    }
+
+    function renderPositionTradePlanReadonly(position, side) {
+      const plan = normalizedPositionTradePlan(position)[side];
+      const label = side === "buy" ? "买点" : "卖点";
+      const rows = plan.map((row, index) => `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price || "--"}</div><div class="position-plan-value">${row.shares || "--"}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`).join("");
+      return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>股数</span><span>完成</span></div>${rows}</section>`;
     }
 
     function renderSquare() {
@@ -4126,8 +4139,11 @@
       if (cashFlowForm) cashFlowForm.addEventListener("submit", submitPortfolioCashFlow);
       const tradeForm = document.querySelector("[data-form='positionTrade']");
       if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
-      document.querySelectorAll("[data-target-weight-value]").forEach((button) => {
-        button.addEventListener("click", () => setPositionTargetWeight(Number(button.dataset.targetWeightValue)));
+      document.querySelectorAll("[data-target-weight-step]").forEach((button) => {
+        button.addEventListener("click", () => stepPositionTargetWeight(Number(button.dataset.targetWeightStep)));
+      });
+      document.querySelectorAll("[data-plan-live-done]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => updatePositionPlanDone(checkbox.dataset.positionId, checkbox.dataset.planSide, Number(checkbox.dataset.planIndex), checkbox.checked));
       });
       const targetWeightInput = document.querySelector('input[name="targetWeight"]');
       if (targetWeightInput) targetWeightInput.addEventListener("blur", () => {
@@ -4557,11 +4573,32 @@
       render();
     }
 
-    function setPositionTargetWeight(value) {
+    function stepPositionTargetWeight(direction) {
       const input = document.querySelector('input[name="targetWeight"]');
       if (!input) return;
-      input.value = formatPositionTargetWeight(value);
+      const tiers = [2, 3, 5, 8, 15, 25, 35];
+      const current = parsePositionTargetWeight(input.value);
+      const next = direction > 0
+        ? (tiers.find((value) => value > current + 0.000001) ?? tiers.at(-1))
+        : ([...tiers].reverse().find((value) => value < current - 0.000001) ?? tiers[0]);
+      input.value = formatPositionTargetWeight(next);
       input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function updatePositionPlanDone(positionId, side, index, done) {
+      if (!positionId || !["buy", "sell"].includes(side) || !Number.isInteger(index) || index < 0 || index > 2) return;
+      updateActivePortfolio((portfolio) => ({
+        ...portfolio,
+        positions: portfolio.positions.map((position) => {
+          if (position.id !== positionId) return position;
+          const tradePlan = normalizedPositionTradePlan(position);
+          tradePlan[side][index] = { ...tradePlan[side][index], done };
+          return { ...position, tradePlan };
+        }),
+        updatedAt: new Date().toISOString()
+      }));
+      const updated = activePortfolio()?.positions?.find((position) => position.id === positionId);
+      if (updated && state.portfolioModal?.position?.id === positionId) state.portfolioModal.position = updated;
     }
 
     function positionTradeSuggestion(position, portfolio, requestedType) {
