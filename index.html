@@ -2279,47 +2279,57 @@
         .slice(0, 6);
     }
 
+    function stockQuoteId(stock) {
+      if (stock.quoteId) return stock.quoteId;
+      const raw = String(stock.rawCode || stock.code || "").replace(/\.(HK|SH|SZ)$/i, "");
+      if (stock.market === "HK" && raw) return `116.${raw.padStart(5, "0")}`;
+      if (stock.market === "CN" && raw) return `${raw.startsWith("6") ? "1" : "0"}.${raw}`;
+      return "";
+    }
+
     async function fetchQuote(stock) {
-      if (!stock.quoteId) return stock;
-      try {
-        return await fetchTencentQuote(stock);
-      } catch (error) {
-        console.warn("腾讯行情接口不可用，尝试东方财富备用行情。", error);
-      }
+      const quoteId = stockQuoteId(stock);
       const fields = "f43,f57,f58,f60,f116,f170";
-      const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${encodeURIComponent(stock.quoteId)}&fields=${fields}`;
-      try {
-        const json = await jsonp(url);
-        const data = json?.data;
-        const marketCap = Number(data?.f116);
-        if (!marketCap || Number.isNaN(marketCap)) throw new Error("行情接口没有返回总市值");
-        const sourceCurrency = marketCurrency(stock.market);
-        const marketCapCny = marketCap * (currencies[sourceCurrency]?.rateToCny || 1) / 100000000;
-        const latestPrice = Number(data?.f43) / 1000 || Number(stock.latestPrice) || 0;
-        const previousClose = Number(data?.f60) / 1000 || 0;
-        const changePercent = data?.f170 !== null && data?.f170 !== undefined && Number.isFinite(Number(data.f170))
-          ? Number(data.f170) / 100
-          : previousClose ? (latestPrice / previousClose - 1) * 100 : null;
-        return {
-          ...stock,
-          name: data.f58 || stock.name,
-          rawCode: data.f57 || stock.rawCode,
-          latestPrice,
-          previousClose,
-          changePercent,
-          latestMarketCapCny: marketCapCny,
-          marketCapSourceCurrency: sourceCurrency,
-          marketCapUpdatedAt: todayString()
-        };
-      } catch (error) {
-        console.warn("行情接口不可用，使用备用市值。", error);
-        return {
-          ...stock,
-          latestMarketCapCny: Number(stock.latestMarketCapCny) || stock.marketCapCny || 0,
-          marketCapSourceCurrency: stock.currency || marketCurrency(stock.market),
-          marketCapUpdatedAt: stock.marketCapUpdatedAt || stock.updatedAt || todayString()
-        };
+      if (quoteId) {
+        const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${encodeURIComponent(quoteId)}&fields=${fields}`;
+        try {
+          const json = await jsonp(url);
+          const data = json?.data;
+          const latestPrice = Number(data?.f43) / 1000;
+          if (!latestPrice || !Number.isFinite(latestPrice)) throw new Error("行情接口没有返回最新价");
+          const marketCap = Number(data?.f116);
+          const sourceCurrency = marketCurrency(stock.market);
+          const latestMarketCapCny = marketCap > 0
+            ? marketCap * (currencies[sourceCurrency]?.rateToCny || 1) / 100000000
+            : Number(stock.latestMarketCapCny) || stock.marketCapCny || 0;
+          const previousClose = Number(data?.f60) / 1000 || 0;
+          const changePercent = data?.f170 !== null && data?.f170 !== undefined && Number.isFinite(Number(data.f170))
+            ? Number(data.f170) / 100
+            : previousClose ? (latestPrice / previousClose - 1) * 100 : null;
+          return {
+            ...stock,
+            quoteId,
+            name: data.f58 || stock.name,
+            rawCode: data.f57 || stock.rawCode,
+            latestPrice,
+            previousClose,
+            changePercent,
+            latestMarketCapCny,
+            marketCapSourceCurrency: sourceCurrency,
+            marketCapUpdatedAt: todayString()
+          };
+        } catch (error) {
+          console.warn("东方财富行情接口不可用，尝试腾讯备用行情。", error);
+        }
       }
+      try { return await fetchTencentQuote(stock); }
+      catch (error) { console.warn("腾讯行情接口不可用，保留最近行情。", error); }
+      return {
+        ...stock,
+        latestMarketCapCny: Number(stock.latestMarketCapCny) || stock.marketCapCny || 0,
+        marketCapSourceCurrency: stock.currency || marketCurrency(stock.market),
+        marketCapUpdatedAt: stock.marketCapUpdatedAt || stock.updatedAt || todayString()
+      };
     }
 
     function stripRuntimeMarketCapFields(stock) {
@@ -2407,7 +2417,7 @@
       if (!symbol) throw new Error("无法识别腾讯行情代码");
       const variableName = `v_${symbol}`;
       delete window[variableName];
-      await loadScript(`https://qt.gtimg.cn/q=${symbol}`);
+      await loadScript(`https://qt.gtimg.cn/q=${symbol}&_=${Date.now()}`);
       const text = window[variableName];
       delete window[variableName];
       if (!text) throw new Error("腾讯行情没有返回数据");
@@ -4441,6 +4451,8 @@
           ...item,
           positions: item.positions.map((position, index) => updates[index]?.latestPrice ? {
             ...position,
+            quoteId: updates[index].quoteId || position.quoteId || stockQuoteId(position),
+            rawCode: updates[index].rawCode || position.rawCode,
             latestPrice: updates[index].latestPrice,
             previousClose: updates[index].previousClose,
             changePercent: updates[index].changePercent,
