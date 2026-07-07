@@ -1593,7 +1593,10 @@
     .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
     .trade-suggestion strong { color: var(--brand-strong); }
     .simple-modal.position-edit-modal { width: min(840px, 100%); }
+    .simple-modal.position-trade-modal { width: min(760px, 100%); }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
+    .position-trade-main { display: grid; gap: 14px; min-width: 0; }
     .position-edit-main { display: grid; gap: 14px; min-width: 0; }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
     .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
@@ -1613,7 +1616,7 @@
     .position-plan-row .input-with-suffix .input-suffix { right: 5px; font-size: 9px; }
     .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; }
     .position-plan h3 { margin: 0 0 4px; font-size: 14px; }
-    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 124px 124px 38px; gap: 7px; align-items: center; }
+    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 100px 100px 38px; gap: 7px; align-items: center; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
     .position-plan-head span:nth-child(2), .position-plan-head span:nth-child(3) { text-align: right; padding-right: 7px; }
     .position-plan-head span:last-child { text-align: center; }
@@ -1621,9 +1624,11 @@
     .position-plan-row span { font-size: 12px; font-weight: 700; }
     .position-plan-row input { min-height: 32px; padding: 5px 7px; text-align: right; }
     .position-plan-row input::placeholder { font-size: 11px; }
+    .position-plan-row input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    .position-plan-row input[type="number"]::-webkit-inner-spin-button, .position-plan-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .position-plan-row input[type="checkbox"] { width: 18px; min-height: 18px; margin: 0 auto; accent-color: var(--brand); }
     .position-plan-readonly { border: 1px solid var(--line); border-radius: 5px; padding: 10px 11px 4px; background: #f8fafc; }
-    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px minmax(80px, 1fr) minmax(70px, .8fr) 38px; }
+    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px 100px 100px 38px; }
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-row.plan-sell > span { color: #067647; }
     .position-plan-row.plan-buy > span { color: #b42318; }
@@ -1711,6 +1716,7 @@
       .portfolio-summary { grid-template-columns: 1fr 1fr; }
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
       .position-edit-layout { grid-template-columns: 1fr; }
+      .position-trade-layout { grid-template-columns: 1fr; }
       .position-edit-fields { grid-template-columns: repeat(2, minmax(0, 124px)); }
       .position-plan { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; }
       .portfolio-switcher select, .portfolio-head button { width: 100%; }
@@ -3170,13 +3176,10 @@
       const suggestion = !isOpen ? positionTradeSuggestion(position, portfolio, modal.type) : null;
       const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
       const suggestionBlock = suggestion ? `<div class="trade-suggestion"><strong>目标仓位建议</strong><br>当前 ${suggestion.currentWeight.toFixed(2)}% · 目标 ${suggestion.targetWeight.toFixed(2)}% · 差额 ${suggestion.gapPercent > 0 ? "+" : ""}${suggestion.gapPercent.toFixed(2)}%<br>${suggestion.targetWeight <= 0 ? "尚未设置有效目标仓位，请先在“编辑”中设置。" : suggestion.action === "hold" ? "当前已接近目标仓位，暂不建议交易。" : `建议${suggestion.action === "add" ? "买入" : "卖出"}约 <strong>${suggestion.fullShares.toLocaleString("zh-CN")} 股</strong>到达目标；按四档网格分批，本次建议 <strong>${suggestion.gridShares.toLocaleString("zh-CN")} 股</strong>。`}</div>` : "";
-      return modalShell(title, `${stockBlock}
-        ${!isOpen ? renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy") : ""}
-        ${suggestionBlock}
-        <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${suggestedShares || ""}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>
-        ${stockConnectNote}
-        ${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
-      `, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入");
+      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${suggestedShares || ""}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>`;
+      const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
+      const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
+      return modalShell(title, body, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
     }
 
     function normalizedPositionTradePlan(position) {
