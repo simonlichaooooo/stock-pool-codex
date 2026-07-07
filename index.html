@@ -1525,6 +1525,8 @@
     .portfolio-metric-label { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 3px; }
     .portfolio-metric-value { font-size: 19px; line-height: 1.1; font-weight: 760; font-variant-numeric: tabular-nums; }
     .portfolio-metric-sub { color: var(--muted); font-size: 10.5px; margin-top: 3px; line-height: 1.25; }
+    .portfolio-benchmarks { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); }
+    .portfolio-benchmark { white-space: nowrap; }
     .portfolio-cash-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .portfolio-cash-head .portfolio-metric-label { margin-bottom: 0; }
     .portfolio-cash-head button { min-height: 20px; padding: 0 6px; font-size: 10.5px; }
@@ -1587,6 +1589,8 @@
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
+    .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
+    .trade-suggestion strong { color: var(--brand-strong); }
     .nav-chart { width: 100%; height: 300px; display: block; background: #fff; }
     .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     @keyframes shimmer {
@@ -1778,6 +1782,7 @@
       portfolioPage: "positions",
       portfolioSort: { key: "value", dir: "desc" },
       portfolioQuotesUpdatedAt: "",
+      portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
       navRange: "3M",
       navYear: "",
@@ -2894,6 +2899,22 @@
       return `<span class="${className}">当日盈亏 ${formatPortfolioSummary(profitAmount, portfolio, { signed: true })} · 较昨日 ${sign}${delta.toFixed(4)}（${sign}${change.toFixed(2)}%）</span>`;
     }
 
+    const intradayBenchmarkCatalog = {
+      CNY: [{ code: "CSI300", label: "沪深300", symbol: "sh000300" }, { code: "SSE", label: "上证指数", symbol: "sh000001" }],
+      HKUS: [{ code: "HSI", label: "恒生指数", symbol: "hkHSI" }, { code: "SP500", label: "标普500", symbol: "usINX" }]
+    };
+
+    function renderIntradayBenchmarks(portfolio) {
+      const rows = intradayBenchmarkCatalog[portfolio.accountType] || [];
+      return `<div class="portfolio-benchmarks">${rows.map((item) => {
+        const quote = state.portfolioBenchmarks[item.code];
+        const change = Number(quote?.changePercent);
+        const available = Number.isFinite(change);
+        const className = available ? (change > 0 ? "gain" : change < 0 ? "loss" : "muted") : "muted";
+        return `<span class="portfolio-benchmark ${className}">${item.label} ${available ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</span>`;
+      }).join("")}</div>`;
+    }
+
     function renderPortfolioView() {
       const portfolio = activePortfolio();
       if (!portfolio) {
@@ -2911,7 +2932,7 @@
             <div class="portfolio-tabs" role="tablist" aria-label="选择组合">
               ${state.portfolios.map((item) => `<button role="tab" aria-selected="${item.id === portfolio.id}" class="${item.id === portfolio.id ? "active" : ""}" data-action="selectPortfolio" data-id="${item.id}">${escapeHtml(item.name)}</button>`).join("")}
             </div>
-            <span class="badge">${isHkus ? "港美账户 · 美元基准" : "人民币账户"}</span>
+            <span class="badge">${isHkus ? "港美账户" : "人民币账户"}</span>
             <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
             <button class="danger" data-action="deletePortfolio">删除组合</button>
@@ -2926,7 +2947,7 @@
             <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
             <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
-          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}</div></div>
+          <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
         </section>
         <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
@@ -2988,7 +3009,7 @@
             </button>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本<br><span class="stock-code">原币/股</span></th><th>当日股价<br><span class="stock-code">原币/股</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th>市值<br><span class="stock-code">${base === "USD" ? "美元" : "人民币万元"}</span></th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
@@ -3011,6 +3032,7 @@
               <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
+              <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="操作"><div class="actions"><button data-action="positionHistory" data-id="${position.id}">历史</button><button data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减持</button></div></td>
             </tr>`;
           }).join("")}</tbody>
@@ -3097,14 +3119,19 @@
       const currency = modal.stock?.currency || position?.currency || "";
       if (modal.type === "edit") return modalShell("编辑持仓", `${stockBlock}
         <div class="grid-2"><label class="field"><span>摊薄成本（${currency}/股）</span><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required></label><label class="field"><span>持股数</span><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required></label></div>
+        <label class="field"><span>目标仓位（%）</span><input name="targetWeight" type="number" min="0" max="100" step="0.01" value="${Number(position.targetWeight) || 0}" required></label>
         <div class="muted">直接校准持仓数据，不影响现金余额。</div>
       `, "positionTrade", "保存");
       const stockMarket = modal.stock?.market || position?.market || "";
       const stockConnectNote = portfolio?.accountType === "CNY" && stockMarket === "HK"
         ? `<div class="muted">港股通按港币成交价录入，成交金额将按当前汇率折算为人民币现金。</div>`
         : "";
+      const suggestion = !isOpen ? positionTradeSuggestion(position, portfolio, modal.type) : null;
+      const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
+      const suggestionBlock = suggestion ? `<div class="trade-suggestion"><strong>目标仓位建议</strong><br>当前 ${suggestion.currentWeight.toFixed(2)}% · 目标 ${suggestion.targetWeight.toFixed(2)}% · 差额 ${suggestion.gapPercent > 0 ? "+" : ""}${suggestion.gapPercent.toFixed(2)}%<br>${suggestion.targetWeight <= 0 ? "尚未设置有效目标仓位，请先在“编辑”中设置。" : suggestion.action === "hold" ? "当前已接近目标仓位，暂不建议交易。" : `建议${suggestion.action === "add" ? "买入" : "卖出"}约 <strong>${suggestion.fullShares.toLocaleString("zh-CN")} 股</strong>到达目标；按四档网格分批，本次建议 <strong>${suggestion.gridShares.toLocaleString("zh-CN")} 股</strong>。`}</div>` : "";
       return modalShell(title, `${stockBlock}
-        <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格（${currency || "原币"}）</span><input name="price" type="number" min="0.000001" step="any" required></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><input name="shares" type="number" min="1" step="1" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}></label></div>
+        ${suggestionBlock}
+        <div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格（${currency || "原币"}）</span><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><input name="shares" type="number" min="1" step="1" value="${suggestedShares || ""}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}></label></div>
         ${stockConnectNote}
         ${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
       `, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入");
@@ -4396,9 +4423,13 @@
       const stock = modal.type === "open" ? modal.stock : modal.position;
       if (!stock) return showPortfolioError("请先选择股票。");
       if (modal.type === "edit") {
+        const targetWeight = Number(form.get("targetWeight"));
+        if (!Number.isFinite(targetWeight) || targetWeight < 0 || targetWeight > 100) return showPortfolioError("目标仓位请输入 0 到 100 之间的百分比。");
+        const otherTargets = portfolio.positions.reduce((sum, position) => position.id === stock.id ? sum : sum + (Number(position.targetWeight) || 0), 0);
+        if (otherTargets + targetWeight > 100.000001) return showPortfolioError(`全部持仓的目标仓位合计不能超过 100%（当前将达到 ${(otherTargets + targetWeight).toFixed(2)}%）。`);
         updateActivePortfolio((item) => ({
           ...item,
-          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price } : position),
+          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price, targetWeight } : position),
           updatedAt: new Date().toISOString()
         }));
         closePortfolioModal();
@@ -4453,16 +4484,34 @@
       render();
     }
 
+    function positionTradeSuggestion(position, portfolio, requestedType) {
+      const metrics = portfolioMetrics(portfolio);
+      const targetWeight = Number(position.targetWeight) || 0;
+      const currentValue = positionBaseValue(position, portfolio);
+      const currentWeight = metrics.netBase > 0 ? currentValue / metrics.netBase * 100 : 0;
+      const gapBase = metrics.netBase * targetWeight / 100 - currentValue;
+      const price = Number(position.latestPrice) || Number(position.averageCost) || 0;
+      const basePerShare = price * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+      const lotSize = position.market === "CN" && requestedType === "add" ? 100 : 1;
+      const roundLot = (value) => Math.floor(Math.max(0, value) / lotSize) * lotSize;
+      const maxShares = requestedType === "reduce" ? Number(position.shares) : Infinity;
+      const fullShares = basePerShare > 0 ? Math.min(maxShares, roundLot(Math.abs(gapBase) / basePerShare)) : 0;
+      const gridShares = Math.min(maxShares, roundLot(Math.max(lotSize, fullShares / 4)));
+      const toleranceBase = metrics.netBase * 0.0025;
+      const action = !targetWeight || !basePerShare || Math.abs(gapBase) <= toleranceBase || !fullShares ? "hold" : gapBase > 0 ? "add" : "reduce";
+      return { targetWeight, currentWeight, gapPercent: targetWeight - currentWeight, fullShares, gridShares: action === "hold" ? 0 : gridShares, action };
+    }
+
     async function refreshPortfolioQuotes({ renderAfter = true } = {}) {
       const portfolio = activePortfolio();
-      if (portfolioQuoteRefreshInFlight || !portfolio?.positions?.length) return;
+      if (portfolioQuoteRefreshInFlight || !portfolio) return;
       portfolioQuoteRefreshInFlight = true;
       if (renderAfter) render();
       try {
-        const updates = await Promise.all(portfolio.positions.map(async (position) => {
+        const [updates] = await Promise.all([Promise.all(portfolio.positions.map(async (position) => {
           try { return await fetchQuote(position); }
           catch { return null; }
-        }));
+        })), refreshIntradayBenchmarks(portfolio)]);
         state.portfolios = state.portfolios.map((item) => item.id === portfolio.id ? {
           ...item,
           positions: item.positions.map((position, index) => updates[index]?.latestPrice ? {
@@ -4481,6 +4530,27 @@
         portfolioQuoteRefreshInFlight = false;
         if (renderAfter) render();
       }
+    }
+
+    async function fetchIntradayBenchmark(item) {
+      const variableName = `v_${item.symbol}`;
+      delete window[variableName];
+      await loadScript(`https://qt.gtimg.cn/q=${item.symbol}&_=${Date.now()}`);
+      const text = window[variableName];
+      delete window[variableName];
+      const parts = text ? text.split("~") : [];
+      const latest = Number(parts[3]);
+      const previousClose = Number(parts[4]);
+      const quotedChange = Number(parts[32]);
+      if (!latest || !previousClose) throw new Error(`${item.label}行情不可用`);
+      return { code: item.code, latest, changePercent: Number.isFinite(quotedChange) ? quotedChange : (latest / previousClose - 1) * 100 };
+    }
+
+    async function refreshIntradayBenchmarks(portfolio) {
+      const rows = await Promise.all((intradayBenchmarkCatalog[portfolio.accountType] || []).map(async (item) => {
+        try { return await fetchIntradayBenchmark(item); } catch (error) { console.warn(error); return null; }
+      }));
+      rows.filter(Boolean).forEach((row) => { state.portfolioBenchmarks[row.code] = row; });
     }
 
     function startPortfolioQuoteAutoRefresh() {
