@@ -1130,6 +1130,8 @@
     td.kpi.plain-kpi.gain,
     td.kpi.plain-kpi.loss { font-weight: 400; }
     td.num { color: #243145; }
+    .portfolio-table td.num.gain { color: var(--gain); }
+    .portfolio-table td.num.loss { color: var(--loss); }
     tbody tr:hover { background: #f7fbfa; }
     .stock-name { font-weight: 780; color: #111827; }
     .table-panel tbody td,
@@ -2344,6 +2346,10 @@
       return "";
     }
 
+    function quotePriceScale(stock) {
+      return stock.market === "CN" ? 100 : 1000;
+    }
+
     async function fetchQuote(stock) {
       let triedTencent = false;
       if (stock.market === "HK") {
@@ -2358,14 +2364,15 @@
         try {
           const json = await jsonp(url);
           const data = json?.data;
-          const latestPrice = Number(data?.f43) / 1000;
+          const priceScale = quotePriceScale(stock);
+          const latestPrice = Number(data?.f43) / priceScale;
           if (!latestPrice || !Number.isFinite(latestPrice)) throw new Error("行情接口没有返回最新价");
           const marketCap = Number(data?.f116);
           const sourceCurrency = marketCurrency(stock.market);
           const latestMarketCapCny = marketCap > 0
             ? marketCap * (currencies[sourceCurrency]?.rateToCny || 1) / 100000000
             : Number(stock.latestMarketCapCny) || stock.marketCapCny || 0;
-          const previousClose = Number(data?.f60) / 1000 || 0;
+          const previousClose = Number(data?.f60) / priceScale || 0;
           const changePercent = data?.f170 !== null && data?.f170 !== undefined && Number.isFinite(Number(data.f170))
             ? Number(data.f170) / 100
             : previousClose ? (latestPrice / previousClose - 1) * 100 : null;
