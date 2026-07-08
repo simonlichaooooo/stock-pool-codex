@@ -2886,6 +2886,8 @@
         : Number(cash.CNY || 0);
       const netBase = positionBase + cashBase;
       const baseToCny = currencies[base]?.rateToCny || 1;
+      const totalUnits = Number(portfolio.totalUnits || portfolio.startBase || 0);
+      const assetNav = totalUnits ? netBase / totalUnits : 0;
       return {
         positionBase,
         cashBase,
@@ -2893,7 +2895,7 @@
         positionCny: positionBase * baseToCny,
         cashCny: cashBase * baseToCny,
         netCny: netBase * baseToCny,
-        nav: Number(portfolio.totalUnits || portfolio.startBase || 0) ? netBase / Number(portfolio.totalUnits || portfolio.startBase) : 0
+        nav: intradayPortfolioNav(portfolio, assetNav)
       };
     }
 
@@ -2921,6 +2923,11 @@
       return `${symbols[currency] || ""}${Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
+    function formatPortfolioMoneyTrailing(value, currency) {
+      const symbols = { CNY: "¥", HKD: "HK$", USD: "$" };
+      return `${Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbols[currency] || currency || ""}`.trim();
+    }
+
     function portfolioPrivate(value) {
       return state.portfolioPrivacyMode ? "****" : value;
     }
@@ -2938,6 +2945,23 @@
         .filter((item) => item.nav_date && item.nav_date < today && Number(item.unit_nav) > 0)
         .sort((a, b) => b.nav_date.localeCompare(a.nav_date))[0];
       return row ? Number(row.unit_nav) : null;
+    }
+
+    function intradayPortfolioNav(portfolio, fallbackNav) {
+      const previousNav = previousPortfolioNav();
+      const totalUnits = Number(portfolio?.totalUnits || portfolio?.startBase || 0);
+      if (!(previousNav > 0) || !(totalUnits > 0)) return fallbackNav;
+      const base = portfolioBaseCurrency(portfolio);
+      let dailyProfit = 0;
+      for (const position of portfolio.positions || []) {
+        const shares = Number(position.shares || 0);
+        if (!shares) continue;
+        const latestPrice = Number(position.latestPrice);
+        const previousClose = Number(position.previousClose);
+        if (!(latestPrice > 0) || !(previousClose > 0)) continue;
+        dailyProfit += (latestPrice - previousClose) * shares * portfolioFx(position.currency, base);
+      }
+      return previousNav + dailyProfit / totalUnits;
     }
 
     function renderPortfolioNavChange(currentNav, portfolio) {
@@ -3062,7 +3086,7 @@
             </button>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th>股票</th><th>股数</th><th>摊薄成本</th><th>实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th>当日盈亏</th><th>持仓盈亏</th><th>市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
+          <thead><tr><th>股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
@@ -3092,12 +3116,12 @@
             return `<tr>
               <td data-label="股票"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div></td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
-              <td data-label="摊薄成本">${portfolioPrivate(formatPortfolioMoney(position.averageCost, position.currency))}</td>
-              <td data-label="实时股价">${position.latestPrice ? formatPortfolioMoney(position.latestPrice, position.currency) : "--"}</td>
+              <td data-label="摊薄成本" class="num">${portfolioPrivate(formatPortfolioMoneyTrailing(position.averageCost, position.currency))}</td>
+              <td data-label="实时股价" class="num">${position.latestPrice ? formatPortfolioMoneyTrailing(position.latestPrice, position.currency) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
-              <td data-label="当日盈亏" class="${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
-              <td data-label="持仓盈亏" class="${holdingProfitClass}">${holdingProfitCell}</td>
-              <td data-label="市值">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
+              <td data-label="当日盈亏" class="num ${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
+              <td data-label="持仓盈亏" class="num ${holdingProfitClass}">${holdingProfitCell}</td>
+              <td data-label="市值" class="num">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
