@@ -2895,7 +2895,7 @@
         positionCny: positionBase * baseToCny,
         cashCny: cashBase * baseToCny,
         netCny: netBase * baseToCny,
-        nav: intradayPortfolioNav(portfolio, assetNav)
+        nav: assetNav
       };
     }
 
@@ -2947,30 +2947,31 @@
       return row ? Number(row.unit_nav) : null;
     }
 
-    function intradayPortfolioNav(portfolio, fallbackNav) {
-      const previousNav = previousPortfolioNav();
-      const totalUnits = Number(portfolio?.totalUnits || portfolio?.startBase || 0);
-      if (!(previousNav > 0) || !(totalUnits > 0)) return fallbackNav;
+    function portfolioDailyProfit(portfolio) {
       const base = portfolioBaseCurrency(portfolio);
       let dailyProfit = 0;
+      let quotedPositions = 0;
       for (const position of portfolio.positions || []) {
         const shares = Number(position.shares || 0);
         if (!shares) continue;
         const latestPrice = Number(position.latestPrice);
         const previousClose = Number(position.previousClose);
         if (!(latestPrice > 0) || !(previousClose > 0)) continue;
+        quotedPositions += 1;
         dailyProfit += (latestPrice - previousClose) * shares * portfolioFx(position.currency, base);
       }
-      return previousNav + dailyProfit / totalUnits;
+      return { amount: dailyProfit, quotedPositions };
     }
 
     function renderPortfolioNavChange(currentNav, portfolio) {
       if (state.portfolioPrivacyMode) return `<span class="muted">当日盈亏 **** · 较昨日 ****</span>`;
-      const previousNav = previousPortfolioNav();
-      if (!previousNav) return `<span class="muted">当日盈亏 -- · 较昨日 --</span>`;
-      const delta = Number(currentNav) - previousNav;
-      const change = delta / previousNav * 100;
-      const profitAmount = delta * Number(portfolio.totalUnits || portfolio.startBase || 0);
+      const totalUnits = Number(portfolio.totalUnits || portfolio.startBase || 0);
+      const { amount: profitAmount, quotedPositions } = portfolioDailyProfit(portfolio);
+      const hasPositions = (portfolio.positions || []).some((position) => Number(position.shares || 0) > 0);
+      if (!(totalUnits > 0) || (hasPositions && !quotedPositions)) return `<span class="muted">当日盈亏 -- · 较昨日 --</span>`;
+      const delta = profitAmount / totalUnits;
+      const previousNav = Number(currentNav) - delta;
+      const change = previousNav > 0 ? delta / previousNav * 100 : 0;
       const sign = delta > 0 ? "+" : "";
       const className = delta > 0 ? "gain" : delta < 0 ? "loss" : "muted";
       return `<span class="${className}">当日盈亏 ${formatPortfolioSummary(profitAmount, portfolio, { signed: true })} · 较昨日 ${sign}${delta.toFixed(4)}（${sign}${change.toFixed(2)}%）</span>`;
