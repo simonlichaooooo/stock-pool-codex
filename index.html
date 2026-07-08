@@ -1560,6 +1560,11 @@
     .portfolio-table .trade-history { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
     .portfolio-table .trade-history:hover { border-color: #ab8bd0; background: #f0e9f8; }
     .portfolio-holding-profit-rate { margin-top: 2px; font-size: 10.5px; opacity: .82; }
+    .portfolio-nav-history { margin-top: 12px; }
+    .portfolio-nav-history table { min-width: 640px; }
+    .portfolio-nav-history-title { padding: 12px 14px 4px; font-size: 14px; font-weight: 700; color: #243145; }
+    .portfolio-nav-history td.num.gain { color: var(--gain); }
+    .portfolio-nav-history td.num.loss { color: var(--loss); }
     .portfolio-sort-indicator { margin-left: 4px; color: var(--brand); font-size: 11px; }
     .portfolio-empty {
       padding: 56px 20px;
@@ -3064,11 +3069,30 @@
       return `<div class="muted" style="margin-bottom:8px">绿色：组合${firstBm ? `　蓝色：${state.benchmarkCode}` : ""}</div><svg class="nav-chart" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="${makePath(values)}" fill="none" stroke="#0f5f55" stroke-width="3" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#2f5f98" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}</svg>`;
     }
 
+    function renderPortfolioNavHistory(rows, portfolio) {
+      if (!rows.length) return `<section class="table-panel portfolio-nav-history"><div class="empty">暂无净值明细。</div></section>`;
+      const allRows = [...state.navHistory].sort((a, b) => a.nav_date.localeCompare(b.nav_date));
+      const previousByDate = new Map(allRows.map((row, index) => [row.nav_date, index ? allRows[index - 1] : null]));
+      const body = [...rows].reverse().map((row) => {
+        const nav = Number(row.unit_nav);
+        const previousNav = Number(previousByDate.get(row.nav_date)?.unit_nav);
+        const hasChange = nav > 0 && previousNav > 0;
+        const navChange = hasChange ? nav / previousNav - 1 : NaN;
+        const totalUnits = Number(row.total_units) || (nav > 0 ? Number(row.total_assets) / nav : 0);
+        const profitAmount = hasChange && totalUnits > 0 ? (nav - previousNav) * totalUnits : NaN;
+        const className = hasChange ? (navChange > 0 ? "gain" : navChange < 0 ? "loss" : "muted") : "muted";
+        const changeText = hasChange ? `${navChange > 0 ? "+" : ""}${(navChange * 100).toFixed(2)}%` : "--";
+        const profitText = Number.isFinite(profitAmount) ? formatPortfolioSummary(profitAmount, portfolio, { signed: true }) : "--";
+        return `<tr><td>${escapeHtml(row.nav_date)}</td><td class="num">${nav > 0 ? nav.toFixed(4) : "--"}</td><td class="num ${className}">${changeText}</td><td class="num ${className}">${portfolioPrivate(profitText)}</td></tr>`;
+      }).join("");
+      return `<section class="table-panel portfolio-nav-history"><div class="portfolio-nav-history-title">净值明细</div><div class="table-scroll"><table><thead><tr><th>日期</th><th class="num">净值</th><th class="num">当日净值涨跌幅</th><th class="num">当日盈亏金额</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    }
+
     function renderPortfolioPerformance(portfolio) {
       const rows = filteredNavHistory(), stats = performanceStats(rows); const years = [...new Set(state.navHistory.map((row)=>row.nav_date.slice(0,4)))].sort().reverse();
       const benchmarks = portfolio.accountType === "HKUS" ? [["HSI","恒生指数"],["HSTECH","恒生科技"],["SP500","标普500"],["NDX100","纳斯达克100"]] : [["CSI300","沪深300"]];
       if (!state.benchmarkCode || !benchmarks.some(([code])=>code===state.benchmarkCode)) state.benchmarkCode = benchmarks[0][0];
-      return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>`;
+      return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>${renderPortfolioNavHistory(rows, portfolio)}`;
     }
 
     function renderPortfolioTable(portfolio, metrics) {
