@@ -1539,6 +1539,21 @@
     .portfolio-view-tabs { margin-bottom: 8px; }
     .portfolio-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
     .portfolio-actions .segmented { flex: 0 0 auto; }
+    .portfolio-action-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .portfolio-action-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    button.portfolio-action-open {
+      background: linear-gradient(180deg, #10786b, var(--brand));
+      border-color: #0a6258;
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(11, 107, 95, 0.16), inset 0 1px 0 rgba(255,255,255,.14);
+    }
+    button.portfolio-action-open:hover { background: linear-gradient(180deg, #0c6a5f, var(--brand-strong)); border-color: var(--brand-strong); }
+    button.portfolio-action-rebalance { color: #245a8d; border-color: #b8cee4; background: #f0f7ff; }
+    button.portfolio-action-rebalance:hover { color: #184975; border-color: #7da8d1; background: #e3f0fc; }
+    button.portfolio-action-summary { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
+    button.portfolio-action-summary:hover { color: #53308d; border-color: #ab8bd0; background: #f0e9f8; }
+    button.portfolio-action-more { color: #8a4b16; border-color: #e3c39b; background: #fff7ed; }
+    button.portfolio-action-more:hover { color: #78350f; border-color: #d69a55; background: #ffedd5; }
     .portfolio-summary-toggle { display: inline-flex; align-items: center; gap: 6px; }
     .portfolio-summary-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-head .portfolio-view-tabs { margin-bottom: 0; }
@@ -1571,6 +1586,43 @@
     .portfolio-menu:hover .portfolio-menu-panel,
     .portfolio-menu:focus-within .portfolio-menu-panel { display: grid; gap: 5px; }
     .portfolio-menu-panel button { width: 100%; justify-content: center; }
+    .portfolio-view-tabs {
+      padding: 3px;
+      gap: 3px;
+      border-radius: 7px;
+      background: #edf3f1;
+    }
+    .portfolio-view-tabs button {
+      min-width: 54px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+    }
+    .portfolio-view-tabs button.active {
+      background: #fff;
+      border-color: rgba(11, 107, 95, .28);
+      box-shadow: 0 2px 7px rgba(18, 25, 38, .10);
+      color: var(--brand-strong);
+    }
+    .portfolio-delete-warning {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid #f3b6ad;
+      border-radius: 6px;
+      background: #fff3f0;
+      color: #7a271a;
+      line-height: 1.5;
+    }
+    .portfolio-delete-warning strong { color: #912018; }
+    .simple-modal.portfolio-delete-modal .simple-modal-foot .primary {
+      background: linear-gradient(180deg, #c2410c, #9a3412);
+      border-color: #9a3412;
+      box-shadow: 0 6px 14px rgba(194, 65, 12, 0.16), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .simple-modal.portfolio-delete-modal .simple-modal-foot .primary:hover {
+      background: linear-gradient(180deg, #a63a0a, #7c2d12);
+      border-color: #7c2d12;
+    }
     .portfolio-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
     .portfolio-list-head-title { font-size: 13px; font-weight: 750; color: var(--text); }
     .portfolio-list-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -2229,6 +2281,7 @@
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
       .portfolio-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
       .portfolio-actions .segmented { width: 100%; }
+      .portfolio-actions .portfolio-view-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .portfolio-actions > button,
       .portfolio-menu { width: 100%; min-width: 0; }
       .portfolio-summary-toggle,
@@ -3467,6 +3520,17 @@
         : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-5.2 9-5.2 9 5.2 9 5.2-3.5 5.2-9 5.2S3 12 3 12z"/><circle cx="12" cy="12" r="2.4"/></svg>`;
     }
 
+    function portfolioActionIcon(name) {
+      const icons = {
+        open: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+        rebalance: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/><path d="M8 7h8"/><path d="M8 17h8"/></svg>`,
+        expand: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
+        collapse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`,
+        more: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>`
+      };
+      return icons[name] || "";
+    }
+
     function previousPortfolioNav() {
       if (state.navHistoryPortfolioId && state.navHistoryPortfolioId !== state.activePortfolioId) return null;
       const today = todayString();
@@ -3544,16 +3608,15 @@
             <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
           </div>
           <div class="portfolio-actions">
-            <button class="primary" data-action="openPosition">+ 开仓</button>
-            <button data-action="rebalancePortfolio">调仓助手</button>
-            <button class="secondary portfolio-summary-toggle" data-action="togglePortfolioSummary">
+            <button class="portfolio-action-btn portfolio-action-open" data-action="openPosition">${portfolioActionIcon("open")}<span>开仓</span></button>
+            <button class="portfolio-action-btn portfolio-action-rebalance" data-action="rebalancePortfolio">${portfolioActionIcon("rebalance")}<span>调仓</span></button>
+            <button class="portfolio-action-btn portfolio-action-summary portfolio-summary-toggle" data-action="togglePortfolioSummary">
               ${summaryExpanded
-                ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>收起组合卡片</span>`
-                : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span>展开组合卡片</span>`}
+                ? `${portfolioActionIcon("collapse")}<span>收起组合卡片</span>`
+                : `${portfolioActionIcon("expand")}<span>展开组合卡片</span>`}
             </button>
-            <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
             <div class="portfolio-menu">
-              <button type="button">更多操作</button>
+              <button type="button" class="portfolio-action-btn portfolio-action-more">${portfolioActionIcon("more")}<span>更多操作</span></button>
               <div class="portfolio-menu-panel">
                 <button type="button" data-action="createPortfolio">创建新组合</button>
                 <button type="button" class="danger" data-action="deletePortfolio">删除当前组合</button>
@@ -3561,6 +3624,7 @@
                 <button type="button" data-action="redeemPortfolio">赎回</button>
               </div>
             </div>
+            <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值</button></div>
           </div>
         </div>
         ${summaryExpanded ? `<section class="portfolio-summary">
@@ -3702,6 +3766,7 @@
       const modal = state.portfolioModal;
       if (!modal) return "";
       if (modal.type === "create") return renderCreatePortfolioModal();
+      if (modal.type === "delete") return renderDeletePortfolioModal(modal);
       if (modal.type === "cash") return renderCashModal(modal);
       if (modal.type === "subscription" || modal.type === "redemption") return renderCashFlowModal(modal);
       if (modal.type === "rebalance") return renderRebalanceModal(modal);
@@ -3741,6 +3806,19 @@
         <div data-account-fields="CNY"><label class="field"><span>人民币启动金额（万元）</span><input name="startCny" type="number" min="0" step="0.01" value="0" required></label></div>
         <div data-account-fields="HKUS" style="display:none"><div class="grid-2"><label class="field"><span>港币启动金额（万港币）</span><input name="startHkd" type="number" min="0" step="0.01" value="0"></label><label class="field"><span>美元启动金额（万美元）</span><input name="startUsd" type="number" min="0" step="0.01" value="0"></label></div></div>
       `, "createPortfolio", "创建");
+    }
+
+    function renderDeletePortfolioModal() {
+      const portfolio = activePortfolio();
+      const positionCount = portfolio?.positions?.length || 0;
+      const detail = positionCount ? `当前组合包含 ${positionCount} 只持仓，现金、持仓、交易流水和净值数据都会一并删除。` : "当前组合的现金、交易流水和净值数据都会一并删除。";
+      return modalShell("删除组合", `
+        <div class="portfolio-delete-warning">
+          <strong>这是不可逆操作。</strong>
+          <span>你将删除组合「${escapeHtml(portfolio?.name || "当前组合")}」。${escapeHtml(detail)}</span>
+        </div>
+        <label class="field"><span>请输入 0000 确认删除</span><input name="confirmCode" inputmode="numeric" pattern="0000" autocomplete="off" placeholder="0000" required></label>
+      `, "deletePortfolio", "确认删除", "portfolio-delete-modal");
     }
 
     function renderCashModal(modal) {
@@ -3833,7 +3911,7 @@
           ${renderRebalancePreview(modal, key, portfolio, metrics)}
         </section>`;
       };
-      return modalShell("调仓助手", `<div class="rebalance-grid">${side("sell", "卖出", "sell")}${side("buy", "买入", "buy")}</div>`, "rebalanceTrade", "确认调仓", "rebalance-modal");
+      return modalShell("调仓", `<div class="rebalance-grid">${side("sell", "卖出", "sell")}${side("buy", "买入", "buy")}</div>`, "rebalanceTrade", "确认调仓", "rebalance-modal");
     }
 
     function renderPositionModal(modal) {
@@ -4854,6 +4932,8 @@
       });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
+      const deletePortfolioForm = document.querySelector("[data-form='deletePortfolio']");
+      if (deletePortfolioForm) deletePortfolioForm.addEventListener("submit", submitDeletePortfolio);
       const cashForm = document.querySelector("[data-form='calibrateCash']");
       if (cashForm) cashForm.addEventListener("submit", submitCalibrateCash);
       const cashFlowForm = document.querySelector("[data-form='portfolioCashFlow']");
@@ -4956,7 +5036,7 @@
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
       if (action === "createPortfolio") openPortfolioModal("create");
-      if (action === "deletePortfolio") deleteActivePortfolio();
+      if (action === "deletePortfolio") openPortfolioModal("delete");
       if (action === "closePortfolioModal") closePortfolioModal();
       if (action === "openPosition") openPortfolioModal("open");
       if (action === "rebalancePortfolio") openPortfolioModal("rebalance");
@@ -5122,12 +5202,10 @@
     function deleteActivePortfolio() {
       const portfolio = activePortfolio();
       if (!portfolio) return;
-      const positionCount = portfolio.positions?.length || 0;
-      const detail = positionCount ? `，其中包含 ${positionCount} 只持仓` : "";
-      if (!confirm(`确定删除组合“${portfolio.name}”吗？${detail}，现金和持仓数据将一并删除，且无法恢复。`)) return;
       const index = state.portfolios.findIndex((item) => item.id === portfolio.id);
       state.portfolios = state.portfolios.filter((item) => item.id !== portfolio.id);
       state.activePortfolioId = state.portfolios[index]?.id || state.portfolios[index - 1]?.id || state.portfolios[0]?.id || "";
+      state.portfolioModal = null;
       savePortfolios();
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
         supabaseRequest(`/rest/v1/portfolios?id=eq.${encodeURIComponent(portfolio.id)}`, { method: "DELETE" })
@@ -5254,6 +5332,15 @@
       state.activePortfolioId = portfolio.id;
       savePortfolios();
       closePortfolioModal();
+    }
+
+    function submitDeletePortfolio(event) {
+      event.preventDefault();
+      const modal = state.portfolioModal;
+      if (modal?.type !== "delete") return;
+      const form = new FormData(event.currentTarget);
+      if (String(form.get("confirmCode") || "").trim() !== "0000") return showPortfolioError("请输入四个 0 后再确认删除。");
+      deleteActivePortfolio();
     }
 
     function submitCalibrateCash(event) {
