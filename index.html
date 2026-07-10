@@ -1651,11 +1651,13 @@
     .rebalance-side h3 { margin: 0; font-size: 14px; }
     .rebalance-side.sell h3 { color: #067647; }
     .rebalance-side.buy h3 { color: #b42318; }
-    .rebalance-fields { display: grid; gap: 10px; }
+    .rebalance-fields { display: grid; grid-template-columns: 126px 154px; gap: 10px; align-items: start; }
     .rebalance-side .field,
     .rebalance-side .search-combobox,
     .rebalance-side [data-input="portfolioStockSearch"],
     .rebalance-side .input-with-suffix { max-width: 300px; }
+    .rebalance-fields .field,
+    .rebalance-fields .input-with-suffix { max-width: none; }
     .rebalance-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
     .rebalance-preview-item { padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: #f8fafc; }
     .rebalance-preview-item span { display: block; color: var(--muted); font-size: 10.5px; font-weight: 720; }
