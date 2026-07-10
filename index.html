@@ -1607,6 +1607,7 @@
     .trade-suggestion strong { color: var(--brand-strong); }
     .simple-modal.position-edit-modal { width: min(840px, 100%); }
     .simple-modal.position-trade-modal { width: min(760px, 100%); }
+    .simple-modal.rebalance-modal { width: min(900px, 100%); }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
     .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
@@ -1645,6 +1646,15 @@
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-row.plan-sell > span { color: #067647; }
     .position-plan-row.plan-buy > span { color: #b42318; }
+    .rebalance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .rebalance-side { display: grid; gap: 12px; min-width: 0; }
+    .rebalance-side h3 { margin: 0; font-size: 14px; }
+    .rebalance-side.sell h3 { color: #067647; }
+    .rebalance-side.buy h3 { color: #b42318; }
+    .rebalance-preview { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .rebalance-preview-item { padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: #f8fafc; }
+    .rebalance-preview-item span { display: block; color: var(--muted); font-size: 10.5px; font-weight: 720; }
+    .rebalance-preview-item strong { display: block; margin-top: 2px; font-size: 14px; font-variant-numeric: tabular-nums; }
     .nav-chart { width: 100%; height: 300px; display: block; background: #fff; }
     .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     @keyframes shimmer {
@@ -1730,6 +1740,7 @@
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
       .position-edit-layout { grid-template-columns: 1fr; }
       .position-trade-layout { grid-template-columns: 1fr; }
+      .rebalance-grid { grid-template-columns: 1fr; }
       .position-edit-fields { grid-template-columns: repeat(2, minmax(0, 124px)); }
       .position-plan { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; }
       .portfolio-switcher select, .portfolio-head button { width: 100%; }
@@ -3027,7 +3038,7 @@
             <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
             <button class="danger" data-action="deletePortfolio">删除组合</button>
           </div>
-          <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
+          <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button data-action="rebalancePortfolio">调仓助手</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
         </div>
         <section class="portfolio-summary">
           <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.netBase, portfolio))}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${portfolioPrivate(formatPortfolioSummary(totalProfit, portfolio, { signed: true }))}</span></div></div>
@@ -3169,6 +3180,7 @@
       if (modal.type === "create") return renderCreatePortfolioModal();
       if (modal.type === "cash") return renderCashModal(modal);
       if (modal.type === "subscription" || modal.type === "redemption") return renderCashFlowModal(modal);
+      if (modal.type === "rebalance") return renderRebalanceModal(modal);
       if (modal.type === "history") return renderPositionHistoryModal(modal);
       return renderPositionModal(modal);
     }
@@ -3224,6 +3236,69 @@
         <label class="field"><span>${isSubscription ? "申购" : "赎回"}金额（万原币）</span><input name="amount" type="number" min="0.000001" step="any" required></label>
         <div class="muted">按操作前盘中估算净值折算份额；${isSubscription ? "资金增加、份额增加" : "资金减少、份额减少"}，单位净值不因资金流入流出突变。</div>
       `, "portfolioCashFlow", isSubscription ? "确认申购" : "确认赎回");
+    }
+
+    function renderRebalanceStockSearch(modal, side) {
+      const queryKey = `${side}Query`;
+      const stockKey = `${side}Stock`;
+      const stock = modal[stockKey];
+      const isActive = modal.searchSide === side;
+      return `
+        <label class="field"><span>${side === "sell" ? "卖出" : "买入"}股票名称/代码搜索</span><div class="search-combobox">
+          <input data-input="portfolioStockSearch" data-side="${side}" autocomplete="off" placeholder="输入股票名称、代码或拼音" value="${escapeHtml(modal[queryKey] || "")}">
+          ${isActive && (state.portfolioSearchLoading || state.portfolioSearchResults.length || (modal[queryKey] && !stock)) ? `<div class="search-results show">
+            ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配股票...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-side="${side}" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">没有匹配结果，请尝试其他名称或代码。</div>`}
+          </div>` : ""}
+        </div></label>
+      `;
+    }
+
+    function rebalanceCurrentPosition(stock, portfolio) {
+      if (!stock || !portfolio) return null;
+      return (portfolio.positions || []).find((item) => item.code === stock.code && item.market === stock.market) || null;
+    }
+
+    function rebalanceSidePreview(modal, side, portfolio, metrics) {
+      const stock = modal[`${side}Stock`];
+      const position = rebalanceCurrentPosition(stock, portfolio);
+      const currency = stock?.currency || marketCurrency(stock?.market);
+      const price = Number(modal[`${side}Price`] || stock?.latestPrice || position?.latestPrice || position?.averageCost || 0);
+      const shares = Number(modal[`${side}Shares`] || 0);
+      const currentRatio = position && metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase * 100 : 0;
+      const tradeBase = price > 0 && shares > 0 ? price * shares * portfolioFx(currency, portfolioBaseCurrency(portfolio)) : 0;
+      const tradeRatio = metrics.netBase ? tradeBase / metrics.netBase * 100 : 0;
+      return { currentRatio, tradeRatio };
+    }
+
+    function renderRebalancePreview(modal, side, portfolio, metrics) {
+      const preview = rebalanceSidePreview(modal, side, portfolio, metrics);
+      const label = side === "sell" ? "本次卖出仓位" : "本次买入仓位";
+      return `<div class="rebalance-preview">
+        <div class="rebalance-preview-item"><span>当前持仓仓位</span><strong data-rebalance-preview="${side}-current">${preview.currentRatio.toFixed(2)}%</strong></div>
+        <div class="rebalance-preview-item"><span>${label}</span><strong data-rebalance-preview="${side}-trade">${preview.tradeRatio.toFixed(2)}%</strong></div>
+      </div>`;
+    }
+
+    function renderRebalanceModal(modal) {
+      const portfolio = activePortfolio();
+      const metrics = portfolioMetrics(portfolio);
+      const side = (key, label, className) => {
+        const stock = modal[`${key}Stock`];
+        const position = rebalanceCurrentPosition(stock, portfolio);
+        const currency = stock?.currency || position?.currency || "";
+        const price = modal[`${key}Price`] ?? (stock?.latestPrice || position?.latestPrice || "");
+        return `<section class="rebalance-side ${className}">
+          <h3>${label}</h3>
+          ${renderRebalanceStockSearch(modal, key)}
+          <div class="grid-2">
+            <label class="field"><span>${key === "sell" ? "卖出价格" : "买入价格"}</span><div class="input-with-suffix"><input name="${key}Price" data-rebalance-price="${key}" type="number" min="0.000001" step="any" value="${Number(price) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label>
+            <label class="field"><span>${key === "sell" ? "卖出数量" : "买入数量"}</span><div class="input-with-suffix"><input name="${key}Shares" data-rebalance-shares="${key}" type="number" min="1" step="1" value="${Number(modal[`${key}Shares`] || 0) || ""}" ${key === "sell" && position ? `max="${Number(position.shares)}"` : ""}><span class="input-suffix">股</span></div></label>
+          </div>
+          ${key === "sell" && position ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
+          ${renderRebalancePreview(modal, key, portfolio, metrics)}
+        </section>`;
+      };
+      return modalShell("调仓助手", `<div class="rebalance-grid">${side("sell", "卖出", "sell")}${side("buy", "买入", "buy")}</div>`, "rebalanceTrade", "确认调仓", "rebalance-modal");
     }
 
     function renderPositionModal(modal) {
@@ -4232,8 +4307,7 @@
       if (portfolioAccountType) portfolioAccountType.addEventListener("change", (event) => {
         document.querySelectorAll("[data-account-fields]").forEach((el) => { el.style.display = el.dataset.accountFields === event.target.value ? "block" : "none"; });
       });
-      const portfolioSearch = document.querySelector("[data-input='portfolioStockSearch']");
-      if (portfolioSearch) {
+      document.querySelectorAll("[data-input='portfolioStockSearch']").forEach((portfolioSearch) => {
         portfolioSearch.addEventListener("compositionstart", () => { state.portfolioSearchComposing = true; });
         portfolioSearch.addEventListener("compositionend", (event) => {
           state.portfolioSearchComposing = false;
@@ -4242,7 +4316,7 @@
         portfolioSearch.addEventListener("input", (event) => {
           if (!state.portfolioSearchComposing && !event.isComposing) onPortfolioStockSearch(event);
         });
-      }
+      });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
       const cashForm = document.querySelector("[data-form='calibrateCash']");
@@ -4251,6 +4325,14 @@
       if (cashFlowForm) cashFlowForm.addEventListener("submit", submitPortfolioCashFlow);
       const tradeForm = document.querySelector("[data-form='positionTrade']");
       if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
+      const rebalanceForm = document.querySelector("[data-form='rebalanceTrade']");
+      if (rebalanceForm) rebalanceForm.addEventListener("submit", submitRebalanceTrade);
+      document.querySelectorAll("[data-rebalance-shares]").forEach((input) => {
+        input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalanceShares, "shares"));
+      });
+      document.querySelectorAll("[data-rebalance-price]").forEach((input) => {
+        input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalancePrice, "price"));
+      });
       document.querySelectorAll("[data-target-weight-step]").forEach((button) => {
         button.addEventListener("click", () => stepPositionTargetWeight(Number(button.dataset.targetWeightStep)));
       });
@@ -4335,6 +4417,7 @@
       if (action === "deletePortfolio") deleteActivePortfolio();
       if (action === "closePortfolioModal") closePortfolioModal();
       if (action === "openPosition") openPortfolioModal("open");
+      if (action === "rebalancePortfolio") openPortfolioModal("rebalance");
       if (action === "calibrateCash") openPortfolioModal("cash");
       if (action === "subscribePortfolio") openPortfolioModal("subscription");
       if (action === "redeemPortfolio") openPortfolioModal("redemption");
@@ -4342,7 +4425,7 @@
       if (action === "reducePosition") openPortfolioModal("reduce", stockId);
       if (action === "editPosition") openPortfolioModal("edit", stockId);
       if (action === "positionHistory") openPortfolioModal("history", stockId);
-      if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index));
+      if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
@@ -4439,6 +4522,33 @@
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
     }
 
+    function ensureLocalPortfolioDemo() {
+      if (state.portfolios.length) return;
+      const now = new Date().toISOString();
+      const portfolio = {
+        id: "portfolio-local-demo",
+        name: "本地演示组合",
+        accountType: "HKUS",
+        startCny: 0,
+        startHkd: 180000,
+        startUsd: 50000,
+        startBase: 69565.21739130435,
+        totalUnits: 69565.21739130435,
+        cash: { CNY: 0, HKD: 60000, USD: 18000 },
+        positions: [
+          { id: "position-demo-0700", name: "腾讯控股", code: "0700.HK", rawCode: "0700", market: "HK", exchange: "HKEX", quoteId: "116.00700", currency: "HKD", shares: 300, averageCost: 360, latestPrice: 385, previousClose: 380, changePercent: 1.32, priceUpdatedAt: now },
+          { id: "position-demo-aapl", name: "苹果", code: "AAPL", rawCode: "AAPL", market: "US", exchange: "NASDAQ", quoteId: "105.AAPL", currency: "USD", shares: 80, averageCost: 188, latestPrice: 205, previousClose: 202, changePercent: 1.49, priceUpdatedAt: now }
+        ],
+        tradeHistory: [],
+        cashFlows: [],
+        createdAt: now,
+        updatedAt: now
+      };
+      state.portfolios = [portfolio];
+      state.activePortfolioId = portfolio.id;
+      writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+    }
+
     function savePortfolios() {
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
@@ -4490,7 +4600,9 @@
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
       state.portfolioSearchComposing = false;
-      state.portfolioModal = { type, position, stock: null, searchQuery: "" };
+      state.portfolioModal = type === "rebalance"
+        ? { type, searchSide: "sell", sellStock: null, buyStock: null, sellQuery: "", buyQuery: "", sellPrice: "", buyPrice: "", sellShares: "", buyShares: "", lastEditedSide: "" }
+        : { type, position, stock: null, searchQuery: "" };
       render();
     }
 
@@ -4503,9 +4615,19 @@
 
     async function onPortfolioStockSearch(event) {
       const query = event.target.value.trim();
-      if (!state.portfolioModal || state.portfolioModal.type !== "open") return;
-      state.portfolioModal.searchQuery = query;
-      state.portfolioModal.stock = null;
+      const side = event.target.dataset.side || "";
+      const modal = state.portfolioModal;
+      if (!modal || (modal.type !== "open" && modal.type !== "rebalance")) return;
+      if (modal.type === "rebalance") {
+        const safeSide = side === "buy" ? "buy" : "sell";
+        state.portfolioModal.searchSide = safeSide;
+        state.portfolioModal[`${safeSide}Query`] = query;
+        state.portfolioModal[`${safeSide}Stock`] = null;
+        state.portfolioModal[`${safeSide}Price`] = "";
+      } else {
+        state.portfolioModal.searchQuery = query;
+        state.portfolioModal.stock = null;
+      }
       state.portfolioSearchResults = [];
       if (!query) {
         state.portfolioSearchLoading = false;
@@ -4517,19 +4639,26 @@
       render();
       try {
         const results = await searchStocks(query);
-        if (state.portfolioModal?.searchQuery !== expectedQuery) return;
+        if (state.portfolioModal?.type === "rebalance") {
+          const safeSide = side === "buy" ? "buy" : "sell";
+          if (state.portfolioModal?.[`${safeSide}Query`] !== expectedQuery || state.portfolioModal?.searchSide !== safeSide) return;
+        } else if (state.portfolioModal?.searchQuery !== expectedQuery) return;
         state.portfolioSearchResults = results;
       } finally {
-        if (state.portfolioModal?.searchQuery === expectedQuery) state.portfolioSearchLoading = false;
+        if (state.portfolioModal?.type === "rebalance") {
+          const safeSide = side === "buy" ? "buy" : "sell";
+          if (state.portfolioModal?.[`${safeSide}Query`] === expectedQuery) state.portfolioSearchLoading = false;
+        } else if (state.portfolioModal?.searchQuery === expectedQuery) state.portfolioSearchLoading = false;
       }
       render();
       requestAnimationFrame(() => {
-        const input = document.querySelector("[data-input='portfolioStockSearch']");
+        const selector = state.portfolioModal?.type === "rebalance" ? `[data-input='portfolioStockSearch'][data-side='${side === "buy" ? "buy" : "sell"}']` : "[data-input='portfolioStockSearch']";
+        const input = document.querySelector(selector);
         if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
       });
     }
 
-    async function selectPortfolioStock(index) {
+    async function selectPortfolioStock(index, side = "") {
       const selected = state.portfolioSearchResults[index];
       if (!selected || !state.portfolioModal) return;
       state.portfolioSearchLoading = true;
@@ -4537,7 +4666,19 @@
       render();
       let quote = selected;
       try { quote = await fetchQuote(selected); } catch (error) { console.warn("开仓行情读取失败，使用录入价格。", error); }
-      state.portfolioModal = { ...state.portfolioModal, stock: { ...selected, ...quote }, searchQuery: `${selected.name} ${selected.code}` };
+      if (state.portfolioModal.type === "rebalance") {
+        const safeSide = side === "buy" ? "buy" : "sell";
+        const stock = { ...selected, ...quote };
+        state.portfolioModal = {
+          ...state.portfolioModal,
+          searchSide: safeSide,
+          [`${safeSide}Stock`]: stock,
+          [`${safeSide}Query`]: `${selected.name} ${selected.code}`,
+          [`${safeSide}Price`]: Number(stock.latestPrice) || ""
+        };
+      } else {
+        state.portfolioModal = { ...state.portfolioModal, stock: { ...selected, ...quote }, searchQuery: `${selected.name} ${selected.code}` };
+      }
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
       render();
@@ -4614,6 +4755,153 @@
           currency, amount, nav_before: metrics.nav, units_changed: unitsChanged
         }) }).catch((error) => console.warn("申购赎回流水保存失败。", error));
       }
+      closePortfolioModal();
+    }
+
+    function rebalanceCashCurrency(portfolio, currency) {
+      return portfolio.accountType === "CNY" ? "CNY" : currency;
+    }
+
+    function rebalanceBasePerShare(stock, price, portfolio) {
+      const currency = stock?.currency || marketCurrency(stock?.market);
+      return Number(price || 0) * portfolioFx(currency, portfolioBaseCurrency(portfolio));
+    }
+
+    function updateRebalancePreviewDom() {
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || modal?.type !== "rebalance") return;
+      const metrics = portfolioMetrics(portfolio);
+      ["sell", "buy"].forEach((side) => {
+        const stock = modal[`${side}Stock`];
+        const priceInput = document.querySelector(`[data-rebalance-price='${side}']`);
+        const sharesInput = document.querySelector(`[data-rebalance-shares='${side}']`);
+        const price = Number(priceInput?.value || 0);
+        const shares = Number(sharesInput?.value || 0);
+        const position = rebalanceCurrentPosition(stock, portfolio);
+        const currentRatio = position && metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase * 100 : 0;
+        const tradeBase = price > 0 && shares > 0 ? price * shares * portfolioFx(stock?.currency || marketCurrency(stock?.market), portfolioBaseCurrency(portfolio)) : 0;
+        const tradeRatio = metrics.netBase ? tradeBase / metrics.netBase * 100 : 0;
+        const currentNode = document.querySelector(`[data-rebalance-preview='${side}-current']`);
+        const tradeNode = document.querySelector(`[data-rebalance-preview='${side}-trade']`);
+        if (currentNode) currentNode.textContent = `${currentRatio.toFixed(2)}%`;
+        if (tradeNode) tradeNode.textContent = `${tradeRatio.toFixed(2)}%`;
+      });
+    }
+
+    function onRebalanceInput(side, field) {
+      const modal = state.portfolioModal;
+      const portfolio = activePortfolio();
+      if (!portfolio || modal?.type !== "rebalance" || !["sell", "buy"].includes(side)) return;
+      const priceInput = document.querySelector(`[data-rebalance-price='${side}']`);
+      const sharesInput = document.querySelector(`[data-rebalance-shares='${side}']`);
+      modal[`${side}Price`] = priceInput?.value || "";
+      modal[`${side}Shares`] = sharesInput?.value || "";
+      if (field === "shares") modal.lastEditedSide = side;
+      const sourceSide = modal.lastEditedSide || side;
+      const targetSide = sourceSide === "sell" ? "buy" : "sell";
+      const sourceStock = modal[`${sourceSide}Stock`];
+      const targetStock = modal[`${targetSide}Stock`];
+      const sourcePrice = Number(document.querySelector(`[data-rebalance-price='${sourceSide}']`)?.value || 0);
+      const targetPrice = Number(document.querySelector(`[data-rebalance-price='${targetSide}']`)?.value || 0);
+      const sourceShares = Number(document.querySelector(`[data-rebalance-shares='${sourceSide}']`)?.value || 0);
+      const targetSharesInput = document.querySelector(`[data-rebalance-shares='${targetSide}']`);
+      if (sourceStock && targetStock && sourcePrice > 0 && targetPrice > 0 && sourceShares > 0 && targetSharesInput) {
+        const sourceBase = rebalanceBasePerShare(sourceStock, sourcePrice, portfolio) * sourceShares;
+        const targetPerShare = rebalanceBasePerShare(targetStock, targetPrice, portfolio);
+        const nextShares = targetPerShare > 0
+          ? (sourceSide === "sell" ? Math.floor(sourceBase / targetPerShare) : Math.ceil(sourceBase / targetPerShare))
+          : 0;
+        targetSharesInput.value = nextShares > 0 ? String(nextShares) : "";
+        modal[`${targetSide}Shares`] = targetSharesInput.value;
+      }
+      updateRebalancePreviewDom();
+    }
+
+    function validatePortfolioStockForAccount(portfolio, stock, label) {
+      if (portfolio.accountType === "CNY" && !["CN", "HK"].includes(stock.market)) return `${label}股票不符合人民币账户可交易市场。`;
+      if (portfolio.accountType === "HKUS" && !["HK", "US"].includes(stock.market)) return `${label}股票不符合港美账户可交易市场。`;
+      return "";
+    }
+
+    function submitRebalanceTrade(event) {
+      event.preventDefault();
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || modal?.type !== "rebalance") return;
+      const form = new FormData(event.currentTarget);
+      const sellStock = modal.sellStock;
+      const buyStock = modal.buyStock;
+      if (!sellStock) return showPortfolioError("请先选择卖出股票。");
+      if (!buyStock) return showPortfolioError("请先选择买入股票。");
+      if (sellStock.code === buyStock.code && sellStock.market === buyStock.market) return showPortfolioError("调仓买入和卖出不能是同一只股票。");
+      const marketError = validatePortfolioStockForAccount(portfolio, sellStock, "卖出") || validatePortfolioStockForAccount(portfolio, buyStock, "买入");
+      if (marketError) return showPortfolioError(marketError);
+      const sellPosition = rebalanceCurrentPosition(sellStock, portfolio);
+      if (!sellPosition) return showPortfolioError("卖出股票必须是当前持仓。");
+      const sellPrice = Number(form.get("sellPrice"));
+      const buyPrice = Number(form.get("buyPrice"));
+      const sellShares = Number(form.get("sellShares"));
+      const buyShares = Number(form.get("buyShares"));
+      if (!Number.isFinite(sellPrice) || sellPrice <= 0 || !Number.isFinite(buyPrice) || buyPrice <= 0) return showPortfolioError("请输入有效的卖出价格和买入价格。");
+      if (!Number.isInteger(sellShares) || sellShares <= 0 || !Number.isInteger(buyShares) || buyShares <= 0) return showPortfolioError("卖出数量和买入数量必须为正整数。");
+      if (sellShares > Number(sellPosition.shares)) return showPortfolioError("卖出数量不能超过当前持股数。");
+      const sellCurrency = sellStock.currency || sellPosition.currency || marketCurrency(sellStock.market);
+      const buyCurrency = buyStock.currency || marketCurrency(buyStock.market);
+      const sellCashCurrency = rebalanceCashCurrency(portfolio, sellCurrency);
+      const buyCashCurrency = rebalanceCashCurrency(portfolio, buyCurrency);
+      const sellCashAmount = sellPrice * sellShares * portfolioFx(sellCurrency, sellCashCurrency);
+      const buyCashAmount = buyPrice * buyShares * portfolioFx(buyCurrency, buyCashCurrency);
+      const cashDeltas = { [sellCashCurrency]: sellCashAmount };
+      cashDeltas[buyCashCurrency] = Number(cashDeltas[buyCashCurrency] || 0) - buyCashAmount;
+      for (const [currency, delta] of Object.entries(cashDeltas)) {
+        if (Number(portfolio.cash?.[currency] || 0) + delta < -0.000001) return showPortfolioError(`${currencies[currency]?.label || currency}现金余额不足。`);
+      }
+      updateActivePortfolio((item) => {
+        const positions = [...item.positions];
+        const now = new Date().toISOString();
+        const sellIndex = positions.findIndex((position) => position.id === sellPosition.id);
+        let soldPositionId = sellPosition.id;
+        if (sellIndex >= 0) {
+          const old = positions[sellIndex];
+          const remaining = Number(old.shares) - sellShares;
+          if (remaining === 0) positions.splice(sellIndex, 1);
+          else positions[sellIndex] = {
+            ...old,
+            shares: remaining,
+            averageCost: (Number(old.shares) * Number(old.averageCost) - sellPrice * sellShares) / remaining,
+            latestPrice: Number(old.latestPrice) || sellPrice
+          };
+        }
+        const buyIndex = positions.findIndex((position) => position.code === buyStock.code && position.market === buyStock.market);
+        let boughtPositionId = "";
+        if (buyIndex >= 0) {
+          const old = positions[buyIndex];
+          const newShares = Number(old.shares) + buyShares;
+          positions[buyIndex] = {
+            ...old,
+            shares: newShares,
+            averageCost: (Number(old.shares) * Number(old.averageCost) + buyPrice * buyShares) / newShares,
+            latestPrice: Number(buyStock.latestPrice) || Number(old.latestPrice) || buyPrice
+          };
+          boughtPositionId = old.id;
+        } else {
+          boughtPositionId = id("position");
+          positions.push({
+            id: boughtPositionId, name: buyStock.name, code: buyStock.code, rawCode: buyStock.rawCode || "", market: buyStock.market,
+            exchange: buyStock.exchange || "", quoteId: buyStock.quoteId || "", currency: buyCurrency, shares: buyShares, averageCost: buyPrice,
+            latestPrice: Number(buyStock.latestPrice) || buyPrice, priceUpdatedAt: buyStock.marketCapUpdatedAt || todayString()
+          });
+        }
+        const nextCash = { ...item.cash };
+        Object.entries(cashDeltas).forEach(([currency, delta]) => { nextCash[currency] = Number(nextCash[currency] || 0) + delta; });
+        const tradeHistory = [
+          ...(item.tradeHistory || []),
+          { id: id("trade"), positionId: soldPositionId, code: sellStock.code, type: "reduce", currency: sellCurrency, price: sellPrice, shares: sellShares, occurredAt: now },
+          { id: id("trade"), positionId: boughtPositionId, code: buyStock.code, type: "add", currency: buyCurrency, price: buyPrice, shares: buyShares, occurredAt: now }
+        ];
+        return { ...item, positions, tradeHistory, cash: nextCash, updatedAt: now };
+      });
       closePortfolioModal();
     }
 
@@ -6048,6 +6336,7 @@
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
         state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
         await loadPortfolios();
+        ensureLocalPortfolioDemo();
         await fetchExchangeRates();
         const demoPreviousDate = new Date();
         demoPreviousDate.setDate(demoPreviousDate.getDate() - 1);
