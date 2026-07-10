@@ -1607,7 +1607,7 @@
     .trade-suggestion strong { color: var(--brand-strong); }
     .simple-modal.position-edit-modal { width: min(840px, 100%); }
     .simple-modal.position-trade-modal { width: min(760px, 100%); }
-    .simple-modal.rebalance-modal { width: min(900px, 100%); }
+    .simple-modal.rebalance-modal { width: min(450px, 100%); }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
     .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
@@ -1646,15 +1646,20 @@
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-row.plan-sell > span { color: #067647; }
     .position-plan-row.plan-buy > span { color: #b42318; }
-    .rebalance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .rebalance-grid { display: grid; gap: 16px; align-items: start; }
     .rebalance-side { display: grid; gap: 12px; min-width: 0; }
     .rebalance-side h3 { margin: 0; font-size: 14px; }
     .rebalance-side.sell h3 { color: #067647; }
     .rebalance-side.buy h3 { color: #b42318; }
-    .rebalance-preview { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .rebalance-fields { display: grid; gap: 10px; }
+    .rebalance-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
     .rebalance-preview-item { padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: #f8fafc; }
     .rebalance-preview-item span { display: block; color: var(--muted); font-size: 10.5px; font-weight: 720; }
     .rebalance-preview-item strong { display: block; margin-top: 2px; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .rebalance-field-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .rebalance-holding-note { color: var(--muted); font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .rebalance-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+    .rebalance-quick button { min-height: 24px; padding: 0 6px; font-size: 11px; font-weight: 650; color: var(--muted); background: #fff; }
     .nav-chart { width: 100%; height: 300px; display: block; background: #fff; }
     .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     @keyframes shimmer {
@@ -3267,16 +3272,28 @@
       const currentRatio = position && metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase * 100 : 0;
       const tradeBase = price > 0 && shares > 0 ? price * shares * portfolioFx(currency, portfolioBaseCurrency(portfolio)) : 0;
       const tradeRatio = metrics.netBase ? tradeBase / metrics.netBase * 100 : 0;
-      return { currentRatio, tradeRatio };
+      const afterRatio = side === "sell" ? Math.max(0, currentRatio - tradeRatio) : currentRatio + tradeRatio;
+      return { currentRatio, tradeRatio, afterRatio };
     }
 
     function renderRebalancePreview(modal, side, portfolio, metrics) {
       const preview = rebalanceSidePreview(modal, side, portfolio, metrics);
       const label = side === "sell" ? "本次卖出仓位" : "本次买入仓位";
+      const afterLabel = side === "sell" ? "卖出后仓位" : "买入后仓位";
       return `<div class="rebalance-preview">
         <div class="rebalance-preview-item"><span>当前持仓仓位</span><strong data-rebalance-preview="${side}-current">${preview.currentRatio.toFixed(2)}%</strong></div>
         <div class="rebalance-preview-item"><span>${label}</span><strong data-rebalance-preview="${side}-trade">${preview.tradeRatio.toFixed(2)}%</strong></div>
+        <div class="rebalance-preview-item"><span>${afterLabel}</span><strong data-rebalance-preview="${side}-after">${preview.afterRatio.toFixed(2)}%</strong></div>
       </div>`;
+    }
+
+    function renderRebalanceQuick(side) {
+      return `<div class="rebalance-quick">${[
+        ["1/5", 0.2],
+        ["1/4", 0.25],
+        ["1/3", 1 / 3],
+        ["1/2", 0.5]
+      ].map(([label, ratio]) => `<button type="button" data-rebalance-ratio-side="${side}" data-rebalance-ratio="${ratio}">${label}</button>`).join("")}</div>`;
     }
 
     function renderRebalanceModal(modal) {
@@ -3290,11 +3307,10 @@
         return `<section class="rebalance-side ${className}">
           <h3>${label}</h3>
           ${renderRebalanceStockSearch(modal, key)}
-          <div class="grid-2">
+          <div class="rebalance-fields">
             <label class="field"><span>${key === "sell" ? "卖出价格" : "买入价格"}</span><div class="input-with-suffix"><input name="${key}Price" data-rebalance-price="${key}" type="number" min="0.000001" step="any" value="${Number(price) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label>
-            <label class="field"><span>${key === "sell" ? "卖出数量" : "买入数量"}</span><div class="input-with-suffix"><input name="${key}Shares" data-rebalance-shares="${key}" type="number" min="1" step="1" value="${Number(modal[`${key}Shares`] || 0) || ""}" ${key === "sell" && position ? `max="${Number(position.shares)}"` : ""}><span class="input-suffix">股</span></div></label>
+            <label class="field"><span class="rebalance-field-title"><span>${key === "sell" ? "卖出数量" : "买入数量"}</span>${key === "sell" && position ? `<span class="rebalance-holding-note">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</span>` : ""}</span><div class="input-with-suffix"><input name="${key}Shares" data-rebalance-shares="${key}" type="number" min="1" step="1" value="${Number(modal[`${key}Shares`] || 0) || ""}" ${key === "sell" && position ? `max="${Number(position.shares)}"` : ""}><span class="input-suffix">股</span></div>${renderRebalanceQuick(key)}</label>
           </div>
-          ${key === "sell" && position ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}
           ${renderRebalancePreview(modal, key, portfolio, metrics)}
         </section>`;
       };
@@ -4333,6 +4349,9 @@
       document.querySelectorAll("[data-rebalance-price]").forEach((input) => {
         input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalancePrice, "price"));
       });
+      document.querySelectorAll("[data-rebalance-ratio-side]").forEach((button) => {
+        button.addEventListener("click", () => applyRebalanceRatio(button.dataset.rebalanceRatioSide, Number(button.dataset.rebalanceRatio)));
+      });
       document.querySelectorAll("[data-target-weight-step]").forEach((button) => {
         button.addEventListener("click", () => stepPositionTargetWeight(Number(button.dataset.targetWeightStep)));
       });
@@ -4782,11 +4801,42 @@
         const currentRatio = position && metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase * 100 : 0;
         const tradeBase = price > 0 && shares > 0 ? price * shares * portfolioFx(stock?.currency || marketCurrency(stock?.market), portfolioBaseCurrency(portfolio)) : 0;
         const tradeRatio = metrics.netBase ? tradeBase / metrics.netBase * 100 : 0;
+        const afterRatio = side === "sell" ? Math.max(0, currentRatio - tradeRatio) : currentRatio + tradeRatio;
         const currentNode = document.querySelector(`[data-rebalance-preview='${side}-current']`);
         const tradeNode = document.querySelector(`[data-rebalance-preview='${side}-trade']`);
+        const afterNode = document.querySelector(`[data-rebalance-preview='${side}-after']`);
         if (currentNode) currentNode.textContent = `${currentRatio.toFixed(2)}%`;
         if (tradeNode) tradeNode.textContent = `${tradeRatio.toFixed(2)}%`;
+        if (afterNode) afterNode.textContent = `${afterRatio.toFixed(2)}%`;
       });
+    }
+
+    function applyRebalanceRatio(side, ratio) {
+      const modal = state.portfolioModal;
+      const portfolio = activePortfolio();
+      if (!portfolio || modal?.type !== "rebalance" || !["sell", "buy"].includes(side) || !Number.isFinite(ratio) || ratio <= 0) return;
+      const input = document.querySelector(`[data-rebalance-shares='${side}']`);
+      if (!input) return;
+      const stock = modal[`${side}Stock`];
+      const position = rebalanceCurrentPosition(stock, portfolio);
+      let shares = position ? Math.floor(Number(position.shares || 0) * ratio) : 0;
+      if (side === "buy" && !shares) {
+        const sellStock = modal.sellStock;
+        const buyStock = modal.buyStock;
+        const sellPrice = Number(document.querySelector("[data-rebalance-price='sell']")?.value || 0);
+        const buyPrice = Number(document.querySelector("[data-rebalance-price='buy']")?.value || 0);
+        const sellPosition = rebalanceCurrentPosition(sellStock, portfolio);
+        if (sellStock && buyStock && sellPosition && sellPrice > 0 && buyPrice > 0) {
+          const sellShares = Math.floor(Number(sellPosition.shares || 0) * ratio);
+          const sourceBase = rebalanceBasePerShare(sellStock, sellPrice, portfolio) * sellShares;
+          const buyPerShare = rebalanceBasePerShare(buyStock, buyPrice, portfolio);
+          shares = buyPerShare > 0 ? Math.floor(sourceBase / buyPerShare) : 0;
+        }
+      }
+      input.value = shares > 0 ? String(shares) : "";
+      modal[`${side}Shares`] = input.value;
+      modal.lastEditedSide = side;
+      onRebalanceInput(side, "shares");
     }
 
     function onRebalanceInput(side, field) {
