@@ -1607,7 +1607,7 @@
     .trade-suggestion strong { color: var(--brand-strong); }
     .simple-modal.position-edit-modal { width: min(840px, 100%); }
     .simple-modal.position-trade-modal { width: min(760px, 100%); }
-    .simple-modal.rebalance-modal { width: min(450px, 100%); }
+    .simple-modal.rebalance-modal { width: min(720px, 100%); }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
     .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
@@ -1646,12 +1646,16 @@
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-row.plan-sell > span { color: #067647; }
     .position-plan-row.plan-buy > span { color: #b42318; }
-    .rebalance-grid { display: grid; gap: 16px; align-items: start; }
-    .rebalance-side { display: grid; gap: 12px; min-width: 0; }
+    .rebalance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 320px)); gap: 22px; align-items: start; justify-content: center; }
+    .rebalance-side { display: grid; gap: 12px; min-width: 0; max-width: 320px; }
     .rebalance-side h3 { margin: 0; font-size: 14px; }
     .rebalance-side.sell h3 { color: #067647; }
     .rebalance-side.buy h3 { color: #b42318; }
     .rebalance-fields { display: grid; gap: 10px; }
+    .rebalance-side .field,
+    .rebalance-side .search-combobox,
+    .rebalance-side [data-input="portfolioStockSearch"],
+    .rebalance-side .input-with-suffix { max-width: 300px; }
     .rebalance-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
     .rebalance-preview-item { padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: #f8fafc; }
     .rebalance-preview-item span { display: block; color: var(--muted); font-size: 10.5px; font-weight: 720; }
