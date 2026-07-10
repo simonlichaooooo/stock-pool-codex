@@ -1539,16 +1539,29 @@
     .portfolio-view-tabs { margin-bottom: 8px; }
     .portfolio-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
     .portfolio-actions .segmented { flex: 0 0 auto; }
+    .portfolio-summary-toggle { display: inline-flex; align-items: center; gap: 6px; }
+    .portfolio-summary-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-head .portfolio-view-tabs { margin-bottom: 0; }
     .portfolio-menu { position: relative; display: inline-flex; }
-    .portfolio-menu > button { min-width: 76px; }
+    .portfolio-menu > button { min-width: 88px; }
+    .portfolio-menu::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 8px;
+      display: none;
+    }
+    .portfolio-menu:hover::after,
+    .portfolio-menu:focus-within::after { display: block; }
     .portfolio-menu-panel {
       position: absolute;
       right: 0;
-      top: calc(100% + 6px);
+      top: calc(100% + 7px);
       z-index: 8;
       display: none;
-      min-width: 118px;
+      min-width: 132px;
       padding: 6px;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -1560,6 +1573,8 @@
     .portfolio-menu-panel button { width: 100%; justify-content: center; }
     .portfolio-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
     .portfolio-list-head-title { font-size: 13px; font-weight: 750; color: var(--text); }
+    .portfolio-list-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .portfolio-update-text { color: #7b8794; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .portfolio-list-refresh { min-height: 28px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; }
     .portfolio-list-refresh svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-list-refresh:disabled svg { animation: portfolio-refresh-spin .8s linear infinite; }
@@ -2212,10 +2227,13 @@
       .card-grid { grid-template-columns: 1fr; }
       .portfolio-summary { grid-template-columns: 1fr 1fr; }
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
-      .portfolio-actions { width: 100%; justify-content: stretch; }
+      .portfolio-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
       .portfolio-actions .segmented { width: 100%; }
       .portfolio-actions > button,
-      .portfolio-menu { flex: 1 1 150px; }
+      .portfolio-menu { width: 100%; min-width: 0; }
+      .portfolio-summary-toggle,
+      .portfolio-actions .segmented,
+      .portfolio-menu { grid-column: 1 / -1; }
       .portfolio-menu { display: flex; }
       .portfolio-menu > button { width: 100%; }
       .portfolio-menu-panel { left: 0; right: 0; }
@@ -2227,7 +2245,10 @@
       .rebalance-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .position-edit-fields { grid-template-columns: repeat(2, minmax(0, 124px)); }
       .position-plan { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; }
-      .portfolio-switcher select, .portfolio-head button { width: 100%; }
+      .portfolio-switcher select, .portfolio-switcher button { width: 100%; }
+      .portfolio-actions > button { width: auto; }
+      .portfolio-list-head { align-items: stretch; flex-direction: column; }
+      .portfolio-list-tools { width: 100%; justify-content: space-between; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       table, thead, tbody, tr, th, td { display: block; width: 100%; min-width: 0; }
@@ -3523,24 +3544,23 @@
             <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
           </div>
           <div class="portfolio-actions">
+            <button class="primary" data-action="openPosition">+ 开仓</button>
+            <button data-action="rebalancePortfolio">调仓助手</button>
+            <button class="secondary portfolio-summary-toggle" data-action="togglePortfolioSummary">
+              ${summaryExpanded
+                ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>收起组合卡片</span>`
+                : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span>展开组合卡片</span>`}
+            </button>
             <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
-            <button class="secondary" data-action="togglePortfolioSummary">${summaryExpanded ? "收起组合卡片" : "展开组合卡片"}</button>
             <div class="portfolio-menu">
-              <button type="button">组合操作</button>
+              <button type="button">更多操作</button>
               <div class="portfolio-menu-panel">
-                <button type="button" data-action="createPortfolio">创建组合</button>
-                <button type="button" class="danger" data-action="deletePortfolio">删除组合</button>
-              </div>
-            </div>
-            <div class="portfolio-menu">
-              <button type="button">申赎</button>
-              <div class="portfolio-menu-panel">
+                <button type="button" data-action="createPortfolio">创建新组合</button>
+                <button type="button" class="danger" data-action="deletePortfolio">删除当前组合</button>
                 <button type="button" data-action="subscribePortfolio">申购</button>
                 <button type="button" data-action="redeemPortfolio">赎回</button>
               </div>
             </div>
-            <button data-action="rebalancePortfolio">调仓助手</button>
-            <button class="primary" data-action="openPosition">+ 开仓</button>
           </div>
         </div>
         ${summaryExpanded ? `<section class="portfolio-summary">
@@ -3625,10 +3645,13 @@
         <section class="table-panel portfolio-table">
           <div class="portfolio-list-head">
             <div class="portfolio-list-head-title">持仓列表</div>
-            <button class="portfolio-list-refresh" data-action="refreshPortfolioQuotes" ${portfolioQuoteRefreshInFlight ? "disabled" : ""} title="刷新实时股价及全部盈亏数据">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg>
-              ${portfolioQuoteRefreshInFlight ? "刷新中" : "刷新"}
-            </button>
+            <div class="portfolio-list-tools">
+              ${state.portfolioQuotesUpdatedAt ? `<span class="portfolio-update-text">最新更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}</span>` : ""}
+              <button class="portfolio-list-refresh" data-action="refreshPortfolioQuotes" ${portfolioQuoteRefreshInFlight ? "disabled" : ""} title="刷新实时股价及全部盈亏数据">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg>
+                ${portfolioQuoteRefreshInFlight ? "刷新中" : "刷新"}
+              </button>
+            </div>
           </div>
           <div class="table-scroll"><table>
           <thead><tr><th>股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
@@ -3672,7 +3695,6 @@
               <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
-          <caption class="muted" style="caption-side:bottom;text-align:left;padding:8px 11px">行情每分钟自动刷新${state.portfolioQuotesUpdatedAt ? ` · 最近更新 ${formatDateTime(state.portfolioQuotesUpdatedAt)}` : ""}</caption>
         </table></div></section>`;
     }
 
