@@ -1600,6 +1600,15 @@
     .simple-modal-error { color: #b42318; background: #fff3f0; border: 1px solid #f6c0b7; padding: 9px 10px; border-radius: 4px; font-size: 13px; }
     .position-history-table { min-width: 100%; }
     .position-history-table th, .position-history-table td { padding: 9px 8px; }
+    .position-history-table .history-rollback {
+      color: #b42318;
+      border-color: #f2b8b5;
+      background: #fff5f5;
+    }
+    .position-history-table .history-rollback:hover {
+      border-color: #e4877b;
+      background: #fee4e2;
+    }
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
@@ -3203,12 +3212,12 @@
         .filter((item) => item.positionId === position?.id || (!item.positionId && item.code === position?.code))
         .sort((a, b) => String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")));
       const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
-        <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th></tr></thead>
-        <tbody>${rows.map((item) => `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td></tr>`).join("")}</tbody>
+        <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th><th>操作</th></tr></thead>
+        <tbody>${rows.map((item) => `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td><td><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></td></tr>`).join("")}</tbody>
       </table></div>` : `<div class="empty" style="padding:28px 12px">暂无加仓或减持记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
         <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
-        <div class="simple-modal-body">${body}</div>
+        <div class="simple-modal-body">${body}${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
         <div class="simple-modal-foot"><button data-action="closePortfolioModal">关闭</button></div>
       </section></div>`;
     }
@@ -4450,6 +4459,7 @@
       if (action === "reducePosition") openPortfolioModal("reduce", stockId);
       if (action === "editPosition") openPortfolioModal("edit", stockId);
       if (action === "positionHistory") openPortfolioModal("history", stockId);
+      if (action === "rollbackTrade") rollbackPortfolioTrade(event.currentTarget.dataset.tradeId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
@@ -5036,6 +5046,67 @@
         return { ...item, positions, tradeHistory, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
       });
       closePortfolioModal();
+    }
+
+    function rollbackPortfolioTrade(tradeId) {
+      const portfolio = activePortfolio();
+      if (!portfolio || !tradeId) return;
+      const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
+      if (!trade || !["add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可回滚的交易记录。");
+      const position = (portfolio.positions || []).find((item) => item.id === trade.positionId || (!trade.positionId && item.code === trade.code));
+      if (!position) return showPortfolioError("当前持仓中已找不到这只股票，无法安全回滚。");
+      const price = Number(trade.price);
+      const shares = Number(trade.shares);
+      const currentShares = Number(position.shares);
+      const currentCost = Number(position.averageCost);
+      if (!(price > 0) || !Number.isInteger(shares) || shares <= 0 || !Number.isFinite(currentShares) || currentShares < 0) return showPortfolioError("这条交易记录数据不完整，无法回滚。");
+      if (trade.type === "add" && currentShares < shares) return showPortfolioError("当前股数少于这笔加仓数量，无法安全回滚。");
+      const tradeTypeText = trade.type === "add" ? "加仓" : "减持";
+      const occurredAt = trade.occurredAt ? new Date(trade.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "--";
+      const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : (trade.currency || position.currency || marketCurrency(position.market));
+      const cashAmount = price * shares * portfolioFx(trade.currency || position.currency, cashCurrency);
+      const cashText = formatPortfolioMoney(cashAmount, cashCurrency);
+      const message = trade.type === "add"
+        ? `确定回滚这笔${tradeTypeText}吗？\n\n${position.name} ${position.code}\n时间：${occurredAt}\n数量：${shares.toLocaleString("zh-CN")} 股\n成交价：${formatPortfolioMoney(price, trade.currency || position.currency)}\n\n回滚后会减少对应股数、恢复现金 ${cashText}，并删除这条交易历史。`
+        : `确定回滚这笔${tradeTypeText}吗？\n\n${position.name} ${position.code}\n时间：${occurredAt}\n数量：${shares.toLocaleString("zh-CN")} 股\n成交价：${formatPortfolioMoney(price, trade.currency || position.currency)}\n\n回滚后会补回对应股数、扣回现金 ${cashText}，并删除这条交易历史。`;
+      if (!confirm(message)) return;
+
+      let nextPosition = null;
+      updateActivePortfolio((item) => {
+        const positions = [...(item.positions || [])];
+        const index = positions.findIndex((entry) => entry.id === position.id);
+        if (index < 0) return item;
+        const old = positions[index];
+        if (trade.type === "add") {
+          const remaining = Number(old.shares) - shares;
+          if (remaining <= 0) {
+            positions.splice(index, 1);
+            nextPosition = null;
+          } else {
+            const restoredCost = (Number(old.shares) * Number(old.averageCost) - price * shares) / remaining;
+            nextPosition = { ...old, shares: remaining, averageCost: restoredCost };
+            positions[index] = nextPosition;
+          }
+        } else {
+          const restoredShares = Number(old.shares) + shares;
+          const restoredCost = (Number(old.shares) * (Number.isFinite(currentCost) ? currentCost : 0) + price * shares) / restoredShares;
+          nextPosition = { ...old, shares: restoredShares, averageCost: restoredCost, latestPrice: Number(old.latestPrice) || price };
+          positions[index] = nextPosition;
+        }
+        const cashDelta = trade.type === "add" ? cashAmount : -cashAmount;
+        const nextCash = { ...(item.cash || {}), [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta };
+        return {
+          ...item,
+          positions,
+          cash: nextCash,
+          tradeHistory: (item.tradeHistory || []).filter((entry) => entry.id !== tradeId),
+          updatedAt: new Date().toISOString()
+        };
+      });
+      if (nextPosition && state.portfolioModal?.type === "history") state.portfolioModal = { ...state.portfolioModal, position: nextPosition };
+      if (!nextPosition && state.portfolioModal?.type === "history") state.portfolioModal = null;
+      state.portfolioError = "";
+      render();
     }
 
     function showPortfolioError(message) {
