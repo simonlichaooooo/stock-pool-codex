@@ -1617,10 +1617,10 @@
       padding: 3px;
       gap: 0;
       border-radius: 999px;
-      border: 1px solid #67d9e8;
-      background: #d9fbff;
+      border: 1px solid #93c5fd;
+      background: #eff6ff;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(8, 145, 178, .10);
+      box-shadow: 0 1px 2px rgba(37, 99, 235, .10);
     }
     .portfolio-view-tabs button {
       position: relative;
@@ -1631,14 +1631,14 @@
       border: 0;
       border-radius: 999px;
       background: transparent;
-      color: #0e7490;
+      color: #1d4ed8;
       box-shadow: none;
     }
-    .portfolio-view-tabs button:hover { background: rgba(255, 255, 255, .50); color: #0891b2; }
+    .portfolio-view-tabs button:hover { background: rgba(255, 255, 255, .58); color: #2563eb; }
     .portfolio-view-tabs button.active {
-      background: #0891b2;
+      background: #2563eb;
       color: #fff;
-      box-shadow: 0 1px 4px rgba(8, 145, 178, .24);
+      box-shadow: 0 1px 4px rgba(37, 99, 235, .24);
     }
     .portfolio-delete-warning {
       display: grid;
@@ -2071,7 +2071,17 @@
       width: 3px;
       background: #bfd9d4;
     }
+    .portfolio-summary .portfolio-metric {
+      border-color: #d5c5ea;
+      background: linear-gradient(180deg, #fff 0, #fcfaff 100%);
+    }
+    .portfolio-summary .portfolio-metric::before {
+      background: #c8b4e4;
+    }
     .portfolio-summary .portfolio-metric:first-child::before,
+    .portfolio-summary .portfolio-metric:nth-child(4)::before {
+      background: #6941a5;
+    }
     .performance-grid .portfolio-metric:first-child::before {
       background: var(--brand);
     }
