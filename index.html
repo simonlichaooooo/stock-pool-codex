@@ -1497,7 +1497,7 @@
       margin-bottom: 8px;
       flex-wrap: wrap;
     }
-    .portfolio-switcher { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .portfolio-switcher { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; }
     .portfolio-tabs { display: inline-flex; gap: 3px; flex-wrap: wrap; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
     .portfolio-tabs button { min-height: 28px; padding: 0 10px; border-color: transparent; background: transparent; color: #667085; }
     .portfolio-tabs button:hover { color: var(--brand); background: #fff; }
@@ -1537,6 +1537,27 @@
     .portfolio-cash-head .portfolio-metric-label { margin-bottom: 0; }
     .portfolio-cash-head button { min-height: 20px; padding: 0 6px; font-size: 10.5px; }
     .portfolio-view-tabs { margin-bottom: 8px; }
+    .portfolio-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+    .portfolio-actions .segmented { flex: 0 0 auto; }
+    .portfolio-head .portfolio-view-tabs { margin-bottom: 0; }
+    .portfolio-menu { position: relative; display: inline-flex; }
+    .portfolio-menu > button { min-width: 76px; }
+    .portfolio-menu-panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 8;
+      display: none;
+      min-width: 118px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 14px 28px rgba(18, 25, 38, .14);
+    }
+    .portfolio-menu:hover .portfolio-menu-panel,
+    .portfolio-menu:focus-within .portfolio-menu-panel { display: grid; gap: 5px; }
+    .portfolio-menu-panel button { width: 100%; justify-content: center; }
     .portfolio-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
     .portfolio-list-head-title { font-size: 13px; font-weight: 750; color: var(--text); }
     .portfolio-list-refresh { min-height: 28px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; }
@@ -1851,9 +1872,8 @@
     .table-panel tbody tr:hover > td:first-child {
       box-shadow: inset 3px 0 0 var(--brand);
     }
-    .table-panel tbody tr:hover > td.sticky-col {
-      box-shadow: inset 3px 0 0 var(--brand), 1px 0 0 #d9e4e1, 8px 0 18px rgba(18,25,38,.035);
-    }
+    .table-panel tbody tr:hover > td.sticky-col { box-shadow: 1px 0 0 #d9e4e1, 8px 0 18px rgba(18,25,38,.035); }
+    .table-panel tbody tr:hover > td:first-child.sticky-col { box-shadow: inset 3px 0 0 var(--brand); }
     th.sticky-col,
     td.sticky-col {
       box-shadow: 1px 0 0 #d9e4e1, 8px 0 18px rgba(18,25,38,.035);
@@ -2192,6 +2212,13 @@
       .card-grid { grid-template-columns: 1fr; }
       .portfolio-summary { grid-template-columns: 1fr 1fr; }
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
+      .portfolio-actions { width: 100%; justify-content: stretch; }
+      .portfolio-actions .segmented { width: 100%; }
+      .portfolio-actions > button,
+      .portfolio-menu { flex: 1 1 150px; }
+      .portfolio-menu { display: flex; }
+      .portfolio-menu > button { width: 100%; }
+      .portfolio-menu-panel { left: 0; right: 0; }
       .position-edit-layout { grid-template-columns: 1fr; }
       .position-trade-layout { grid-template-columns: 1fr; }
       .rebalance-grid { grid-template-columns: 1fr; }
@@ -2310,6 +2337,7 @@
       portfolioQuotesUpdatedAt: "",
       portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
+      portfolioSummaryExpanded: false,
       navRange: "3M",
       navYear: "",
       benchmarkCode: "",
@@ -3484,6 +3512,7 @@
       const cashRatio = metrics.netBase ? metrics.cashBase / metrics.netBase : 0;
       const totalProfit = portfolioTotalProfit(portfolio, metrics);
       const profitClass = state.portfolioPrivacyMode ? "muted" : totalProfit > 0 ? "gain" : totalProfit < 0 ? "loss" : "muted";
+      const summaryExpanded = Boolean(state.portfolioSummaryExpanded);
       return `
         <div class="portfolio-head">
           <div class="portfolio-switcher">
@@ -3492,12 +3521,29 @@
             </div>
             <span class="badge">${isHkus ? "港美账户" : "人民币账户"}</span>
             <button class="portfolio-privacy-toggle ${state.portfolioPrivacyMode ? "active" : ""}" data-action="togglePortfolioPrivacy" aria-label="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}" title="${state.portfolioPrivacyMode ? "显示资产数据" : "隐藏资产数据"}">${portfolioPrivacyIcon()}</button>
-            <button class="secondary" data-action="createPortfolio">+ 创建组合</button>
-            <button class="danger" data-action="deletePortfolio">删除组合</button>
           </div>
-          <div class="actions"><button data-action="subscribePortfolio">申购</button><button data-action="redeemPortfolio">赎回</button><button data-action="rebalancePortfolio">调仓助手</button><button class="primary" data-action="openPosition">+ 开仓</button></div>
+          <div class="portfolio-actions">
+            <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
+            <button class="secondary" data-action="togglePortfolioSummary">${summaryExpanded ? "收起组合卡片" : "展开组合卡片"}</button>
+            <div class="portfolio-menu">
+              <button type="button">组合操作</button>
+              <div class="portfolio-menu-panel">
+                <button type="button" data-action="createPortfolio">创建组合</button>
+                <button type="button" class="danger" data-action="deletePortfolio">删除组合</button>
+              </div>
+            </div>
+            <div class="portfolio-menu">
+              <button type="button">申赎</button>
+              <div class="portfolio-menu-panel">
+                <button type="button" data-action="subscribePortfolio">申购</button>
+                <button type="button" data-action="redeemPortfolio">赎回</button>
+              </div>
+            </div>
+            <button data-action="rebalancePortfolio">调仓助手</button>
+            <button class="primary" data-action="openPosition">+ 开仓</button>
+          </div>
         </div>
-        <section class="portfolio-summary">
+        ${summaryExpanded ? `<section class="portfolio-summary">
           <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.netBase, portfolio))}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${portfolioPrivate(formatPortfolioSummary(totalProfit, portfolio, { signed: true }))}</span></div></div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.positionBase, portfolio))}</div><div class="portfolio-metric-sub">仓位比例 ${(positionRatio * 100).toFixed(2)}%</div></div>
           <div class="portfolio-metric">
@@ -3506,8 +3552,7 @@
             <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
-        </section>
-        <div class="segmented portfolio-view-tabs"><button class="${state.portfolioPage === "positions" ? "active" : ""}" data-action="portfolioPage" data-page="positions">当前持仓</button><button class="${state.portfolioPage === "performance" ? "active" : ""}" data-action="portfolioPage" data-page="performance">净值曲线</button></div>
+        </section>` : ""}
         ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
       `;
     }
@@ -4881,6 +4926,10 @@
       }
       if (action === "togglePortfolioPrivacy") {
         state.portfolioPrivacyMode = !state.portfolioPrivacyMode;
+        render();
+      }
+      if (action === "togglePortfolioSummary") {
+        state.portfolioSummaryExpanded = !state.portfolioSummaryExpanded;
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
