@@ -1577,19 +1577,38 @@
       z-index: 8;
       display: none;
       min-width: 132px;
-      padding: 6px;
-      border: 1px solid var(--line);
+      padding: 7px;
+      border: 1px solid #e3c39b;
       border-radius: 6px;
-      background: #fff;
-      box-shadow: 0 14px 28px rgba(18, 25, 38, .14);
+      background: #fffaf3;
+      box-shadow: 0 14px 28px rgba(138, 75, 22, .14);
     }
     .portfolio-menu:hover .portfolio-menu-panel,
     .portfolio-menu:focus-within .portfolio-menu-panel { display: grid; gap: 5px; }
-    .portfolio-menu-panel button { width: 100%; justify-content: center; }
+    .portfolio-menu-panel button {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+      color: #8a4b16;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+    .portfolio-menu-panel button:hover { border-color: #e3c39b; background: #fff2df; color: #78350f; }
+    .portfolio-menu-divider {
+      height: 1px;
+      margin: 5px 2px 3px;
+      background: #e8d2b4;
+    }
     .portfolio-menu-panel .portfolio-menu-danger {
-      margin-top: 4px;
-      padding-top: 9px;
-      border-top: 1px solid var(--line);
+      justify-content: center;
+      text-align: center;
+      color: #8a3d35;
+    }
+    .portfolio-menu-panel .portfolio-menu-danger:hover {
+      color: #8a3d35;
+      border-color: #f3b6ad;
+      background: #fff3f0;
     }
     .portfolio-view-tabs {
       position: relative;
@@ -1597,10 +1616,10 @@
       padding: 2px;
       gap: 0;
       border-radius: 6px;
-      border: 1px solid #b9cedb;
-      background: #dff0f8;
+      border: 1px solid #8cc7d2;
+      background: #e6f9fb;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(36, 90, 141, .08);
+      box-shadow: 0 1px 2px rgba(21, 94, 117, .09);
     }
     .portfolio-view-tabs button {
       min-width: 54px;
@@ -1609,15 +1628,15 @@
       border: 0;
       border-radius: 4px;
       background: transparent;
-      color: #426072;
+      color: #155e75;
       box-shadow: none;
     }
-    .portfolio-view-tabs button + button { border-left: 1px solid rgba(132, 161, 176, .38); }
-    .portfolio-view-tabs button:hover { background: rgba(255, 255, 255, .48); color: #245a8d; }
+    .portfolio-view-tabs button + button { border-left: 1px solid rgba(21, 94, 117, .18); }
+    .portfolio-view-tabs button:hover { background: rgba(255, 255, 255, .48); color: #0e7490; }
     .portfolio-view-tabs button.active {
-      background: #fff;
-      color: #1f5277;
-      box-shadow: 0 1px 4px rgba(36, 90, 141, .18);
+      background: #0e7490;
+      color: #fff;
+      box-shadow: 0 1px 4px rgba(14, 116, 144, .22);
     }
     .portfolio-delete-warning {
       display: grid;
@@ -3680,6 +3699,7 @@
                 <button type="button" data-action="renamePortfolio">重命名组合</button>
                 <button type="button" data-action="subscribePortfolio">申购</button>
                 <button type="button" data-action="redeemPortfolio">赎回</button>
+                <div class="portfolio-menu-divider" aria-hidden="true"></div>
                 <button type="button" class="danger portfolio-menu-danger" data-action="deletePortfolio">删除组合</button>
               </div>
             </div>
