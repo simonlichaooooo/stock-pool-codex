@@ -1702,6 +1702,7 @@
     .portfolio-table .actions button { min-height: 27px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
     .portfolio-table .table-scroll { overflow: auto; max-height: calc(100vh - 288px); }
     .portfolio-table .stock-name { font-weight: 720; }
+    .portfolio-table .portfolio-position-weight { font-weight: 750; }
     .portfolio-table .trade-add {
       color: #b42318;
       border-color: #f3b6ad;
@@ -3870,7 +3871,7 @@
               <td data-label="当日盈亏" class="num ${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="持仓盈亏" class="num ${holdingProfitClass}">${holdingProfitCell}</td>
               <td data-label="市值" class="num">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
-              <td data-label="仓位比例">${(weight * 100).toFixed(2)}%</td>
+              <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
             </tr>`;
@@ -3895,11 +3896,14 @@
       const portfolio = activePortfolio();
       const position = modal.position;
       const rows = (portfolio?.tradeHistory || [])
-        .filter((item) => item.positionId === position?.id || (!item.positionId && item.code === position?.code))
+        .filter((item) => item.positionId === position?.id || (item.code === position?.code && (!item.market || item.market === position?.market)))
         .sort((a, b) => String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")));
       const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
         <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th><th>操作</th></tr></thead>
-        <tbody>${rows.map((item) => `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td><td><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></td></tr>`).join("")}</tbody>
+        <tbody>${rows.map((item) => {
+          const canRollback = !item.positionId || item.positionId === position?.id;
+          return `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td><td>${canRollback ? `<button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button>` : `<span class="muted">历史周期</span>`}</td></tr>`;
+        }).join("")}</tbody>
       </table></div>` : `<div class="empty" style="padding:28px 12px">暂无加仓或减持记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
         <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
@@ -5712,8 +5716,8 @@
         Object.entries(cashDeltas).forEach(([currency, delta]) => { nextCash[currency] = Number(nextCash[currency] || 0) + delta; });
         const tradeHistory = [
           ...(item.tradeHistory || []),
-          { id: id("trade"), positionId: soldPositionId, code: sellStock.code, type: "reduce", currency: sellCurrency, price: sellPrice, shares: sellShares, occurredAt: now },
-          { id: id("trade"), positionId: boughtPositionId, code: buyStock.code, type: "add", currency: buyCurrency, price: buyPrice, shares: buyShares, occurredAt: now }
+          { id: id("trade"), positionId: soldPositionId, code: sellStock.code, market: sellStock.market, type: "reduce", currency: sellCurrency, price: sellPrice, shares: sellShares, occurredAt: now },
+          { id: id("trade"), positionId: boughtPositionId, code: buyStock.code, market: buyStock.market, type: "add", currency: buyCurrency, price: buyPrice, shares: buyShares, occurredAt: now }
         ];
         return { ...item, positions, tradeHistory, cash: nextCash, updatedAt: now };
       });
@@ -5790,7 +5794,7 @@
         }
         const cashDelta = modal.type === "reduce" ? cashAmount : -cashAmount;
         const tradeHistory = modal.type === "add" || modal.type === "reduce"
-          ? [...(item.tradeHistory || []), { id: id("trade"), positionId: stock.id, code: stock.code, type: modal.type, currency, price, shares, occurredAt: new Date().toISOString() }]
+          ? [...(item.tradeHistory || []), { id: id("trade"), positionId: stock.id, code: stock.code, market: stock.market, type: modal.type, currency, price, shares, occurredAt: new Date().toISOString() }]
           : [...(item.tradeHistory || [])];
         return { ...item, positions, tradeHistory, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
       });
