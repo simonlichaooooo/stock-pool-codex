@@ -1408,7 +1408,7 @@
     }
     .segment-row {
       display: grid;
-      grid-template-columns: 64px 185px 37px 82px minmax(0, 1fr) 30px;
+      grid-template-columns: 64px 150px 50px 72px minmax(0, 1fr) 16px;
       gap: 8px;
       align-items: end;
     }
@@ -1425,6 +1425,26 @@
     .segment-row .readonly-value {
       width: 100%;
       max-width: none !important;
+    }
+    .segment-row .segment-remove {
+      width: 16px;
+      min-width: 16px;
+      max-width: 16px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1;
+    }
+    .segment-row .segment-remove:hover {
+      border: 0;
+      background: transparent;
+      color: #b42318;
     }
     .segment-total {
       display: grid;
@@ -4840,7 +4860,7 @@
               <input class="numeric-input" type="number" step="any" data-segment-field="expectedPE" data-segment-index="${index}" value="${escapeHtml(segment.expectedPE)}" ${locked}>
               ${segmentForecastYearSelect(segment.forecastYear || form.forecastYear, index, locked)}
               <textarea class="auto-grow-note" rows="1" data-segment-field="expectedPERemark" data-segment-index="${index}" ${locked}>${escapeHtml(segment.expectedPERemark || "")}</textarea>
-              <button class="icon" type="button" data-action="removeSegment" data-index="${index}" title="删除分部" ${locked || segments.length <= 1 ? "disabled" : ""}>×</button>
+              <button class="icon segment-remove" type="button" data-action="removeSegment" data-index="${index}" title="删除分部" aria-label="删除分部" ${locked || segments.length <= 1 ? "disabled" : ""}>×</button>
             </div>
           `).join("")}
           <div class="segment-actions">
