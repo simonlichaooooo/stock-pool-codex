@@ -1448,7 +1448,7 @@
     }
     .segment-total {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       padding-top: 10px;
       border-top: 1px solid var(--line);
@@ -1456,6 +1456,12 @@
     .segment-total .form-field > input,
     .segment-total .form-field > select,
     .segment-total .form-field .readonly-value { max-width: none; }
+    .segment-version {
+      width: 150px;
+      max-width: 100%;
+    }
+    .segment-version .form-field > input,
+    .segment-version .form-field > select { max-width: none; }
     .segment-actions {
       display: flex;
       justify-content: flex-start;
@@ -2370,6 +2376,7 @@
       .segment-row { grid-template-columns: 1fr; align-items: stretch; padding-bottom: 10px; border-bottom: 1px solid var(--soft); }
       .segment-row.head { display: none; }
       .segment-total { grid-template-columns: 1fr; }
+      .segment-version { width: 100%; }
       .valuation-form,
       .section-card { width: 100% !important; max-width: none !important; }
       .valuation-form .form-field > input,
@@ -4869,6 +4876,8 @@
           <div class="segment-total">
             ${formField("加总前瞻利润", `<div class="readonly-value"><span data-segment-total="profit">${metricMoney(form.expectedProfitCny, currency)}</span></div>`, { className: "input-short" })}
             ${formField("加总前瞻 PE", `<div class="readonly-value"><span data-segment-total="pe">${form.expectedPE ? `${trimNumber(form.expectedPE)} 倍` : "--"}</span></div>`, { className: "input-short" })}
+          </div>
+          <div class="segment-version">
             ${formField("版本", renderVersionControl(form, locked), { className: "input-medium" })}
           </div>
         </div>
