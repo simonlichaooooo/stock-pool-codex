@@ -6192,12 +6192,27 @@
     }
 
     function closePortfolioModal() {
+      const pageScroll = { x: window.scrollX, y: window.scrollY };
+      const currentTableScroll = document.querySelector(".portfolio-table .table-scroll");
+      const tableScroll = currentTableScroll
+        ? { left: currentTableScroll.scrollLeft, top: currentTableScroll.scrollTop }
+        : null;
       if (portfolioInitializationSearchTimer) window.clearTimeout(portfolioInitializationSearchTimer);
       portfolioInitializationSearchRequestId += 1;
       state.portfolioModal = null;
       state.portfolioError = "";
       state.portfolioSearchResults = [];
       render();
+      const restoreScroll = () => {
+        window.scrollTo(pageScroll.x, pageScroll.y);
+        const nextTableScroll = document.querySelector(".portfolio-table .table-scroll");
+        if (nextTableScroll && tableScroll) {
+          nextTableScroll.scrollLeft = tableScroll.left;
+          nextTableScroll.scrollTop = tableScroll.top;
+        }
+      };
+      restoreScroll();
+      window.requestAnimationFrame(() => window.requestAnimationFrame(restoreScroll));
     }
 
     function addInitializationRow() {
