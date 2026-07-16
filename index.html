@@ -3345,9 +3345,9 @@
       }
       if (!parts?.length) throw new Error("腾讯行情没有返回数据");
       const marketCapYi = Number(parts[45] || parts[44]);
-      if (!marketCapYi || Number.isNaN(marketCapYi)) throw new Error("腾讯行情没有返回总市值");
       const sourceCurrency = marketCurrency(stock.market);
       const latestPrice = Number(parts[3]) || Number(stock.latestPrice) || 0;
+      if (!latestPrice || !Number.isFinite(latestPrice)) throw new Error("腾讯行情没有返回最新价");
       const previousClose = Number(parts[4]) || 0;
       const quotedChangePercent = String(parts[32] || "").trim() === "" ? NaN : Number(parts[32]);
       return {
@@ -3355,7 +3355,7 @@
         latestPrice,
         previousClose,
         changePercent: Number.isFinite(quotedChangePercent) ? quotedChangePercent : previousClose ? (latestPrice / previousClose - 1) * 100 : null,
-        latestMarketCapCny: marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1),
+        latestMarketCapCny: marketCapYi > 0 ? marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1) : Number(stock.latestMarketCapCny) || 0,
         marketCapSourceCurrency: sourceCurrency,
         marketCapUpdatedAt: todayString()
       };
@@ -3674,7 +3674,7 @@
 
     function journalPriceText(stock) {
       const price = Number(stock.publishedPrice);
-      return price > 0 ? `发布价 ${price.toLocaleString("zh-CN", { maximumFractionDigits: 3 })} ${stock.currency || marketCurrency(stock.market)}` : "发布价暂不可用";
+      return price > 0 ? `${price.toLocaleString("zh-CN", { maximumFractionDigits: 3 })} ${stock.currency || marketCurrency(stock.market)}` : `— ${stock.currency || marketCurrency(stock.market)}`;
     }
 
     function renderJournalView() {
@@ -3747,6 +3747,40 @@
         }
       }
       writeJson(journalStorageKey(), state.journals);
+      if (state.journalDbReady) repairMissingJournalPrices().catch((error) => console.warn("日志价格补全失败。", error));
+    }
+
+    async function captureJournalStockPrice(stock, capturedAt = new Date().toISOString()) {
+      if (Number(stock.publishedPrice) > 0) return stock;
+      const quote = await fetchQuote(stock);
+      const latestPrice = Number(quote.latestPrice);
+      if (!latestPrice || !Number.isFinite(latestPrice)) throw new Error(`${stock.name || stock.code} 暂无有效行情`);
+      return { ...stock, publishedPrice: latestPrice, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: capturedAt };
+    }
+
+    async function repairMissingJournalPrices() {
+      const targets = state.journals.filter((entry) => (entry.stocks || []).some((stock) => !(Number(stock.publishedPrice) > 0)));
+      if (!targets.length || !state.session?.access_token || state.session.access_token === "local-demo") return;
+      const repaired = [];
+      for (const entry of targets) {
+        const stocks = await Promise.all((entry.stocks || []).map(async (stock) => {
+          try { return await captureJournalStockPrice(stock, new Date().toISOString()); }
+          catch { return stock; }
+        }));
+        if (stocks.some((stock, index) => Number(stock.publishedPrice) > 0 && !(Number(entry.stocks[index]?.publishedPrice) > 0))) {
+          repaired.push({ ...entry, stocks, updatedAt: new Date().toISOString() });
+        }
+      }
+      if (!repaired.length) return;
+      await supabaseRequest("/rest/v1/journal_entries?on_conflict=id", {
+        method: "POST",
+        prefer: "resolution=merge-duplicates",
+        body: JSON.stringify(repaired.map((entry) => ({ id: entry.id, user_id: state.session.user.id, payload: { ...entry, id: undefined }, updated_at: entry.updatedAt })))
+      });
+      const repairedById = new Map(repaired.map((entry) => [entry.id, entry]));
+      state.journals = state.journals.map((entry) => repairedById.get(entry.id) || entry);
+      writeJson(journalStorageKey(), state.journals);
+      if (state.mainView === "journal") render();
     }
 
     function openJournal(entryId = "") {
@@ -3875,10 +3909,15 @@
       if (!content) { state.journalError = "请先写下日志内容。"; render(); return; }
       state.journalSaving = true; state.journalError = ""; render();
       const now = new Date().toISOString();
-      const stocks = state.journalModal.id ? state.journalModal.stocks : await Promise.all((state.journalModal.stocks || []).map(async (stock) => {
-        try { const quote = await fetchQuote(stock); return { ...stock, publishedPrice: Number(quote.latestPrice) || Number(stock.publishedPrice) || 0, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: now }; }
-        catch { return { ...stock, publishedPrice: Number(stock.publishedPrice) || 0, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: now }; }
-      }));
+      const priceResults = await Promise.allSettled((state.journalModal.stocks || []).map((stock) => captureJournalStockPrice(stock, now)));
+      const failedPrice = priceResults.find((result) => result.status === "rejected");
+      if (failedPrice) {
+        state.journalSaving = false;
+        state.journalError = `价格获取失败，请稍后重试：${failedPrice.reason?.message || String(failedPrice.reason)}`;
+        render();
+        return;
+      }
+      const stocks = priceResults.map((result) => result.value);
       const entry = { ...state.journalModal, id: state.journalModal.id || id("journal"), content, stocks, publishedAt: state.journalModal.publishedAt || now, createdAt: state.journalModal.createdAt || now, updatedAt: now };
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
         try {
