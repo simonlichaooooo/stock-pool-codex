@@ -4448,6 +4448,13 @@
       return { id: id("initrow"), query: "", stock: null, shares: "", averageCost: "", results: [], loading: false };
     }
 
+    function initializationResultsMarkup(row) {
+      if (!row?.loading && !row?.results?.length) return "";
+      return `<div class="portfolio-initialize-results">${row.loading
+        ? `<div class="muted" style="padding:10px">搜索中…</div>`
+        : row.results.map((stock, resultIndex) => `<button type="button" class="portfolio-initialize-result" data-action="selectInitializationStock" data-row-id="${row.id}" data-index="${resultIndex}"><span>${escapeHtml(stock.name)}</span><small>${escapeHtml(stock.code)} · ${escapeHtml(stock.market)}</small></button>`).join("")}</div>`;
+    }
+
     function renderInitializePortfolioModal(modal) {
       const isHkus = modal.accountType === "HKUS";
       const isEditing = Boolean(modal.portfolioId);
@@ -4466,7 +4473,7 @@
             <div class="portfolio-initialize-rows">${rows.map((row, index) => `<div class="portfolio-initialize-row">
               <div class="field portfolio-initialize-stock"><span>股票</span>${row.stock
                 ? `<div class="portfolio-initialize-selected"><div><strong>${escapeHtml(row.stock.name)}</strong><small>${escapeHtml(row.stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`
-                : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off">${row.loading || row.results?.length ? `<div class="portfolio-initialize-results">${row.loading ? `<div class="muted" style="padding:10px">搜索中…</div>` : row.results.map((stock, resultIndex) => `<button type="button" class="portfolio-initialize-result" data-action="selectInitializationStock" data-row-id="${row.id}" data-index="${resultIndex}"><span>${escapeHtml(stock.name)}</span><small>${escapeHtml(stock.code)} · ${escapeHtml(stock.market)}</small></button>`).join("")}</div>` : ""}`}</div>
+                : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off"><div data-initialization-results="${row.id}">${initializationResultsMarkup(row)}</div>`}</div>
               <label class="field"><span>持股数</span><input data-init-row-field="shares" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.shares || "")}" placeholder="0"></label>
               <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
               <button type="button" class="portfolio-initialize-remove" data-action="removeInitializationRow" data-row-id="${row.id}" aria-label="删除第 ${index + 1} 行">×</button>
@@ -6039,7 +6046,8 @@
       row.loading = Boolean(query);
       if (portfolioInitializationSearchTimer) window.clearTimeout(portfolioInitializationSearchTimer);
       const requestId = ++portfolioInitializationSearchRequestId;
-      if (!query) { row.loading = false; render(); return; }
+      updateInitializationSearchResults(rowId);
+      if (!query) { row.loading = false; updateInitializationSearchResults(rowId); return; }
       portfolioInitializationSearchTimer = window.setTimeout(async () => {
         try {
           const results = await searchStocks(query);
@@ -6048,12 +6056,15 @@
         } finally {
           if (requestId === portfolioInitializationSearchRequestId) row.loading = false;
         }
-        render();
-        requestAnimationFrame(() => {
-          const input = document.querySelector(`[data-input='initializationStockSearch'][data-row-id='${rowId}']`);
-          if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
-        });
+        updateInitializationSearchResults(rowId);
       }, 180);
+    }
+
+    function updateInitializationSearchResults(rowId) {
+      const row = state.portfolioModal?.rows?.find((item) => item.id === rowId);
+      const host = document.querySelector(`[data-initialization-results='${rowId}']`);
+      if (!row || !host) return;
+      host.innerHTML = initializationResultsMarkup(row);
     }
 
     function selectInitializationStock(rowId, index) {
