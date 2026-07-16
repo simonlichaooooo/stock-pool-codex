@@ -4471,7 +4471,7 @@
             : `<label class="field"><span>人民币现金（万元）</span><input data-init-field="cashCny" name="cashCny" type="number" min="0" step="any" value="${escapeHtml(modal.cashCny || "")}" required></label>`}</section>
           <section class="portfolio-initialize-section"><div class="portfolio-initialize-section-head"><h3>3. 当前持仓</h3><button type="button" data-action="addInitializationRow">增加一行</button></div><div class="portfolio-initialize-help">逐行搜索股票并录入当前持股数和摊薄成本；保存时会同步最新股价计算当前资产与净值。</div>
             <div class="portfolio-initialize-rows">${rows.map((row, index) => `<div class="portfolio-initialize-row">
-              <div class="field portfolio-initialize-stock"><span>股票</span>${row.stock
+              <div class="field portfolio-initialize-stock" data-initialization-stock="${row.id}"><span>股票</span>${row.stock
                 ? `<div class="portfolio-initialize-selected"><div><strong>${escapeHtml(row.stock.name)}</strong><small>${escapeHtml(row.stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`
                 : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off"><div data-initialization-results="${row.id}">${initializationResultsMarkup(row)}</div>`}</div>
               <label class="field"><span>持股数</span><input data-init-row-field="shares" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.shares || "")}" placeholder="0"></label>
@@ -6031,8 +6031,12 @@
       row.stock = null;
       row.query = "";
       row.results = [];
-      render();
-      requestAnimationFrame(() => document.querySelector(`[data-input='initializationStockSearch'][data-row-id='${rowId}']`)?.focus());
+      const host = document.querySelector(`[data-initialization-stock='${rowId}']`);
+      if (!host) return;
+      host.innerHTML = `<span>股票</span><input data-input="initializationStockSearch" data-row-id="${rowId}" value="" placeholder="搜索股票名称或代码" autocomplete="off"><div data-initialization-results="${rowId}"></div>`;
+      const input = host.querySelector("[data-input='initializationStockSearch']");
+      input?.addEventListener("input", onInitializationStockSearch);
+      input?.focus({ preventScroll: true });
     }
 
     function onInitializationStockSearch(event) {
@@ -6075,7 +6079,8 @@
       row.query = `${stock.name} ${stock.code}`;
       row.results = [];
       row.loading = false;
-      render();
+      const host = document.querySelector(`[data-initialization-stock='${rowId}']`);
+      if (host) host.innerHTML = `<span>股票</span><div class="portfolio-initialize-selected"><div><strong>${escapeHtml(stock.name)}</strong><small>${escapeHtml(stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`;
     }
 
     async function onPortfolioStockSearch(event) {
