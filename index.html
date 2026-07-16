@@ -1809,6 +1809,25 @@
     .simple-modal.position-edit-modal { width: min(840px, 100%); }
     .simple-modal.position-trade-modal { width: min(760px, 100%); }
     .simple-modal.rebalance-modal { width: min(960px, 100%); overflow-x: hidden; }
+    .simple-modal.portfolio-initialize-modal { width: min(1040px, 100%); overflow-x: hidden; }
+    .portfolio-create-import { padding: 12px; border: 1px solid #c9ddd9; background: #f4faf8; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .portfolio-create-import strong { display: block; color: var(--brand-strong); font-size: 13px; }
+    .portfolio-create-import span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .portfolio-initialize-section { display: grid; gap: 10px; }
+    .portfolio-initialize-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .portfolio-initialize-section-head h3 { margin: 0; font-size: 14px; }
+    .portfolio-initialize-help { color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .portfolio-initialize-rows { display: grid; gap: 9px; }
+    .portfolio-initialize-row { display: grid; grid-template-columns: minmax(260px, 1fr) 150px 150px 36px; gap: 10px; align-items: start; padding: 11px; border: 1px solid var(--line); background: #fbfdfc; }
+    .portfolio-initialize-stock { position: relative; min-width: 0; }
+    .portfolio-initialize-stock input { width: 100%; }
+    .portfolio-initialize-selected { min-height: 38px; padding: 8px 10px; border: 1px solid #bad7d1; background: var(--brand-soft); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .portfolio-initialize-selected strong { font-size: 13px; }
+    .portfolio-initialize-selected small { color: var(--muted); margin-left: 6px; }
+    .portfolio-initialize-results { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; display: grid; gap: 3px; max-height: 230px; overflow: auto; padding: 5px; border: 1px solid #cfd9d7; background: #fff; box-shadow: 0 12px 26px rgba(18,25,38,.16); }
+    .portfolio-initialize-result { min-height: 40px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-color: transparent; }
+    .portfolio-initialize-result small { color: var(--muted); }
+    .portfolio-initialize-remove { width: 36px; min-width: 36px; padding: 0; color: #b42318; }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
     .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
@@ -2519,6 +2538,9 @@
       td[data-label="股票名称"] { grid-template-columns: 1fr; padding-top: 12px; }
       .actions { flex-wrap: wrap; justify-content: flex-start; }
       .actions button { min-height: 32px; }
+      .portfolio-create-import { align-items: stretch; flex-direction: column; }
+      .portfolio-initialize-row { grid-template-columns: 1fr; }
+      .portfolio-initialize-remove { width: 100%; }
     }
     @media (max-width: 520px) {
       .portfolio-summary { grid-template-columns: 1fr; }
@@ -2545,6 +2567,8 @@
     let portfolioQuoteRefreshInFlight = false;
     let journalSearchTimer = null;
     let journalSearchRequestId = 0;
+    let portfolioInitializationSearchTimer = null;
+    let portfolioInitializationSearchRequestId = 0;
     const stockSearchCache = new Map();
 
     let currencies = {
@@ -4371,6 +4395,7 @@
       const modal = state.portfolioModal;
       if (!modal) return "";
       if (modal.type === "create") return renderCreatePortfolioModal();
+      if (modal.type === "initialize") return renderInitializePortfolioModal(modal);
       if (modal.type === "rename") return renderRenamePortfolioModal();
       if (modal.type === "delete") return renderDeletePortfolioModal(modal);
       if (modal.type === "cash") return renderCashModal(modal);
@@ -4414,7 +4439,40 @@
         <label class="field"><span>账户类型</span><select name="accountType" data-input="portfolioAccountType"><option value="CNY">人民币账户</option><option value="HKUS">港美账户</option></select></label>
         <div data-account-fields="CNY"><label class="field"><span>人民币启动金额（万元）</span><input name="startCny" type="number" min="0" step="0.01" value="0" required></label></div>
         <div data-account-fields="HKUS" style="display:none"><div class="grid-2"><label class="field"><span>港币启动金额（万港币）</span><input name="startHkd" type="number" min="0" step="0.01" value="0"></label><label class="field"><span>美元启动金额（万美元）</span><input name="startUsd" type="number" min="0" step="0.01" value="0"></label></div></div>
+        <div class="portfolio-create-import"><div><strong>导入一个已运行的组合</strong><span>一次录入启动金额、当前现金和全部持仓，系统据此计算当前净值。</span></div><button type="button" data-action="initializePortfolio">初始化导入</button></div>
       `, "createPortfolio", "创建");
+    }
+
+    function initializationRow() {
+      return { id: id("initrow"), query: "", stock: null, shares: "", averageCost: "", results: [], loading: false };
+    }
+
+    function renderInitializePortfolioModal(modal) {
+      const isHkus = modal.accountType === "HKUS";
+      const rows = modal.rows || [];
+      return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal portfolio-initialize-modal">
+        <div class="simple-modal-head"><h2>初始化导入组合</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
+        <form data-form="initializePortfolio"><div class="simple-modal-body">
+          <div class="grid-2"><label class="field"><span>组合名称</span><input data-init-field="name" name="name" maxlength="30" required value="${escapeHtml(modal.name || "")}" placeholder="例如：My"></label><label class="field"><span>账户类型</span><select data-input="initializationAccountType" name="accountType"><option value="CNY"${isHkus ? "" : " selected"}>人民币账户</option><option value="HKUS"${isHkus ? " selected" : ""}>港美账户</option></select></label></div>
+          <section class="portfolio-initialize-section"><div class="portfolio-initialize-section-head"><h3>1. 启动金额</h3></div><div class="portfolio-initialize-help">组合最初开始运行时的本金，用作净值 1.0000 的计算基准。</div>${isHkus
+            ? `<div class="grid-2"><label class="field"><span>港币启动金额（万港币）</span><input data-init-field="startHkd" name="startHkd" type="number" min="0" step="any" value="${escapeHtml(modal.startHkd || "")}"></label><label class="field"><span>美元启动金额（万美元）</span><input data-init-field="startUsd" name="startUsd" type="number" min="0" step="any" value="${escapeHtml(modal.startUsd || "")}"></label></div>`
+            : `<label class="field"><span>人民币启动金额（万元）</span><input data-init-field="startCny" name="startCny" type="number" min="0" step="any" value="${escapeHtml(modal.startCny || "")}" required></label>`}</section>
+          <section class="portfolio-initialize-section"><div class="portfolio-initialize-section-head"><h3>2. 当前现金</h3></div><div class="portfolio-initialize-help">填写导入当天账户内实际可用的现金余额。</div>${isHkus
+            ? `<div class="grid-2"><label class="field"><span>港币现金（万港币）</span><input data-init-field="cashHkd" name="cashHkd" type="number" min="0" step="any" value="${escapeHtml(modal.cashHkd || "")}"></label><label class="field"><span>美元现金（万美元）</span><input data-init-field="cashUsd" name="cashUsd" type="number" min="0" step="any" value="${escapeHtml(modal.cashUsd || "")}"></label></div>`
+            : `<label class="field"><span>人民币现金（万元）</span><input data-init-field="cashCny" name="cashCny" type="number" min="0" step="any" value="${escapeHtml(modal.cashCny || "")}" required></label>`}</section>
+          <section class="portfolio-initialize-section"><div class="portfolio-initialize-section-head"><h3>3. 当前持仓</h3><button type="button" data-action="addInitializationRow">增加一行</button></div><div class="portfolio-initialize-help">逐行搜索股票并录入当前持股数和摊薄成本；保存时会同步最新股价计算当前资产与净值。</div>
+            <div class="portfolio-initialize-rows">${rows.map((row, index) => `<div class="portfolio-initialize-row">
+              <div class="portfolio-initialize-stock">${row.stock
+                ? `<div class="portfolio-initialize-selected"><div><strong>${escapeHtml(row.stock.name)}</strong><small>${escapeHtml(row.stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`
+                : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off">${row.loading || row.results?.length ? `<div class="portfolio-initialize-results">${row.loading ? `<div class="muted" style="padding:10px">搜索中…</div>` : row.results.map((stock, resultIndex) => `<button type="button" class="portfolio-initialize-result" data-action="selectInitializationStock" data-row-id="${row.id}" data-index="${resultIndex}"><span>${escapeHtml(stock.name)}</span><small>${escapeHtml(stock.code)} · ${escapeHtml(stock.market)}</small></button>`).join("")}</div>` : ""}`}</div>
+              <label class="field"><span>持股数</span><input data-init-row-field="shares" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.shares || "")}" placeholder="0"></label>
+              <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
+              <button type="button" class="portfolio-initialize-remove" data-action="removeInitializationRow" data-row-id="${row.id}" aria-label="删除第 ${index + 1} 行">×</button>
+            </div>`).join("")}</div>
+          </section>
+          ${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}
+        </div><div class="simple-modal-foot"><button type="button" data-action="closePortfolioModal">取消</button><button class="primary" type="submit">完成初始化</button></div></form>
+      </section></div>`;
     }
 
     function renderRenamePortfolioModal() {
@@ -5541,6 +5599,22 @@
       if (portfolioAccountType) portfolioAccountType.addEventListener("change", (event) => {
         document.querySelectorAll("[data-account-fields]").forEach((el) => { el.style.display = el.dataset.accountFields === event.target.value ? "block" : "none"; });
       });
+      const initializationAccountType = document.querySelector("[data-input='initializationAccountType']");
+      if (initializationAccountType) initializationAccountType.addEventListener("change", (event) => {
+        if (state.portfolioModal?.type !== "initialize") return;
+        state.portfolioModal.accountType = event.target.value;
+        render();
+      });
+      document.querySelectorAll("[data-init-field]").forEach((input) => input.addEventListener("input", () => {
+        if (state.portfolioModal?.type === "initialize") state.portfolioModal[input.dataset.initField] = input.value;
+      }));
+      document.querySelectorAll("[data-init-row-field]").forEach((input) => input.addEventListener("input", () => {
+        const row = state.portfolioModal?.rows?.find((item) => item.id === input.dataset.rowId);
+        if (row) row[input.dataset.initRowField] = input.value;
+      }));
+      document.querySelectorAll("[data-input='initializationStockSearch']").forEach((input) => {
+        input.addEventListener("input", onInitializationStockSearch);
+      });
       document.querySelectorAll("[data-input='portfolioStockSearch']").forEach((portfolioSearch) => {
         portfolioSearch.addEventListener("compositionstart", () => { state.portfolioSearchComposing = true; });
         portfolioSearch.addEventListener("compositionend", (event) => {
@@ -5553,6 +5627,8 @@
       });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
+      const initializePortfolioForm = document.querySelector("[data-form='initializePortfolio']");
+      if (initializePortfolioForm) initializePortfolioForm.addEventListener("submit", submitInitializePortfolio);
       const renamePortfolioForm = document.querySelector("[data-form='renamePortfolio']");
       if (renamePortfolioForm) renamePortfolioForm.addEventListener("submit", submitRenamePortfolio);
       const deletePortfolioForm = document.querySelector("[data-form='deletePortfolio']");
@@ -5692,6 +5768,11 @@
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
       if (action === "createPortfolio") openPortfolioModal("create");
+      if (action === "initializePortfolio") openPortfolioModal("initialize");
+      if (action === "addInitializationRow") addInitializationRow();
+      if (action === "removeInitializationRow") removeInitializationRow(event.currentTarget.dataset.rowId);
+      if (action === "clearInitializationStock") clearInitializationStock(event.currentTarget.dataset.rowId);
+      if (action === "selectInitializationStock") selectInitializationStock(event.currentTarget.dataset.rowId, Number(event.currentTarget.dataset.index));
       if (action === "renamePortfolio") openPortfolioModal("rename");
       if (action === "deletePortfolio") openPortfolioModal("delete");
       if (action === "closePortfolioModal") closePortfolioModal();
@@ -5893,16 +5974,82 @@
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
       state.portfolioSearchComposing = false;
-      state.portfolioModal = type === "rebalance"
+      state.portfolioModal = type === "initialize"
+        ? { type, name: "", accountType: "CNY", startCny: "", startHkd: "", startUsd: "", cashCny: "", cashHkd: "", cashUsd: "", rows: [initializationRow()] }
+        : type === "rebalance"
         ? { type, searchSide: "sell", sellStock: null, buyStock: null, sellQuery: "", buyQuery: "", sellPrice: "", buyPrice: "", sellShares: "", buyShares: "", lastEditedSide: "" }
         : { type, position, stock: null, searchQuery: "" };
       render();
     }
 
     function closePortfolioModal() {
+      if (portfolioInitializationSearchTimer) window.clearTimeout(portfolioInitializationSearchTimer);
+      portfolioInitializationSearchRequestId += 1;
       state.portfolioModal = null;
       state.portfolioError = "";
       state.portfolioSearchResults = [];
+      render();
+    }
+
+    function addInitializationRow() {
+      if (state.portfolioModal?.type !== "initialize") return;
+      state.portfolioModal.rows.push(initializationRow());
+      render();
+    }
+
+    function removeInitializationRow(rowId) {
+      if (state.portfolioModal?.type !== "initialize") return;
+      state.portfolioModal.rows = state.portfolioModal.rows.filter((row) => row.id !== rowId);
+      if (!state.portfolioModal.rows.length) state.portfolioModal.rows.push(initializationRow());
+      render();
+    }
+
+    function clearInitializationStock(rowId) {
+      const row = state.portfolioModal?.rows?.find((item) => item.id === rowId);
+      if (!row) return;
+      row.stock = null;
+      row.query = "";
+      row.results = [];
+      render();
+      requestAnimationFrame(() => document.querySelector(`[data-input='initializationStockSearch'][data-row-id='${rowId}']`)?.focus());
+    }
+
+    function onInitializationStockSearch(event) {
+      const rowId = event.target.dataset.rowId;
+      const query = event.target.value.trim();
+      const row = state.portfolioModal?.rows?.find((item) => item.id === rowId);
+      if (!row) return;
+      row.query = event.target.value;
+      row.stock = null;
+      row.results = [];
+      row.loading = Boolean(query);
+      if (portfolioInitializationSearchTimer) window.clearTimeout(portfolioInitializationSearchTimer);
+      const requestId = ++portfolioInitializationSearchRequestId;
+      if (!query) { row.loading = false; render(); return; }
+      portfolioInitializationSearchTimer = window.setTimeout(async () => {
+        try {
+          const results = await searchStocks(query);
+          if (requestId !== portfolioInitializationSearchRequestId || row.query.trim() !== query) return;
+          row.results = results.slice(0, 8);
+        } finally {
+          if (requestId === portfolioInitializationSearchRequestId) row.loading = false;
+        }
+        render();
+        requestAnimationFrame(() => {
+          const input = document.querySelector(`[data-input='initializationStockSearch'][data-row-id='${rowId}']`);
+          if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+        });
+      }, 180);
+    }
+
+    function selectInitializationStock(rowId, index) {
+      const row = state.portfolioModal?.rows?.find((item) => item.id === rowId);
+      const stock = row?.results?.[index];
+      if (!row || !stock) return;
+      row.stock = stock;
+      row.query = `${stock.name} ${stock.code}`;
+      row.results = [];
+      row.loading = false;
       render();
     }
 
@@ -5999,6 +6146,57 @@
         totalUnits: startBase,
         cash: accountType === "HKUS" ? { CNY: 0, HKD: startHkd, USD: startUsd } : { CNY: startCny, HKD: 0, USD: 0 },
         positions: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      state.portfolios.push(portfolio);
+      state.activePortfolioId = portfolio.id;
+      savePortfolios();
+      closePortfolioModal();
+    }
+
+    async function submitInitializePortfolio(event) {
+      event.preventDefault();
+      const modal = state.portfolioModal;
+      if (modal?.type !== "initialize") return;
+      const name = String(modal.name || "").trim();
+      const accountType = modal.accountType === "HKUS" ? "HKUS" : "CNY";
+      const amounts = ["startCny", "startHkd", "startUsd", "cashCny", "cashHkd", "cashUsd"].reduce((result, key) => ({ ...result, [key]: Number(modal[key] || 0) * 10000 }), {});
+      if (!name) return showPortfolioError("请输入组合名称。");
+      if (state.portfolios.some((item) => item.name.trim().toLowerCase() === name.toLowerCase())) return showPortfolioError("组合名称不能重复。");
+      if (Object.values(amounts).some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("启动金额和现金不能小于 0。");
+      const startBase = accountType === "HKUS" ? amounts.startUsd + amounts.startHkd * portfolioFx("HKD", "USD") : amounts.startCny;
+      if (startBase <= 0) return showPortfolioError("组合启动金额必须大于 0。");
+      const completedRows = (modal.rows || []).filter((row) => row.stock || row.shares || row.averageCost);
+      for (const row of completedRows) {
+        if (!row.stock) return showPortfolioError("请为每一行持仓选择股票。");
+        if (!(Number(row.shares) > 0)) return showPortfolioError(`${row.stock.name} 的持股数必须大于 0。`);
+        if (!(Number(row.averageCost) > 0)) return showPortfolioError(`${row.stock.name} 的摊薄成本必须大于 0。`);
+        if (accountType === "CNY" && !["CN", "HK"].includes(row.stock.market)) return showPortfolioError("人民币账户只能导入 A 股或港股通股票。");
+        if (accountType === "HKUS" && !["HK", "US"].includes(row.stock.market)) return showPortfolioError("港美账户只能导入港股或美股。");
+      }
+      const duplicate = completedRows.find((row, index) => completedRows.findIndex((other) => other.stock.code === row.stock.code && other.stock.market === row.stock.market) !== index);
+      if (duplicate) return showPortfolioError(`${duplicate.stock.name} 重复录入，请合并为一行。`);
+      state.portfolioError = "";
+      const now = new Date().toISOString();
+      const positions = await Promise.all(completedRows.map(async (row) => {
+        let quote = row.stock;
+        try { quote = { ...row.stock, ...(await fetchQuote(row.stock)) }; } catch (error) { console.warn("初始化行情读取失败，暂以摊薄成本计算。", error); }
+        return {
+          id: id("position"), name: row.stock.name, code: row.stock.code, rawCode: row.stock.rawCode || row.stock.code,
+          market: row.stock.market, exchange: row.stock.exchange, quoteId: row.stock.quoteId,
+          currency: row.stock.currency || marketCurrency(row.stock.market), shares: Number(row.shares), averageCost: Number(row.averageCost),
+          latestPrice: Number(quote.latestPrice) || Number(row.averageCost), previousClose: Number(quote.previousClose) || 0,
+          changePercent: Number.isFinite(Number(quote.changePercent)) ? Number(quote.changePercent) : null,
+          targetWeight: 0, priceUpdatedAt: now, createdAt: now, updatedAt: now
+        };
+      }));
+      const portfolio = {
+        id: id("portfolio"), name, accountType,
+        startCny: accountType === "CNY" ? amounts.startCny : 0,
+        startHkd: accountType === "HKUS" ? amounts.startHkd : 0,
+        startUsd: accountType === "HKUS" ? amounts.startUsd : 0,
+        startBase, totalUnits: startBase,
+        cash: accountType === "HKUS" ? { CNY: 0, HKD: amounts.cashHkd, USD: amounts.cashUsd } : { CNY: amounts.cashCny, HKD: 0, USD: 0 },
+        positions, tradeHistory: [], cashFlows: [], initializationMethod: "import", initializedAt: now, createdAt: now, updatedAt: now
       };
       state.portfolios.push(portfolio);
       state.activePortfolioId = portfolio.id;
