@@ -2358,10 +2358,10 @@
     .journal-editor { width:min(900px,100%); }
     .journal-editor textarea { min-height:300px; padding:16px; font:16px/1.8 "Songti SC","STSong",serif; }
     .journal-content-field { position:relative; }
-    .journal-mention-popup { display:none; position:absolute; z-index:4; left:14px; right:14px; top:calc(100% - 2px); max-height:240px; overflow:auto; padding:6px; background:#fff; border:1px solid #cfd9d7; box-shadow:0 14px 30px rgba(18,25,38,.16); }
+    .journal-mention-popup { display:none; position:absolute; z-index:20; width:min(440px,calc(100% - 20px)); max-height:260px; overflow-y:auto; overflow-x:hidden; padding:6px; background:#fff; border:1px solid #cfd9d7; box-shadow:0 14px 30px rgba(18,25,38,.18); }
     .journal-mention-popup.show { display:grid; gap:3px; }
     .journal-mention-hint { padding:10px 12px; color:var(--muted); font-size:12px; }
-    .journal-mention-result { min-height:40px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; border-color:transparent; font-weight:500; }
+    .journal-mention-result { width:100%; min-height:42px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; border-color:transparent; font-weight:500; flex:0 0 auto; }
     .journal-mention-result:hover, .journal-mention-result.active { border-color:#b8d5d0; background:var(--brand-soft); }
     .journal-mention-result small { color:var(--muted); }
     .journal-editor-help { color:var(--muted); font-size:12px; }
@@ -3743,6 +3743,51 @@
       if (!popup) return;
       popup.innerHTML = content;
       popup.classList.toggle("show", show);
+      if (show) positionJournalMentionPopup();
+    }
+
+    function positionJournalMentionPopup() {
+      const textarea = document.querySelector("[data-input='journalContent']");
+      const popup = document.querySelector("[data-journal-mention-popup]");
+      const field = textarea?.closest(".journal-content-field");
+      if (!textarea || !popup || !field) return;
+      const style = getComputedStyle(textarea);
+      const mirror = document.createElement("div");
+      mirror.style.position = "fixed";
+      mirror.style.visibility = "hidden";
+      mirror.style.pointerEvents = "none";
+      mirror.style.left = `${textarea.getBoundingClientRect().left}px`;
+      mirror.style.top = `${textarea.getBoundingClientRect().top}px`;
+      mirror.style.width = `${textarea.clientWidth}px`;
+      mirror.style.height = `${textarea.clientHeight}px`;
+      mirror.style.overflow = "hidden";
+      mirror.style.whiteSpace = "pre-wrap";
+      mirror.style.overflowWrap = "break-word";
+      mirror.style.wordBreak = "break-word";
+      ["fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing", "lineHeight", "textTransform", "textIndent", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "boxSizing"].forEach((name) => { mirror.style[name] = style[name]; });
+      const before = document.createTextNode(textarea.value.slice(0, textarea.selectionStart));
+      const marker = document.createElement("span");
+      marker.textContent = "\u200b";
+      mirror.append(before, marker);
+      document.body.appendChild(mirror);
+      mirror.scrollTop = textarea.scrollTop;
+      mirror.scrollLeft = textarea.scrollLeft;
+      const markerRect = marker.getBoundingClientRect();
+      const fieldRect = field.getBoundingClientRect();
+      const lineHeight = parseFloat(style.lineHeight) || 28;
+      const popupWidth = Math.min(440, Math.max(240, field.clientWidth - 20));
+      let left = markerRect.left - fieldRect.left;
+      left = Math.max(10, Math.min(left, field.clientWidth - popupWidth - 10));
+      let top = markerRect.top - fieldRect.top + lineHeight + 5;
+      popup.style.width = `${popupWidth}px`;
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+      mirror.remove();
+      const popupRect = popup.getBoundingClientRect();
+      if (popupRect.bottom > window.innerHeight - 12) {
+        top = Math.max(30, top - popupRect.height - lineHeight - 10);
+        popup.style.top = `${top}px`;
+      }
     }
 
     function journalMentionResultsHtml(results) {
@@ -5472,6 +5517,9 @@
         journalContent.addEventListener("compositionstart", () => { state.journalSearchComposing = true; });
         journalContent.addEventListener("compositionend", () => { state.journalSearchComposing = false; updateMention(); });
         journalContent.addEventListener("input", (event) => { if (!state.journalSearchComposing && !event.isComposing) updateMention(); });
+        journalContent.addEventListener("click", updateMention);
+        journalContent.addEventListener("keyup", (event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) updateMention(); });
+        journalContent.addEventListener("scroll", () => { if (document.querySelector("[data-journal-mention-popup].show")) positionJournalMentionPopup(); });
       }
       const historyBackdrop = document.querySelector("[data-history-backdrop]");
       if (historyBackdrop) {
