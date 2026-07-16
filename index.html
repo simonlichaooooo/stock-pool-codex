@@ -1847,6 +1847,13 @@
     .portfolio-tag-stat { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 5px 10px; border-color: #cfd9d7; background: #fff; font-size: 11px; }
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
     .portfolio-tag-stat.active { border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
+    .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
+    .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
+    .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: var(--brand-strong); border-left: 0; border-color: var(--brand); border-radius: 0 4px 4px 0; background: var(--brand-soft); font-size: 15px; }
+    .portfolio-tag-rename-form { display: inline-flex; align-items: center; gap: 5px; }
+    .portfolio-tag-rename-form input { width: 140px; min-height: 32px; padding: 5px 8px; border-color: var(--brand); font-size: 13px; font-weight: 700; }
+    .portfolio-tag-rename-form button { min-height: 32px; padding: 5px 9px; font-size: 11px; }
+    .portfolio-tag-rename-save { color: #fff; border-color: var(--brand); background: var(--brand); }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
     .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
     .position-target-control { width: 150px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; }
@@ -2632,6 +2639,7 @@
       portfolioPage: "positions",
       portfolioSort: { key: "value", dir: "desc" },
       portfolioTagFilter: "",
+      portfolioTagRenaming: "",
       portfolioQuotesUpdatedAt: "",
       portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
@@ -4434,7 +4442,9 @@
         const dailyPercent = quoted && previousValue > 0 ? profit / previousValue * 100 : NaN;
         const active = state.portfolioTagFilter === tag;
         const className = Number.isFinite(dailyPercent) ? (dailyPercent > 0 ? "gain" : dailyPercent < 0 ? "loss" : "muted") : "muted";
-        return `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${metrics.netBase ? (value / metrics.netBase * 100).toFixed(2) : "0.00"}%</span><span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
+        if (state.portfolioTagRenaming === tag) return `<form class="portfolio-tag-rename-form" data-form="renamePortfolioTag"><input name="tagName" value="${escapeHtml(tag)}" maxlength="20" required aria-label="新标签名"><button class="portfolio-tag-rename-save" type="submit">保存</button><button type="button" data-action="cancelPortfolioTagRename">取消</button></form>`;
+        const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${metrics.netBase ? (value / metrics.netBase * 100).toFixed(2) : "0.00"}%</span><span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
+        return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="startPortfolioTagRename" data-tag="${escapeHtml(tag)}" title="修改标签名" aria-label="修改标签名">✎</button></span>` : stat;
       }).join("")}</div>`;
     }
 
@@ -5697,6 +5707,22 @@
       if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
       const rebalanceForm = document.querySelector("[data-form='rebalanceTrade']");
       if (rebalanceForm) rebalanceForm.addEventListener("submit", submitRebalanceTrade);
+      const renamePortfolioTagForm = document.querySelector("[data-form='renamePortfolioTag']");
+      if (renamePortfolioTagForm) {
+        renamePortfolioTagForm.addEventListener("submit", submitPortfolioTagRename);
+        const input = renamePortfolioTagForm.querySelector('input[name="tagName"]');
+        input?.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            renamePortfolioTagForm.requestSubmit();
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            state.portfolioTagRenaming = "";
+            render();
+          }
+        });
+      }
       document.querySelectorAll("[data-rebalance-shares]").forEach((input) => {
         input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalanceShares, "shares"));
       });
@@ -5792,6 +5818,7 @@
       if (action === "selectPortfolio") {
         state.activePortfolioId = stockId;
         state.portfolioTagFilter = "";
+        state.portfolioTagRenaming = "";
         state.navHistory = [];
         state.navHistoryPortfolioId = "";
         state.benchmarkHistory = [];
@@ -5815,6 +5842,18 @@
       if (action === "togglePortfolioTag") {
         const tag = event.currentTarget.dataset.tag || "";
         state.portfolioTagFilter = state.portfolioTagFilter === tag ? "" : tag;
+        state.portfolioTagRenaming = "";
+        render();
+      }
+      if (action === "startPortfolioTagRename") {
+        state.portfolioTagRenaming = event.currentTarget.dataset.tag || "";
+        render();
+        const input = document.querySelector('[data-form="renamePortfolioTag"] input[name="tagName"]');
+        input?.focus();
+        input?.select();
+      }
+      if (action === "cancelPortfolioTagRename") {
+        state.portfolioTagRenaming = "";
         render();
       }
       if (action === "refreshPortfolioQuotes") {
@@ -6004,6 +6043,36 @@
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
         persistPortfoliosToCloud(state.portfolios).catch((error) => console.warn("组合云端保存失败。", error));
       }
+    }
+
+    function submitPortfolioTagRename(event) {
+      event.preventDefault();
+      const oldTag = state.portfolioTagRenaming;
+      const input = event.currentTarget.querySelector('input[name="tagName"]');
+      const newTag = String(input?.value || "").trim().replace(/\s+/g, " ");
+      if (!newTag) {
+        input?.setCustomValidity("请输入标签名。");
+        input?.reportValidity();
+        return;
+      }
+      if (newTag === oldTag) {
+        state.portfolioTagRenaming = "";
+        render();
+        return;
+      }
+      const now = new Date().toISOString();
+      state.portfolios = state.portfolios.map((portfolio) => ({
+        ...portfolio,
+        positions: (portfolio.positions || []).map((position) => ({
+          ...position,
+          tags: [...new Set((position.tags || []).map((tag) => tag === oldTag ? newTag : tag))]
+        })),
+        updatedAt: now
+      }));
+      state.portfolioTagFilter = newTag;
+      state.portfolioTagRenaming = "";
+      savePortfolios();
+      render();
     }
 
     async function persistPortfoliosToCloud(portfolios) {
