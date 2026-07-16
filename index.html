@@ -2587,6 +2587,8 @@
       journalSearchComposing: false,
       journalSaving: false,
       journalError: "",
+      journalDbReady: false,
+      journalDbError: "",
       expandedJournalIds: [],
       navRange: "3M",
       navYear: "",
@@ -3641,8 +3643,9 @@
       return `
         <section class="journal-head">
           <div><h2>投资日志</h2><p>记录判断，也保留当时看到的价格。</p></div>
-          <button class="primary" data-action="newJournal">+ 写日志</button>
+          <button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button>
         </section>
+        ${state.journalDbError ? `<div class="simple-modal-error" style="margin-bottom:12px">日志数据库尚未启用。请先按部署说明执行建表 SQL，然后刷新页面；当前设备已有的本地日志会自动迁移。</div>` : ""}
         ${rows.length ? `<div class="journal-list">${rows.map((entry) => {
           const date = journalDateParts(entry.publishedAt || entry.createdAt);
           const expanded = state.expandedJournalIds.includes(entry.id);
@@ -3653,9 +3656,9 @@
               ${long ? `<button class="journal-expand" data-action="toggleJournal" data-id="${entry.id}">${expanded ? "收起" : "展开阅读全文"}</button>` : ""}
               ${(entry.stocks || []).length ? `<div class="journal-stocks">${entry.stocks.map((stock) => `<span class="journal-stock-chip"><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)}</span><small>${escapeHtml(journalPriceText(stock))}</small></span>`).join("")}</div>` : ""}
             </div>
-            <div class="journal-actions"><button data-action="editJournal" data-id="${entry.id}">更改</button></div>
+            <div class="journal-actions"><button data-action="editJournal" data-id="${entry.id}" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>更改</button></div>
           </article>`;
-        }).join("")}</div>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal">写第一篇日志</button></section>`}
+        }).join("")}</div>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>写第一篇日志</button></section>`}
       `;
     }
 
@@ -3677,13 +3680,35 @@
     }
 
     async function loadJournals() {
-      state.journals = readJson(journalStorageKey(), []);
-      if (!Array.isArray(state.journals)) state.journals = [];
+      const localRows = readJson(journalStorageKey(), []);
+      state.journals = Array.isArray(localRows) ? localRows : [];
+      state.journalDbReady = state.session?.access_token === "local-demo";
+      state.journalDbError = "";
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
         try {
           const rows = await supabaseRequest(`/rest/v1/journal_entries?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,payload,created_at,updated_at&order=created_at.desc`);
-          if (rows?.length) state.journals = rows.map((row) => ({ ...(row.payload || {}), id: row.id, createdAt: row.payload?.createdAt || row.created_at }));
-        } catch (error) { console.warn("日志云端表尚未就绪，暂时使用本地数据。", error); }
+          const cloudRows = (rows || []).map((row) => ({ ...(row.payload || {}), id: row.id, createdAt: row.payload?.createdAt || row.created_at }));
+          const cloudIds = new Set(cloudRows.map((entry) => entry.id));
+          const pendingLocalRows = state.journals.filter((entry) => entry?.id && !cloudIds.has(entry.id));
+          if (pendingLocalRows.length) {
+            await supabaseRequest("/rest/v1/journal_entries?on_conflict=id", {
+              method: "POST",
+              prefer: "resolution=merge-duplicates",
+              body: JSON.stringify(pendingLocalRows.map((entry) => ({
+                id: entry.id,
+                user_id: state.session.user.id,
+                payload: { ...entry, id: undefined },
+                updated_at: entry.updatedAt || new Date().toISOString()
+              })))
+            });
+          }
+          state.journals = [...pendingLocalRows, ...cloudRows].sort((a, b) => String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)));
+          state.journalDbReady = true;
+        } catch (error) {
+          state.journalDbReady = false;
+          state.journalDbError = error.message || String(error);
+          console.warn("日志数据库尚未就绪。", error);
+        }
       }
       writeJson(journalStorageKey(), state.journals);
     }
@@ -3734,12 +3759,18 @@
         catch { return { ...stock, publishedPrice: Number(stock.publishedPrice) || 0, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: now }; }
       }));
       const entry = { ...state.journalModal, id: state.journalModal.id || id("journal"), content, stocks, publishedAt: state.journalModal.publishedAt || now, createdAt: state.journalModal.createdAt || now, updatedAt: now };
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        try {
+          await supabaseRequest("/rest/v1/journal_entries?on_conflict=id", { method:"POST", prefer:"resolution=merge-duplicates", body:JSON.stringify({ id:entry.id, user_id:state.session.user.id, payload:{ ...entry, id:undefined }, updated_at:now }) });
+        } catch (error) {
+          state.journalSaving = false;
+          state.journalError = `数据库保存失败：${error.message || String(error)}`;
+          render();
+          return;
+        }
+      }
       state.journals = state.journals.some((item) => item.id === entry.id) ? state.journals.map((item) => item.id === entry.id ? entry : item) : [entry, ...state.journals];
       writeJson(journalStorageKey(), state.journals);
-      if (state.session?.access_token && state.session.access_token !== "local-demo") {
-        try { await supabaseRequest("/rest/v1/journal_entries?on_conflict=id", { method:"POST", prefer:"resolution=merge-duplicates", body:JSON.stringify({ id:entry.id, user_id:state.session.user.id, payload:{ ...entry, id:undefined }, updated_at:now }) }); }
-        catch (error) { console.warn("日志已保存在当前设备，云端同步暂不可用。", error); }
-      }
       state.journalSaving = false; state.journalModal = null; render();
     }
 
