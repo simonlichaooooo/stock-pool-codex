@@ -2336,6 +2336,34 @@
       100% { background-position: 0 0; }
     }
 
+    .journal-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
+    .journal-head h2 { margin:0; font-family:"Songti SC","STSong",serif; font-size:24px; font-weight:700; }
+    .journal-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .journal-list { display:grid; gap:10px; }
+    .journal-entry { display:grid; grid-template-columns:130px minmax(0,1fr) 72px; gap:22px; padding:22px 20px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
+    .journal-date { border-right:1px solid var(--line); padding-right:20px; color:var(--brand-strong); font-family:"Baskerville","Songti SC","STSong",serif; }
+    .journal-date-day { display:block; font-size:42px; line-height:.9; font-style:italic; letter-spacing:-2px; }
+    .journal-date-month { display:block; margin-top:8px; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#60746f; }
+    .journal-date-time { display:block; margin-top:5px; font:11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--muted); }
+    .journal-content { min-width:0; }
+    .journal-text { margin:0; color:#243145; font:15px/1.8 "Songti SC","STSong",serif; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .journal-text.collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:7; overflow:hidden; }
+    .journal-expand { margin-top:10px; border:0; padding:0; min-height:auto; color:var(--brand); background:transparent; font-size:12px; }
+    .journal-stocks { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); }
+    .journal-stock-chip { display:inline-flex; align-items:baseline; gap:6px; padding:5px 8px; background:var(--brand-soft); border:1px solid #c5ddd8; border-radius:999px; color:var(--brand-strong); font-size:12px; }
+    .journal-stock-chip small { color:#64748b; font-variant-numeric:tabular-nums; }
+    .journal-actions { display:flex; justify-content:flex-end; align-items:flex-start; }
+    .journal-empty { padding:70px 24px; text-align:center; background:var(--panel); border:1px solid var(--line); color:var(--muted); }
+    .journal-empty h2 { color:var(--text); font-family:"Songti SC","STSong",serif; }
+    .journal-editor { width:min(900px,100%); }
+    .journal-editor textarea { min-height:300px; padding:16px; font:16px/1.8 "Songti SC","STSong",serif; }
+    .journal-editor-help { color:var(--muted); font-size:12px; }
+    .journal-stock-picker { position:relative; }
+    .journal-stock-results { display:grid; gap:4px; max-height:220px; overflow:auto; }
+    .journal-selected-stocks { display:flex; flex-wrap:wrap; gap:7px; }
+    .journal-selected-stock { display:inline-flex; align-items:center; gap:7px; padding:7px 9px; border:1px solid #b9d6d1; background:var(--brand-soft); color:var(--brand-strong); font-size:12px; }
+    .journal-selected-stock button { min-height:20px; width:20px; padding:0; border:0; background:transparent; }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
@@ -2350,8 +2378,13 @@
       .page-title-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .page-title-row select { width: 100%; min-width: 0; }
       .page-header-actions { width: 100%; justify-content: flex-start; }
-      .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
+      .journal-head { align-items:stretch; flex-direction:column; }
+      .journal-entry { grid-template-columns:78px minmax(0,1fr); gap:14px; padding:16px 14px; }
+      .journal-date { padding-right:12px; }
+      .journal-date-day { font-size:34px; }
+      .journal-actions { grid-column:2; justify-content:flex-start; }
       .nav-pool-controls { width: 100%; justify-content: flex-start; }
       .nav-publisher-select { width: 100%; min-width: 0; max-width: none; flex: 1 1 auto; }
       .toolbar { grid-template-columns: 1fr; padding: 8px; position: static; }
@@ -2491,6 +2524,7 @@
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
+    const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
     const MARKET_CAP_REFRESH_MS = 15 * 60 * 1000;
     const PORTFOLIO_QUOTE_REFRESH_MS = 60 * 1000;
     let marketCapRefreshTimer = null;
@@ -2546,6 +2580,14 @@
       portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
       portfolioSummaryExpanded: false,
+      journals: [],
+      journalModal: null,
+      journalSearchResults: [],
+      journalSearchLoading: false,
+      journalSearchComposing: false,
+      journalSaving: false,
+      journalError: "",
+      expandedJournalIds: [],
       navRange: "3M",
       navYear: "",
       benchmarkCode: "",
@@ -3522,6 +3564,7 @@
           ${renderPublicationHistory()}
           ${renderDeleteConfirm()}
           ${renderPortfolioModal()}
+          ${renderJournalModal()}
         </div>
       `;
       bindEvents();
@@ -3535,6 +3578,7 @@
             <nav class="nav-tabs">
               <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
               <button class="${state.mainView === "portfolio" ? "active" : ""}" data-action="switchMainView" data-view="portfolio">组合管理</button>
+              <button class="${state.mainView === "journal" ? "active" : ""}" data-action="switchMainView" data-view="journal">日志</button>
               <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
               ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
             </nav>
@@ -3563,6 +3607,7 @@
 
     function renderCurrentView() {
       if (state.mainView === "portfolio") return renderPortfolioView();
+      if (state.mainView === "journal") return renderJournalView();
       if (state.mainView === "square") return renderSquare();
       if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
       return `
@@ -3571,6 +3616,131 @@
         ${renderToolbar()}
         ${renderTable()}
       `;
+    }
+
+    function journalStorageKey() {
+      return `${JOURNAL_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
+    }
+
+    function journalDateParts(value) {
+      const date = new Date(value);
+      return {
+        day: String(date.getDate()).padStart(2, "0"),
+        month: date.toLocaleDateString("zh-CN", { year: "numeric", month: "short" }),
+        time: date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+      };
+    }
+
+    function journalPriceText(stock) {
+      const price = Number(stock.publishedPrice);
+      return price > 0 ? `发布价 ${price.toLocaleString("zh-CN", { maximumFractionDigits: 3 })} ${stock.currency || marketCurrency(stock.market)}` : "发布价暂不可用";
+    }
+
+    function renderJournalView() {
+      const rows = [...state.journals].sort((a, b) => String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)));
+      return `
+        <section class="journal-head">
+          <div><h2>投资日志</h2><p>记录判断，也保留当时看到的价格。</p></div>
+          <button class="primary" data-action="newJournal">+ 写日志</button>
+        </section>
+        ${rows.length ? `<div class="journal-list">${rows.map((entry) => {
+          const date = journalDateParts(entry.publishedAt || entry.createdAt);
+          const expanded = state.expandedJournalIds.includes(entry.id);
+          const long = String(entry.content || "").length > 260 || String(entry.content || "").split("\n").length > 7;
+          return `<article class="journal-entry">
+            <time class="journal-date" datetime="${escapeHtml(entry.publishedAt || entry.createdAt)}"><span class="journal-date-day">${date.day}</span><span class="journal-date-month">${escapeHtml(date.month)}</span><span class="journal-date-time">${escapeHtml(date.time)}</span></time>
+            <div class="journal-content"><p class="journal-text ${expanded ? "" : "collapsed"}">${escapeHtml(entry.content)}</p>
+              ${long ? `<button class="journal-expand" data-action="toggleJournal" data-id="${entry.id}">${expanded ? "收起" : "展开阅读全文"}</button>` : ""}
+              ${(entry.stocks || []).length ? `<div class="journal-stocks">${entry.stocks.map((stock) => `<span class="journal-stock-chip"><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)}</span><small>${escapeHtml(journalPriceText(stock))}</small></span>`).join("")}</div>` : ""}
+            </div>
+            <div class="journal-actions"><button data-action="editJournal" data-id="${entry.id}">更改</button></div>
+          </article>`;
+        }).join("")}</div>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal">写第一篇日志</button></section>`}
+      `;
+    }
+
+    function renderJournalModal() {
+      const modal = state.journalModal;
+      if (!modal) return "";
+      return `<div class="simple-modal-backdrop"><section class="simple-modal journal-editor" role="dialog" aria-modal="true" aria-label="${modal.id ? "更改日志" : "写日志"}">
+        <div class="simple-modal-head"><h2>${modal.id ? "更改日志" : "写日志"}</h2><button class="icon" data-action="closeJournal" aria-label="关闭">×</button></div>
+        <form data-form="journal"><div class="simple-modal-body">
+          <label class="field"><span>日志内容</span><textarea name="content" data-input="journalContent" maxlength="30000" placeholder="写下你的所思所想。输入 $股票名，或在下方搜索插入股票。" required>${escapeHtml(modal.content || "")}</textarea></label>
+          <div class="journal-editor-help">在正文中输入 $ 后继续输入股票名称或代码，会自动打开匹配结果。选择股票后，它会插入光标位置，并在发布时记录实时价格。</div>
+          <div class="journal-stock-picker"><input data-input="journalStockSearch" placeholder="用名称或代码搜索股票">
+            ${state.journalSearchLoading ? `<div class="empty">正在匹配股票...</div>` : state.journalSearchResults.length ? `<div class="journal-stock-results">${state.journalSearchResults.map((item, index) => `<button type="button" class="portfolio-search-result" data-action="selectJournalStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.code)} · ${marketLabel(item.market)}</small></span><span>插入</span></button>`).join("")}</div>` : ""}
+          </div>
+          ${(modal.stocks || []).length ? `<div class="journal-selected-stocks">${modal.stocks.map((stock, index) => `<span class="journal-selected-stock"><strong>${escapeHtml(stock.name)}</strong>${escapeHtml(stock.code)}<button type="button" data-action="removeJournalStock" data-index="${index}" aria-label="移除">×</button></span>`).join("")}</div>` : ""}
+          ${state.journalError ? `<div class="simple-modal-error">${escapeHtml(state.journalError)}</div>` : ""}
+        </div><div class="simple-modal-foot"><button type="button" data-action="closeJournal">取消</button><button class="primary" type="submit" ${state.journalSaving ? "disabled" : ""}>${state.journalSaving ? "正在记录价格..." : modal.id ? "保存更改" : "发布日志"}</button></div></form>
+      </section></div>`;
+    }
+
+    async function loadJournals() {
+      state.journals = readJson(journalStorageKey(), []);
+      if (!Array.isArray(state.journals)) state.journals = [];
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        try {
+          const rows = await supabaseRequest(`/rest/v1/journal_entries?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,payload,created_at,updated_at&order=created_at.desc`);
+          if (rows?.length) state.journals = rows.map((row) => ({ ...(row.payload || {}), id: row.id, createdAt: row.payload?.createdAt || row.created_at }));
+        } catch (error) { console.warn("日志云端表尚未就绪，暂时使用本地数据。", error); }
+      }
+      writeJson(journalStorageKey(), state.journals);
+    }
+
+    function openJournal(entryId = "") {
+      const entry = state.journals.find((item) => item.id === entryId);
+      state.journalModal = entry ? JSON.parse(JSON.stringify(entry)) : { id: "", content: "", stocks: [] };
+      state.journalSearchResults = [];
+      state.journalError = "";
+      render();
+      setTimeout(() => document.querySelector("[data-input='journalContent']")?.focus(), 0);
+    }
+
+    function closeJournal() {
+      state.journalModal = null; state.journalSearchResults = []; state.journalError = ""; render();
+    }
+
+    async function onJournalSearch(query) {
+      const value = String(query || "").trim();
+      if (!value) { state.journalSearchResults = []; render(); return; }
+      state.journalSearchLoading = true; render();
+      state.journalSearchResults = await searchStocks(value);
+      state.journalSearchLoading = false; render();
+    }
+
+    function selectJournalStock(index) {
+      const stock = state.journalSearchResults[index];
+      if (!stock || !state.journalModal) return;
+      if (!state.journalModal.stocks.some((item) => item.code === stock.code && item.market === stock.market)) state.journalModal.stocks.push(stock);
+      const textarea = document.querySelector("[data-input='journalContent']");
+      const content = textarea?.value ?? state.journalModal.content;
+      const cursor = textarea?.selectionStart ?? content.length;
+      const before = content.slice(0, cursor).replace(/\$[^\s$]*$/, "");
+      state.journalModal.content = `${before}$${stock.name}(${stock.code}) ${content.slice(cursor)}`;
+      state.journalSearchResults = [];
+      render();
+    }
+
+    async function submitJournal(event) {
+      event.preventDefault();
+      if (!state.journalModal || state.journalSaving) return;
+      const content = String(new FormData(event.currentTarget).get("content") || "").trim();
+      if (!content) { state.journalError = "请先写下日志内容。"; render(); return; }
+      state.journalSaving = true; state.journalError = ""; render();
+      const now = new Date().toISOString();
+      const stocks = state.journalModal.id ? state.journalModal.stocks : await Promise.all((state.journalModal.stocks || []).map(async (stock) => {
+        try { const quote = await fetchQuote(stock); return { ...stock, publishedPrice: Number(quote.latestPrice) || Number(stock.publishedPrice) || 0, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: now }; }
+        catch { return { ...stock, publishedPrice: Number(stock.publishedPrice) || 0, currency: stock.currency || marketCurrency(stock.market), priceCapturedAt: now }; }
+      }));
+      const entry = { ...state.journalModal, id: state.journalModal.id || id("journal"), content, stocks, publishedAt: state.journalModal.publishedAt || now, createdAt: state.journalModal.createdAt || now, updatedAt: now };
+      state.journals = state.journals.some((item) => item.id === entry.id) ? state.journals.map((item) => item.id === entry.id ? entry : item) : [entry, ...state.journals];
+      writeJson(journalStorageKey(), state.journals);
+      if (state.session?.access_token && state.session.access_token !== "local-demo") {
+        try { await supabaseRequest("/rest/v1/journal_entries?on_conflict=id", { method:"POST", prefer:"resolution=merge-duplicates", body:JSON.stringify({ id:entry.id, user_id:state.session.user.id, payload:{ ...entry, id:undefined }, updated_at:now }) }); }
+        catch (error) { console.warn("日志已保存在当前设备，云端同步暂不可用。", error); }
+      }
+      state.journalSaving = false; state.journalModal = null; render();
     }
 
     function renderProfileSetup() {
@@ -5203,6 +5373,21 @@
       });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
+      const journalForm = document.querySelector("[data-form='journal']");
+      if (journalForm) journalForm.addEventListener("submit", submitJournal);
+      const journalContent = document.querySelector("[data-input='journalContent']");
+      if (journalContent) journalContent.addEventListener("input", (event) => {
+        if (!state.journalModal) return;
+        state.journalModal.content = event.target.value;
+        const match = event.target.value.slice(0, event.target.selectionStart).match(/\$([^\s$]{1,20})$/);
+        if (match) onJournalSearch(match[1]);
+      });
+      const journalSearch = document.querySelector("[data-input='journalStockSearch']");
+      if (journalSearch) {
+        journalSearch.addEventListener("compositionstart", () => { state.journalSearchComposing = true; });
+        journalSearch.addEventListener("compositionend", (event) => { state.journalSearchComposing = false; onJournalSearch(event.target.value); });
+        journalSearch.addEventListener("input", (event) => { if (!state.journalSearchComposing && !event.isComposing) onJournalSearch(event.target.value); });
+      }
       const historyBackdrop = document.querySelector("[data-history-backdrop]");
       if (historyBackdrop) {
         historyBackdrop.addEventListener("click", (event) => {
@@ -5233,10 +5418,17 @@
         state.followedPublishers = [];
         state.portfolios = [];
         state.activePortfolioId = "";
+        state.journals = [];
         render();
       }
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
+      if (action === "newJournal") openJournal();
+      if (action === "editJournal") openJournal(stockId);
+      if (action === "closeJournal") closeJournal();
+      if (action === "selectJournalStock") selectJournalStock(Number(event.currentTarget.dataset.index));
+      if (action === "removeJournalStock" && state.journalModal) { state.journalModal.stocks.splice(Number(event.currentTarget.dataset.index), 1); render(); }
+      if (action === "toggleJournal") { state.expandedJournalIds = state.expandedJournalIds.includes(stockId) ? state.expandedJournalIds.filter((id) => id !== stockId) : [...state.expandedJournalIds, stockId]; render(); }
       if (action === "selectPortfolio") {
         state.activePortfolioId = stockId;
         state.navHistory = [];
@@ -7138,6 +7330,7 @@
 
     async function afterProfileReady() {
       await loadPortfolios();
+      await loadJournals();
       await loadAdminMarker();
       await loadFollowedPublishers();
       await loadShareInvite();
@@ -7362,6 +7555,7 @@
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
         state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
         await loadPortfolios();
+        await loadJournals();
         ensureLocalPortfolioDemo();
         await fetchExchangeRates();
         const demoPreviousDate = new Date();
