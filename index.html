@@ -108,12 +108,14 @@
       justify-content: space-between;
       gap: 20px;
     }
-    .topbar-main { display: flex; align-items: center; gap: 18px; min-width: 0; }
+    .topbar-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .brand {
       display: flex;
       align-items: center;
       gap: 9px;
       min-width: 0;
+      padding-right: 18px;
+      border-right: 1px solid #d9e2df;
     }
     .brand-logo {
       display: block;
@@ -1586,8 +1588,8 @@
     button.portfolio-action-rebalance:hover { color: #184975; border-color: #7da8d1; background: #e3f0fc; }
     button.portfolio-action-summary { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
     button.portfolio-action-summary:hover { color: #53308d; border-color: #ab8bd0; background: #f0e9f8; }
-    button.portfolio-action-tags { color: #4f46a5; border-color: #c8c5eb; background: #f5f4ff; }
-    button.portfolio-action-tags:hover, button.portfolio-action-tags.active { color: #37308a; border-color: #9993d7; background: #eae8ff; }
+    button.portfolio-action-tags { color: #8a6116; border-color: #dfc47d; background: #fff9e8; }
+    button.portfolio-action-tags:hover, button.portfolio-action-tags.active { color: #704b08; border-color: #c79a34; background: #fff0bd; }
     button.portfolio-action-more { color: #8a4b16; border-color: #e3c39b; background: #fff7ed; }
     button.portfolio-action-more:hover { color: #78350f; border-color: #d69a55; background: #ffedd5; }
     .portfolio-summary-toggle { display: inline-flex; align-items: center; gap: 6px; }
@@ -1847,19 +1849,19 @@
     .position-tag-existing button { color: var(--brand-strong); border-color: #c5ddd8; background: #f4faf8; }
     .position-row-tags { margin-top: 5px; max-width: 150px; }
     .position-row-tags span { padding: 1px 5px; color: var(--brand-strong); background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 9px; font-size: 9px; line-height: 1.4; }
-    .portfolio-tag-filter-panel { margin-bottom: 10px; padding: 11px 14px; border: 1px solid #c8c5eb; border-radius: 6px; background: #f5f4ff; box-shadow: var(--shadow-soft); }
-    .portfolio-tag-filter-head { margin-bottom: 8px; color: #4f46a5; font-size: 12px; font-weight: 750; }
+    .portfolio-tag-filter-panel { margin-bottom: 10px; padding: 11px 14px; border: 1px solid #dfc47d; border-radius: 6px; background: #fff9e8; box-shadow: var(--shadow-soft); }
+    .portfolio-tag-filter-head { margin-bottom: 8px; color: #8a6116; font-size: 12px; font-weight: 750; }
     .portfolio-tag-summary { display: flex; flex-wrap: wrap; gap: 8px; }
     .portfolio-tag-stat { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 5px 10px; border-color: #cfd9d7; background: #fff; font-size: 11px; }
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
-    .portfolio-tag-stat.active { border-color: var(--brand); background: var(--brand-soft); box-shadow: none; }
+    .portfolio-tag-filter-panel .portfolio-tag-stat.active { border-color: #c79a34; background: #fff0bd; box-shadow: none; }
     .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
     .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
-    .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: var(--brand-strong); border-left: 0; border-color: var(--brand); border-radius: 0 4px 4px 0; background: var(--brand-soft); font-size: 15px; }
+    .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #c79a34; border-radius: 0 4px 4px 0; background: #fff0bd; font-size: 15px; }
     .portfolio-tag-rename-form { display: inline-flex; align-items: center; gap: 5px; }
-    .portfolio-tag-rename-form input { width: 140px; min-height: 32px; padding: 5px 8px; border-color: var(--brand); font-size: 13px; font-weight: 700; }
+    .portfolio-tag-rename-form input { width: 140px; min-height: 32px; padding: 5px 8px; border-color: #c79a34; font-size: 13px; font-weight: 700; }
     .portfolio-tag-rename-form button { min-height: 32px; padding: 5px 9px; font-size: 11px; }
-    .portfolio-tag-rename-save { color: #fff; border-color: var(--brand); background: var(--brand); }
+    .portfolio-tag-rename-save { color: #fff; border-color: #9a6b10; background: #9a6b10; }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
     .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
     .position-target-control { width: 150px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; }
@@ -2020,6 +2022,39 @@
       color: var(--brand-strong);
       border-color: rgba(11, 107, 95, .24);
       box-shadow: 0 1px 2px rgba(18, 25, 38, .08);
+    }
+    .topbar .topbar-nav {
+      gap: 2px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .topbar .topbar-nav button {
+      position: relative;
+      min-width: auto;
+      min-height: 40px;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #526070;
+      font-size: 13px;
+      font-weight: 650;
+      box-shadow: none;
+    }
+    .topbar .topbar-nav button:hover { background: #f0f5f3; color: var(--brand-strong); }
+    .topbar .topbar-nav button.active { background: #edf6f3; color: var(--brand-strong); box-shadow: none; }
+    .topbar .topbar-nav button.active::after {
+      content: "";
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      bottom: 3px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--brand);
     }
     .portfolio-actions .portfolio-view-tabs {
       border-color: #bfdbfe;
@@ -2427,7 +2462,7 @@
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
       .topbar-main { width: 100%; flex-wrap: wrap; gap: 8px; }
-      .brand { justify-content: space-between; }
+      .brand { justify-content: space-between; padding-right: 0; border-right: 0; }
       .brand-logo { width: 136px; height: 40px; }
       .brand span { display: none; }
       .userbar { width: 100%; justify-content: flex-start; }
