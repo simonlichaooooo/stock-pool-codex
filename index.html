@@ -108,6 +108,7 @@
       justify-content: space-between;
       gap: 20px;
     }
+    .topbar-main { display: flex; align-items: center; gap: 18px; min-width: 0; }
     .brand {
       display: flex;
       align-items: center;
@@ -190,6 +191,7 @@
       color: white;
       box-shadow: none;
     }
+    .topbar-nav { flex-wrap: nowrap; }
     .filters {
       display: flex;
       gap: 8px;
@@ -1584,6 +1586,8 @@
     button.portfolio-action-rebalance:hover { color: #184975; border-color: #7da8d1; background: #e3f0fc; }
     button.portfolio-action-summary { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
     button.portfolio-action-summary:hover { color: #53308d; border-color: #ab8bd0; background: #f0e9f8; }
+    button.portfolio-action-tags { color: #4f46a5; border-color: #c8c5eb; background: #f5f4ff; }
+    button.portfolio-action-tags:hover, button.portfolio-action-tags.active { color: #37308a; border-color: #9993d7; background: #eae8ff; }
     button.portfolio-action-more { color: #8a4b16; border-color: #e3c39b; background: #fff7ed; }
     button.portfolio-action-more:hover { color: #78350f; border-color: #d69a55; background: #ffedd5; }
     .portfolio-summary-toggle { display: inline-flex; align-items: center; gap: 6px; }
@@ -1843,7 +1847,9 @@
     .position-tag-existing button { color: var(--brand-strong); border-color: #c5ddd8; background: #f4faf8; }
     .position-row-tags { margin-top: 5px; max-width: 150px; }
     .position-row-tags span { padding: 1px 5px; color: var(--brand-strong); background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 9px; font-size: 9px; line-height: 1.4; }
-    .portfolio-tag-summary { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); background: #fbfdfc; }
+    .portfolio-tag-filter-panel { margin-bottom: 10px; padding: 11px 14px; border: 1px solid #c8c5eb; border-radius: 6px; background: #f5f4ff; box-shadow: var(--shadow-soft); }
+    .portfolio-tag-filter-head { margin-bottom: 8px; color: #4f46a5; font-size: 12px; font-weight: 750; }
+    .portfolio-tag-summary { display: flex; flex-wrap: wrap; gap: 8px; }
     .portfolio-tag-stat { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 5px 10px; border-color: #cfd9d7; background: #fff; font-size: 11px; }
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
     .portfolio-tag-stat.active { border-color: var(--brand); background: var(--brand-soft); box-shadow: none; }
@@ -2420,7 +2426,8 @@
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
-      .brand { width: 100%; justify-content: space-between; }
+      .topbar-main { width: 100%; flex-wrap: wrap; gap: 8px; }
+      .brand { justify-content: space-between; }
       .brand-logo { width: 136px; height: 40px; }
       .brand span { display: none; }
       .userbar { width: 100%; justify-content: flex-start; }
@@ -2644,6 +2651,7 @@
       portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
       portfolioSummaryExpanded: false,
+      portfolioTagsExpanded: false,
       journals: [],
       journalModal: null,
       journalSearchResults: [],
@@ -3640,9 +3648,12 @@
         <div class="shell">
           <header class="topbar">
             <div class="topbar-inner">
-              <div class="brand">
-                <img class="brand-logo" src="logo/logo-site.jpg?v=green-20260520" alt="钞·作业">
-                <h1>钞·作业</h1>
+              <div class="topbar-main">
+                <div class="brand">
+                  <img class="brand-logo" src="logo/logo-site.jpg?v=green-20260520" alt="钞·作业">
+                  <h1>钞·作业</h1>
+                </div>
+                ${renderMainNavTabs()}
               </div>
               <div class="userbar">
                 <span>${escapeHtml(state.session.user.email)}</span>
@@ -3668,37 +3679,33 @@
 
     function renderNavTabs() {
       const viewingOwn = state.viewPublisherId === "own";
+      if (state.mainView !== "pool") return "";
       return `
         <div class="nav-row">
           <div class="nav-primary">
-            <nav class="nav-tabs">
-              <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
-              <button class="${state.mainView === "portfolio" ? "active" : ""}" data-action="switchMainView" data-view="portfolio">组合管理</button>
-              <button class="${state.mainView === "journal" ? "active" : ""}" data-action="switchMainView" data-view="journal">日志</button>
-              <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
-              ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
-            </nav>
-            ${state.mainView === "pool" ? renderPublisherSelect() : ""}
+            ${renderPublisherSelect()}
           </div>
-          ${state.mainView === "pool" ? `
-            <div class="nav-pool-controls">
-              ${viewingOwn ? `
-                <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
-                  <input
-                    type="checkbox"
-                    data-input="shareVisibilityToggle"
-                    ${state.profile?.share_visibility === "public" ? "checked" : ""}
-                    ${state.profile?.share_banned ? "disabled" : ""}
-                  >
-                  <span class="share-switch-track" aria-hidden="true"></span>
-                  <span>公开至广场</span>
-                </label>
-                <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
-              ` : ""}
-            </div>
-          ` : ""}
+          <div class="nav-pool-controls">
+            ${viewingOwn ? `
+              <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
+                <input type="checkbox" data-input="shareVisibilityToggle" ${state.profile?.share_visibility === "public" ? "checked" : ""} ${state.profile?.share_banned ? "disabled" : ""}>
+                <span class="share-switch-track" aria-hidden="true"></span><span>公开至广场</span>
+              </label>
+              <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
+            ` : ""}
+          </div>
         </div>
       `;
+    }
+
+    function renderMainNavTabs() {
+      return `<nav class="nav-tabs topbar-nav" aria-label="主导航">
+        <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
+        <button class="${state.mainView === "portfolio" ? "active" : ""}" data-action="switchMainView" data-view="portfolio">组合管理</button>
+        <button class="${state.mainView === "journal" ? "active" : ""}" data-action="switchMainView" data-view="journal">日志</button>
+        <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
+        ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
+      </nav>`;
     }
 
     function renderCurrentView() {
@@ -4262,6 +4269,11 @@
                 ? `${portfolioActionIcon("collapse")}<span>收起组合卡片</span>`
                 : `${portfolioActionIcon("expand")}<span>展开组合卡片</span>`}
             </button>
+            <button class="portfolio-action-btn portfolio-action-tags ${state.portfolioTagsExpanded ? "active" : ""}" data-action="togglePortfolioTags">
+              ${state.portfolioTagsExpanded
+                ? `${portfolioActionIcon("collapse")}<span>收起标签组</span>`
+                : `${portfolioActionIcon("expand")}<span>展开标签组</span>`}
+            </button>
             <div class="portfolio-menu">
               <button type="button" class="portfolio-action-btn portfolio-action-more">${portfolioActionIcon("more")}<span>更多操作</span></button>
               <div class="portfolio-menu-panel">
@@ -4358,6 +4370,7 @@
       const dailySummary = portfolioDailyProfitSummary(portfolio, metrics);
       const sortIndicator = (key) => sort.key === key ? `<span class="portfolio-sort-indicator">${sort.dir === "asc" ? "▲" : "▼"}</span>` : "";
       return `
+        ${state.portfolioTagsExpanded ? renderPortfolioTagSummary(portfolio, metrics) : ""}
         <section class="table-panel portfolio-table">
           <div class="portfolio-list-head">
             <div class="portfolio-list-head-main">
@@ -4372,7 +4385,6 @@
               </button>
             </div>
           </div>
-          ${renderPortfolioTagSummary(portfolio, metrics)}
           <div class="table-scroll"><table>
           <thead><tr><th class="sticky-col">股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
@@ -4426,9 +4438,9 @@
 
     function renderPortfolioTagSummary(portfolio, metrics) {
       const tags = [...new Set((portfolio.positions || []).flatMap((position) => position.tags || []))];
-      if (!tags.length) return "";
+      if (!tags.length) return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="muted">当前组合暂无标签，可在编辑持仓中添加。</div></section>`;
       const base = portfolioBaseCurrency(portfolio);
-      return `<div class="portfolio-tag-summary" aria-label="标签汇总">${tags.map((tag) => {
+      return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="portfolio-tag-summary" aria-label="标签汇总">${tags.map((tag) => {
         const tagged = (portfolio.positions || []).filter((position) => (position.tags || []).includes(tag));
         const value = tagged.reduce((sum, position) => sum + positionBaseValue(position, portfolio), 0);
         let profit = 0, previousValue = 0, quoted = 0;
@@ -4445,7 +4457,7 @@
         if (state.portfolioTagRenaming === tag) return `<form class="portfolio-tag-rename-form" data-form="renamePortfolioTag"><input name="tagName" value="${escapeHtml(tag)}" maxlength="20" required aria-label="新标签名"><button class="portfolio-tag-rename-save" type="submit">保存</button><button type="button" data-action="cancelPortfolioTagRename">取消</button></form>`;
         const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${metrics.netBase ? (value / metrics.netBase * 100).toFixed(2) : "0.00"}%</span><span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
         return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="startPortfolioTagRename" data-tag="${escapeHtml(tag)}" title="修改标签名" aria-label="修改标签名">✎</button></span>` : stat;
-      }).join("")}</div>`;
+      }).join("")}</div></section>`;
     }
 
     function renderPortfolioModal() {
@@ -5865,6 +5877,14 @@
       }
       if (action === "togglePortfolioSummary") {
         state.portfolioSummaryExpanded = !state.portfolioSummaryExpanded;
+        render();
+      }
+      if (action === "togglePortfolioTags") {
+        state.portfolioTagsExpanded = !state.portfolioTagsExpanded;
+        if (!state.portfolioTagsExpanded) {
+          state.portfolioTagFilter = "";
+          state.portfolioTagRenaming = "";
+        }
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
