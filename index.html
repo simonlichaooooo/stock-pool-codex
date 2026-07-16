@@ -3137,23 +3137,41 @@
       const cacheKey = String(query || "").trim().toLowerCase();
       const cached = stockSearchCache.get(cacheKey);
       if (cached && Date.now() - cached.savedAt < 2 * 60 * 1000) return cached.rows;
+      const searches = await Promise.allSettled([searchStocksEastmoney(query), searchStocksTencent(query)]);
+      const merged = searches.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+        .filter((stock, index, all) => index === all.findIndex((item) => item.code === stock.code && item.market === stock.market))
+        .slice(0, 12);
+      searches.filter((result) => result.status === "rejected").forEach((result) => console.warn("股票搜索源暂不可用。", result.reason));
+      stockSearchCache.set(cacheKey, { rows: merged, savedAt: Date.now() });
+      return merged;
+    }
+
+    async function searchStocksEastmoney(query) {
       const url = `https://searchapi.eastmoney.com/api/suggest/get?input=${encodeURIComponent(query)}&type=14&token=D43BF722C8E33BD95256D2E364145C90&count=12`;
-      try {
-        const json = await jsonp(url);
-        const rows = json?.QuotationCodeTable?.Data || [];
-        const normalized = rows.map(normalizeSearchItem).filter(Boolean);
-        const localMatches = fallbackStockSearch(query);
-        const merged = [...normalized, ...localMatches].filter((stock, index, all) =>
-          index === all.findIndex((item) => item.code === stock.code && item.market === stock.market)
-        ).slice(0, 12);
-        stockSearchCache.set(cacheKey, { rows: merged, savedAt: Date.now() });
-        return merged;
-      } catch (error) {
-        console.warn("股票搜索接口不可用，使用内置备用样例。", error);
-        const fallback = fallbackStockSearch(query);
-        stockSearchCache.set(cacheKey, { rows: fallback, savedAt: Date.now() });
-        return fallback;
-      }
+      const json = await jsonp(url);
+      return (json?.QuotationCodeTable?.Data || []).map(normalizeSearchItem).filter(Boolean);
+    }
+
+    async function searchStocksTencent(query) {
+      delete window.v_hint;
+      await loadScript(`https://smartbox.gtimg.cn/s3/?q=${encodeURIComponent(query)}&t=all&_=${Date.now()}`);
+      const raw = String(window.v_hint || "");
+      delete window.v_hint;
+      return raw.split("^").map((row) => {
+        const [sourceMarket, rawCode, name, , securityType] = row.split("~");
+        if (securityType !== "GP" || !name || !rawCode) return null;
+        if (sourceMarket === "hk") {
+          return { name, code: `${rawCode.padStart(5, "0")}.HK`, rawCode, quoteId: `116.${rawCode.padStart(5, "0")}`, market: "HK", exchange: "HKEX", currency: "HKD" };
+        }
+        if (sourceMarket === "sh" || sourceMarket === "sz") {
+          const exchange = sourceMarket === "sh" ? "SSE" : "SZSE";
+          return { name, code: `${rawCode}.${sourceMarket.toUpperCase()}`, rawCode, quoteId: `${sourceMarket === "sh" ? "1" : "0"}.${rawCode}`, market: "CN", exchange, currency: "CNY" };
+        }
+        if (sourceMarket === "us") {
+          return { name, code: rawCode.toUpperCase(), rawCode, quoteId: "", market: "US", exchange: "US", currency: "USD" };
+        }
+        return null;
+      }).filter(Boolean);
     }
 
     function fallbackStockSearch(query) {
@@ -3819,9 +3837,8 @@
         updateJournalMentionPopup(`<div class="journal-mention-hint">继续输入股票名称或代码</div>`, true);
         return;
       }
-      const immediateMatches = fallbackStockSearch(value);
-      state.journalSearchResults = immediateMatches;
-      updateJournalMentionPopup(immediateMatches.length ? journalMentionResultsHtml(immediateMatches) : `<div class="journal-mention-hint">正在匹配“${escapeHtml(value)}”...</div>`, true);
+      state.journalSearchResults = [];
+      updateJournalMentionPopup(`<div class="journal-mention-hint">正在联网匹配“${escapeHtml(value)}”...</div>`, true);
       journalSearchTimer = window.setTimeout(async () => {
         journalSearchTimer = null;
         state.journalSearchLoading = true;
