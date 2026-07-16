@@ -2540,6 +2540,7 @@
     let portfolioQuoteRefreshInFlight = false;
     let journalSearchTimer = null;
     let journalSearchRequestId = 0;
+    const stockSearchCache = new Map();
 
     let currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -3133,18 +3134,25 @@
     }
 
     async function searchStocks(query) {
+      const cacheKey = String(query || "").trim().toLowerCase();
+      const cached = stockSearchCache.get(cacheKey);
+      if (cached && Date.now() - cached.savedAt < 2 * 60 * 1000) return cached.rows;
       const url = `https://searchapi.eastmoney.com/api/suggest/get?input=${encodeURIComponent(query)}&type=14&token=D43BF722C8E33BD95256D2E364145C90&count=12`;
       try {
         const json = await jsonp(url);
         const rows = json?.QuotationCodeTable?.Data || [];
         const normalized = rows.map(normalizeSearchItem).filter(Boolean);
         const localMatches = fallbackStockSearch(query);
-        return [...normalized, ...localMatches].filter((stock, index, all) =>
+        const merged = [...normalized, ...localMatches].filter((stock, index, all) =>
           index === all.findIndex((item) => item.code === stock.code && item.market === stock.market)
         ).slice(0, 12);
+        stockSearchCache.set(cacheKey, { rows: merged, savedAt: Date.now() });
+        return merged;
       } catch (error) {
         console.warn("股票搜索接口不可用，使用内置备用样例。", error);
-        return fallbackStockSearch(query);
+        const fallback = fallbackStockSearch(query);
+        stockSearchCache.set(cacheKey, { rows: fallback, savedAt: Date.now() });
+        return fallback;
       }
     }
 
@@ -3811,7 +3819,9 @@
         updateJournalMentionPopup(`<div class="journal-mention-hint">继续输入股票名称或代码</div>`, true);
         return;
       }
-      updateJournalMentionPopup(`<div class="journal-mention-hint">正在匹配“${escapeHtml(value)}”...</div>`, true);
+      const immediateMatches = fallbackStockSearch(value);
+      state.journalSearchResults = immediateMatches;
+      updateJournalMentionPopup(immediateMatches.length ? journalMentionResultsHtml(immediateMatches) : `<div class="journal-mention-hint">正在匹配“${escapeHtml(value)}”...</div>`, true);
       journalSearchTimer = window.setTimeout(async () => {
         journalSearchTimer = null;
         state.journalSearchLoading = true;
@@ -3820,7 +3830,7 @@
         state.journalSearchResults = results;
         state.journalSearchLoading = false;
         updateJournalMentionPopup(journalMentionResultsHtml(results), true);
-      }, 280);
+      }, 80);
     }
 
     function selectJournalStock(index) {
