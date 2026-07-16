@@ -1745,6 +1745,10 @@
     .portfolio-table.tags-expanded.summary-expanded .table-scroll { max-height: calc(100vh - 370px); }
     .portfolio-table .stock-name { font-weight: 720; }
     .portfolio-table .portfolio-position-weight { font-weight: 750; }
+    .portfolio-valuation-cell { min-width: 92px; font-variant-numeric: tabular-nums; }
+    .portfolio-valuation-cell span { display: block; line-height: 1.55; white-space: nowrap; }
+    .portfolio-valuation-cell .muted { font-size: 11px; }
+    .position-valuation-preview { margin-top: 7px; padding: 9px 10px; border: 1px solid #d5e4e1; border-radius: 4px; background: #f5faf9; color: #344054; font-size: 12px; line-height: 1.6; }
     .portfolio-table .trade-add {
       color: #b42318;
       border-color: #f3b6ad;
@@ -4426,7 +4430,7 @@
             </div>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th class="sticky-col">股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>操作</th></tr></thead>
+          <thead><tr><th class="sticky-col">股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值信息</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
@@ -4464,11 +4468,28 @@
               <td data-label="市值" class="num">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
               <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
+              <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
               <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div>
         </section>`;
+    }
+
+    function portfolioValuationVersions(position) {
+      if (!position) return [];
+      return state.stocks.filter((stock) => stock.code === position.code && stock.market === position.market);
+    }
+
+    function portfolioValuationStock(position, selectedId = position?.valuationStockId) {
+      return portfolioValuationVersions(position).find((stock) => stock.id === selectedId) || null;
+    }
+
+    function renderPortfolioValuation(position, selectedId = position?.valuationStockId) {
+      const stock = portfolioValuationStock(position, selectedId);
+      if (!stock) return `<span class="muted">--</span>`;
+      const computed = calc(stock);
+      return `<span>${percent(computed.upside)}</span><span>${computed.forwardPE == null ? "--" : `${trimNumber(computed.forwardPE)}x`}</span><span>${percent(computed.shareholderReturnRate)}</span>`;
     }
 
     function allPortfolioTags() {
@@ -4722,6 +4743,7 @@
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
           <div class="grid-2 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label></div>
+          <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${position.valuationStockId ? renderPortfolioValuation(position) : "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。"}</div></label>
           <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
           <div class="position-tag-editor"><div class="position-tag-title">标签</div><div class="position-tag-input"><input name="newTag" maxlength="20" placeholder="自定义标签，如：AI / 高股息"><button type="button" data-action="addPositionTag">添加</button></div>${modal.tags.length ? `<div class="position-tags-selected">${modal.tags.map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)} ×</button>`).join("")}</div>` : `<div class="muted">暂未添加标签</div>`}${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).length ? `<div class="position-tag-existing"><span>快速选择已有标签</span><div>${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">+ ${escapeHtml(tag)}</button>`).join("")}</div></div>` : ""}</div>
         </div>
@@ -5743,6 +5765,13 @@
           if (!state.portfolioSearchComposing && !event.isComposing) onPortfolioStockSearch(event);
         });
       });
+      const portfolioValuationVersion = document.querySelector("[data-input='portfolioValuationVersion']");
+      if (portfolioValuationVersion) portfolioValuationVersion.addEventListener("change", (event) => {
+        const preview = document.querySelector("[data-portfolio-valuation-preview]");
+        if (preview && state.portfolioModal?.position) preview.innerHTML = event.target.value
+          ? renderPortfolioValuation(state.portfolioModal.position, event.target.value)
+          : "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。";
+      });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
       const initializePortfolioForm = document.querySelector("[data-form='initializePortfolio']");
@@ -6704,6 +6733,8 @@
       if (!stock) return showPortfolioError("请先选择股票。");
       if (modal.type === "edit") {
         const targetWeight = parsePositionTargetWeight(form.get("targetWeight"));
+        const valuationStockId = String(form.get("valuationStockId") || "");
+        if (valuationStockId && !portfolioValuationStock(stock, valuationStockId)) return showPortfolioError("所选估值版本已不存在，请重新选择。");
         if (!Number.isFinite(targetWeight) || targetWeight < 0 || targetWeight > 100) return showPortfolioError("目标仓位请输入 0 到 100 之间的百分比。");
         const tradePlan = { buy: [], sell: [] };
         for (const side of ["buy", "sell"]) {
@@ -6717,7 +6748,7 @@
         }
         updateActivePortfolio((item) => ({
           ...item,
-          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price, targetWeight, tradePlan, tags: [...new Set((modal.tags || []).map((tag) => String(tag).trim()).filter(Boolean))] } : position),
+          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price, targetWeight, valuationStockId, tradePlan, tags: [...new Set((modal.tags || []).map((tag) => String(tag).trim()).filter(Boolean))] } : position),
           updatedAt: new Date().toISOString()
         }));
         closePortfolioModal();
