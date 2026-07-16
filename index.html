@@ -4399,7 +4399,7 @@
     }
 
     function renderPortfolioTable(portfolio, metrics) {
-      const sort = state.portfolioSort || { key: "value", dir: "desc" };
+      const sort = state.portfolioTagFilter ? { key: "weight", dir: "desc" } : (state.portfolioSort || { key: "value", dir: "desc" });
       const positionWeight = (position) => metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase : 0;
       const sortValue = (position) => sort.key === "change" ? (position.changePercent == null ? NaN : Number(position.changePercent)) : sort.key === "weight" ? positionWeight(position) : positionBaseValue(position, portfolio);
       const allPositions = [...(portfolio.positions || [])];
@@ -4498,12 +4498,15 @@
     }
 
     function renderPortfolioTagSummary(portfolio, metrics) {
-      const tags = [...new Set((portfolio.positions || []).flatMap((position) => position.tags || []))];
-      if (!tags.length) return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="muted">当前组合暂无标签，可在编辑持仓中添加。</div></section>`;
+      const tagRows = [...new Set((portfolio.positions || []).flatMap((position) => position.tags || []))]
+        .map((tag) => {
+          const tagged = (portfolio.positions || []).filter((position) => (position.tags || []).includes(tag));
+          return { tag, tagged, value: tagged.reduce((sum, position) => sum + positionBaseValue(position, portfolio), 0) };
+        })
+        .sort((a, b) => b.value - a.value || a.tag.localeCompare(b.tag, "zh-CN"));
+      if (!tagRows.length) return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="muted">当前组合暂无标签，可在编辑持仓中添加。</div></section>`;
       const base = portfolioBaseCurrency(portfolio);
-      return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="portfolio-tag-summary" aria-label="标签汇总">${tags.map((tag) => {
-        const tagged = (portfolio.positions || []).filter((position) => (position.tags || []).includes(tag));
-        const value = tagged.reduce((sum, position) => sum + positionBaseValue(position, portfolio), 0);
+      return `<section class="portfolio-tag-filter-panel"><div class="portfolio-tag-filter-head">标签筛选</div><div class="portfolio-tag-summary" aria-label="标签汇总">${tagRows.map(({ tag, tagged, value }) => {
         let profit = 0, previousValue = 0, quoted = 0;
         tagged.forEach((position) => {
           const previousClose = Number(position.previousClose), latestPrice = Number(position.latestPrice), shares = Number(position.shares || 0);
@@ -5923,6 +5926,7 @@
       if (action === "togglePortfolioTag") {
         const tag = event.currentTarget.dataset.tag || "";
         state.portfolioTagFilter = state.portfolioTagFilter === tag ? "" : tag;
+        if (state.portfolioTagFilter) state.portfolioSort = { key: "weight", dir: "desc" };
         state.portfolioTagRenaming = "";
         render();
       }
