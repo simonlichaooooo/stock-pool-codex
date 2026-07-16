@@ -2531,6 +2531,8 @@
     let marketCapRefreshInFlight = false;
     let portfolioQuoteRefreshTimer = null;
     let portfolioQuoteRefreshInFlight = false;
+    let journalSearchTimer = null;
+    let journalSearchRequestId = 0;
 
     let currencies = {
       CNY: { label: "人民币", unit: "亿人民币", rateToCny: 1 },
@@ -2585,6 +2587,8 @@
       journalSearchResults: [],
       journalSearchLoading: false,
       journalSearchComposing: false,
+      journalSearchQuery: "",
+      journalInsertCursor: 0,
       journalSaving: false,
       journalError: "",
       journalDbReady: false,
@@ -3670,7 +3674,7 @@
         <form data-form="journal"><div class="simple-modal-body">
           <label class="field"><span>日志内容</span><textarea name="content" data-input="journalContent" maxlength="30000" placeholder="写下你的所思所想。输入 $股票名，或在下方搜索插入股票。" required>${escapeHtml(modal.content || "")}</textarea></label>
           <div class="journal-editor-help">在正文中输入 $ 后继续输入股票名称或代码，会自动打开匹配结果。选择股票后，它会插入光标位置，并在发布时记录实时价格。</div>
-          <div class="journal-stock-picker"><input data-input="journalStockSearch" placeholder="用名称或代码搜索股票">
+          <div class="journal-stock-picker"><input data-input="journalStockSearch" value="${escapeHtml(state.journalSearchQuery)}" placeholder="用名称或代码搜索股票">
             ${state.journalSearchLoading ? `<div class="empty">正在匹配股票...</div>` : state.journalSearchResults.length ? `<div class="journal-stock-results">${state.journalSearchResults.map((item, index) => `<button type="button" class="portfolio-search-result" data-action="selectJournalStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.code)} · ${marketLabel(item.market)}</small></span><span>插入</span></button>`).join("")}</div>` : ""}
           </div>
           ${(modal.stocks || []).length ? `<div class="journal-selected-stocks">${modal.stocks.map((stock, index) => `<span class="journal-selected-stock"><strong>${escapeHtml(stock.name)}</strong>${escapeHtml(stock.code)}<button type="button" data-action="removeJournalStock" data-index="${index}" aria-label="移除">×</button></span>`).join("")}</div>` : ""}
@@ -3717,21 +3721,50 @@
       const entry = state.journals.find((item) => item.id === entryId);
       state.journalModal = entry ? JSON.parse(JSON.stringify(entry)) : { id: "", content: "", stocks: [] };
       state.journalSearchResults = [];
+      state.journalSearchQuery = "";
+      state.journalInsertCursor = state.journalModal.content.length;
       state.journalError = "";
       render();
       setTimeout(() => document.querySelector("[data-input='journalContent']")?.focus(), 0);
     }
 
     function closeJournal() {
-      state.journalModal = null; state.journalSearchResults = []; state.journalError = ""; render();
+      if (journalSearchTimer) window.clearTimeout(journalSearchTimer);
+      journalSearchRequestId += 1;
+      state.journalModal = null; state.journalSearchResults = []; state.journalSearchQuery = ""; state.journalError = ""; render();
     }
 
-    async function onJournalSearch(query) {
+    function scheduleJournalSearch(query, focusTarget = "search", cursor = null) {
       const value = String(query || "").trim();
-      if (!value) { state.journalSearchResults = []; render(); return; }
-      state.journalSearchLoading = true; render();
-      state.journalSearchResults = await searchStocks(value);
-      state.journalSearchLoading = false; render();
+      state.journalSearchQuery = focusTarget === "search" ? String(query || "") : value;
+      if (Number.isInteger(cursor)) state.journalInsertCursor = cursor;
+      if (journalSearchTimer) window.clearTimeout(journalSearchTimer);
+      const requestId = ++journalSearchRequestId;
+      journalSearchTimer = window.setTimeout(async () => {
+        journalSearchTimer = null;
+        if (!value) {
+          state.journalSearchResults = [];
+          state.journalSearchLoading = false;
+          render();
+          restoreJournalSearchFocus(focusTarget, cursor);
+          return;
+        }
+        state.journalSearchLoading = true;
+        const results = await searchStocks(value);
+        if (requestId !== journalSearchRequestId || !state.journalModal) return;
+        state.journalSearchResults = results;
+        state.journalSearchLoading = false;
+        render();
+        restoreJournalSearchFocus(focusTarget, cursor);
+      }, 280);
+    }
+
+    function restoreJournalSearchFocus(target, cursor) {
+      const input = document.querySelector(target === "content" ? "[data-input='journalContent']" : "[data-input='journalStockSearch']");
+      if (!input) return;
+      input.focus();
+      if (target === "content" && Number.isInteger(cursor)) input.setSelectionRange(cursor, cursor);
+      if (target === "search") input.setSelectionRange(input.value.length, input.value.length);
     }
 
     function selectJournalStock(index) {
@@ -3740,10 +3773,11 @@
       if (!state.journalModal.stocks.some((item) => item.code === stock.code && item.market === stock.market)) state.journalModal.stocks.push(stock);
       const textarea = document.querySelector("[data-input='journalContent']");
       const content = textarea?.value ?? state.journalModal.content;
-      const cursor = textarea?.selectionStart ?? content.length;
+      const cursor = document.activeElement === textarea ? textarea.selectionStart : (state.journalInsertCursor || content.length);
       const before = content.slice(0, cursor).replace(/\$[^\s$]*$/, "");
       state.journalModal.content = `${before}$${stock.name}(${stock.code}) ${content.slice(cursor)}`;
       state.journalSearchResults = [];
+      state.journalSearchQuery = "";
       render();
     }
 
@@ -5410,14 +5444,16 @@
       if (journalContent) journalContent.addEventListener("input", (event) => {
         if (!state.journalModal) return;
         state.journalModal.content = event.target.value;
+        state.journalInsertCursor = event.target.selectionStart;
         const match = event.target.value.slice(0, event.target.selectionStart).match(/\$([^\s$]{1,20})$/);
-        if (match) onJournalSearch(match[1]);
+        if (match) scheduleJournalSearch(match[1], "content", event.target.selectionStart);
+        else if (state.journalSearchResults.length || state.journalSearchQuery) scheduleJournalSearch("", "content", event.target.selectionStart);
       });
       const journalSearch = document.querySelector("[data-input='journalStockSearch']");
       if (journalSearch) {
         journalSearch.addEventListener("compositionstart", () => { state.journalSearchComposing = true; });
-        journalSearch.addEventListener("compositionend", (event) => { state.journalSearchComposing = false; onJournalSearch(event.target.value); });
-        journalSearch.addEventListener("input", (event) => { if (!state.journalSearchComposing && !event.isComposing) onJournalSearch(event.target.value); });
+        journalSearch.addEventListener("compositionend", (event) => { state.journalSearchComposing = false; scheduleJournalSearch(event.target.value, "search"); });
+        journalSearch.addEventListener("input", (event) => { if (!state.journalSearchComposing && !event.isComposing) scheduleJournalSearch(event.target.value, "search"); });
       }
       const historyBackdrop = document.querySelector("[data-history-backdrop]");
       if (historyBackdrop) {
