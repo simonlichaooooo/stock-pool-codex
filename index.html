@@ -2337,16 +2337,15 @@
     }
 
     .journal-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
-    .journal-head h2 { margin:0; font-family:"Songti SC","STSong",serif; font-size:24px; font-weight:700; }
+    .journal-head h2 { margin:0; font-size:24px; font-weight:700; }
     .journal-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
     .journal-list { display:grid; gap:10px; }
     .journal-entry { display:grid; grid-template-columns:130px minmax(0,1fr) 72px; gap:22px; padding:22px 20px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
     .journal-date { border-right:1px solid var(--line); padding-right:20px; color:var(--brand-strong); font-family:"Baskerville","Songti SC","STSong",serif; }
     .journal-date-day { display:block; font-size:42px; line-height:.9; font-style:italic; letter-spacing:-2px; }
     .journal-date-month { display:block; margin-top:8px; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#60746f; }
-    .journal-date-time { display:block; margin-top:5px; font:11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--muted); }
     .journal-content { min-width:0; }
-    .journal-text { margin:0; color:#243145; font:15px/1.8 "Songti SC","STSong",serif; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .journal-text { margin:0; color:#243145; font-size:15px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
     .journal-text.collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:7; overflow:hidden; }
     .journal-expand { margin-top:10px; border:0; padding:0; min-height:auto; color:var(--brand); background:transparent; font-size:12px; }
     .journal-stocks { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); }
@@ -2354,9 +2353,9 @@
     .journal-stock-chip small { color:#64748b; font-variant-numeric:tabular-nums; }
     .journal-actions { display:flex; justify-content:flex-end; align-items:flex-start; }
     .journal-empty { padding:70px 24px; text-align:center; background:var(--panel); border:1px solid var(--line); color:var(--muted); }
-    .journal-empty h2 { color:var(--text); font-family:"Songti SC","STSong",serif; }
+    .journal-empty h2 { color:var(--text); }
     .journal-editor { width:min(900px,100%); }
-    .journal-editor textarea { min-height:300px; padding:16px; font:16px/1.8 "Songti SC","STSong",serif; }
+    .journal-editor textarea { min-height:300px; padding:16px; font-size:16px; line-height:1.8; }
     .journal-content-field { position:relative; }
     .journal-mention-popup { display:none; position:absolute; z-index:20; width:min(440px,calc(100% - 20px)); max-height:260px; overflow-y:auto; overflow-x:hidden; padding:6px; background:#fff; border:1px solid #cfd9d7; box-shadow:0 14px 30px rgba(18,25,38,.18); }
     .journal-mention-popup.show { display:grid; gap:3px; }
@@ -3669,8 +3668,7 @@
       const date = new Date(value);
       return {
         day: String(date.getDate()).padStart(2, "0"),
-        month: date.toLocaleDateString("zh-CN", { year: "numeric", month: "short" }),
-        time: date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+        month: date.toLocaleDateString("zh-CN", { month: "short" })
       };
     }
 
@@ -3692,7 +3690,7 @@
           const expanded = state.expandedJournalIds.includes(entry.id);
           const long = String(entry.content || "").length > 260 || String(entry.content || "").split("\n").length > 7;
           return `<article class="journal-entry">
-            <time class="journal-date" datetime="${escapeHtml(entry.publishedAt || entry.createdAt)}"><span class="journal-date-day">${date.day}</span><span class="journal-date-month">${escapeHtml(date.month)}</span><span class="journal-date-time">${escapeHtml(date.time)}</span></time>
+            <time class="journal-date" datetime="${escapeHtml(entry.publishedAt || entry.createdAt)}"><span class="journal-date-day">${date.day}</span><span class="journal-date-month">${escapeHtml(date.month)}</span></time>
             <div class="journal-content"><p class="journal-text ${expanded ? "" : "collapsed"}">${escapeHtml(entry.content)}</p>
               ${long ? `<button class="journal-expand" data-action="toggleJournal" data-id="${entry.id}">${expanded ? "收起" : "展开阅读全文"}</button>` : ""}
               ${(entry.stocks || []).length ? `<div class="journal-stocks">${entry.stocks.map((stock) => `<span class="journal-stock-chip"><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)}</span><small>${escapeHtml(journalPriceText(stock))}</small></span>`).join("")}</div>` : ""}
