@@ -1739,7 +1739,10 @@
     @keyframes portfolio-refresh-spin { to { transform: rotate(360deg); } }
     .portfolio-table .actions { white-space: nowrap; gap: 5px; }
     .portfolio-table .actions button { min-height: 27px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
-    .portfolio-table .table-scroll { overflow: auto; max-height: calc(100vh - 288px); }
+    .portfolio-table .table-scroll { overflow: auto; max-height: calc(100vh - 198px); }
+    .portfolio-table.tags-expanded .table-scroll { max-height: calc(100vh - 288px); }
+    .portfolio-table.summary-expanded .table-scroll { max-height: calc(100vh - 280px); }
+    .portfolio-table.tags-expanded.summary-expanded .table-scroll { max-height: calc(100vh - 370px); }
     .portfolio-table .stock-name { font-weight: 720; }
     .portfolio-table .portfolio-position-weight { font-weight: 750; }
     .portfolio-table .trade-add {
@@ -1855,10 +1858,10 @@
     .portfolio-tag-summary { display: flex; flex-wrap: wrap; gap: 8px; }
     .portfolio-tag-stat { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 5px 10px; border-color: #cfd9d7; background: #fff; font-size: 11px; }
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
-    .portfolio-tag-filter-panel .portfolio-tag-stat.active { border-color: #c79a34; background: #fff0bd; box-shadow: none; }
+    .portfolio-tag-filter-panel .portfolio-tag-stat.active { border-color: #d6b45d; background: #fff9e8; box-shadow: none; }
     .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
     .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
-    .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #c79a34; border-radius: 0 4px 4px 0; background: #fff0bd; font-size: 15px; }
+    .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #d6b45d; border-radius: 0 4px 4px 0; background: #fff9e8; font-size: 15px; }
     .portfolio-tag-rename-form { display: inline-flex; align-items: center; gap: 5px; }
     .portfolio-tag-rename-form input { width: 140px; min-height: 32px; padding: 5px 8px; border-color: #c79a34; font-size: 13px; font-weight: 700; }
     .portfolio-tag-rename-form button { min-height: 32px; padding: 5px 9px; font-size: 11px; }
@@ -2567,6 +2570,7 @@
       .portfolio-list-tools { width: 100%; justify-content: space-between; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
+      .portfolio-table .table-scroll { max-height: none; }
       table, thead, tbody, tr, th, td { display: block; width: 100%; min-width: 0; }
       table { border-collapse: separate; }
       thead { display: none; }
@@ -4407,7 +4411,7 @@
       const sortIndicator = (key) => sort.key === key ? `<span class="portfolio-sort-indicator">${sort.dir === "asc" ? "▲" : "▼"}</span>` : "";
       return `
         ${state.portfolioTagsExpanded ? renderPortfolioTagSummary(portfolio, metrics) : ""}
-        <section class="table-panel portfolio-table">
+        <section class="table-panel portfolio-table ${state.portfolioTagsExpanded ? "tags-expanded" : ""} ${state.portfolioSummaryExpanded ? "summary-expanded" : ""}">
           <div class="portfolio-list-head">
             <div class="portfolio-list-head-main">
               <div class="portfolio-list-head-title">持仓列表<span class="portfolio-account-badge">${base === "USD" ? "美元" : "人民币"}</span></div>
