@@ -2429,6 +2429,15 @@
     .journal-head { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-bottom:12px; }
     .journal-head h2 { margin:0; font-size:24px; font-weight:700; }
     .journal-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .journal-filters { display:grid; gap:9px; margin-bottom:12px; padding:13px 14px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
+    .journal-filter-row { display:grid; grid-template-columns:54px minmax(0,1fr); gap:10px; align-items:start; }
+    .journal-filter-label { padding-top:7px; color:var(--muted); font-size:12px; font-weight:700; }
+    .journal-filter-tags { display:flex; flex-wrap:wrap; gap:7px; min-width:0; }
+    .journal-filter-tag { min-height:30px; padding:5px 10px; border-color:#ccd8d6; border-radius:3px; background:#fff; color:#40514e; font-size:12px; font-weight:600; }
+    .journal-filter-tag:hover { border-color:#8fb6af; background:#f5faf9; }
+    .journal-filter-tag.active { border-color:var(--brand); background:var(--brand); color:#fff; }
+    .journal-filter-count { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; margin-left:5px; padding:0 5px; border-radius:9px; background:#e7efed; color:#536864; font-size:10px; font-variant-numeric:tabular-nums; }
+    .journal-filter-tag.active .journal-filter-count { background:rgba(255,255,255,.22); color:#fff; }
     .journal-list { display:grid; gap:10px; }
     .journal-entry { display:grid; grid-template-columns:130px minmax(0,1fr) 86px; gap:22px; padding:22px 20px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
     .journal-date { border-right:1px solid var(--line); padding-right:20px; color:var(--brand-strong); font-family:"Baskerville","Songti SC","STSong",serif; }
@@ -2484,6 +2493,8 @@
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .journal-head { align-items:stretch; flex-direction:column; }
+      .journal-filter-row { grid-template-columns:1fr; gap:5px; }
+      .journal-filter-label { padding-top:0; }
       .journal-entry { grid-template-columns:78px minmax(0,1fr); gap:14px; padding:16px 14px; }
       .journal-date { padding-right:12px; }
       .journal-date-day { font-size:34px; }
@@ -2707,6 +2718,8 @@
       journalError: "",
       journalDbReady: false,
       journalDbError: "",
+      journalMonthFilter: "",
+      journalStockFilter: "",
       expandedJournalIds: [],
       navRange: "3M",
       navYear: "",
@@ -3782,13 +3795,57 @@
       return price > 0 ? `${price.toLocaleString("zh-CN", { maximumFractionDigits: 3 })} ${stock.currency || marketCurrency(stock.market)}` : `— ${stock.currency || marketCurrency(stock.market)}`;
     }
 
+    function journalMonthKey(entry) {
+      const date = new Date(entry.publishedAt || entry.createdAt);
+      if (Number.isNaN(date.getTime())) return "";
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function journalStockKey(stock) {
+      return `${stock.market || ""}:${stock.code || ""}`;
+    }
+
+    function journalFilterTag(label, count, active, attrs) {
+      return `<button type="button" class="journal-filter-tag ${active ? "active" : ""}" ${attrs}>${escapeHtml(label)}<span class="journal-filter-count">${count}</span></button>`;
+    }
+
     function renderJournalView() {
-      const rows = [...state.journals].sort((a, b) => String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)));
+      const allRows = [...state.journals].sort((a, b) => String(b.publishedAt || b.createdAt).localeCompare(String(a.publishedAt || a.createdAt)));
+      const months = [...new Set(allRows.map(journalMonthKey).filter(Boolean))].sort().reverse();
+      const stockStats = new Map();
+      allRows.forEach((entry) => {
+        const seen = new Set();
+        (entry.stocks || []).forEach((stock) => {
+          const key = journalStockKey(stock);
+          if (!stock.code || seen.has(key)) return;
+          seen.add(key);
+          const current = stockStats.get(key) || { stock, count: 0 };
+          current.count += 1;
+          stockStats.set(key, current);
+        });
+      });
+      const stocks = [...stockStats.entries()].sort((a, b) => b[1].count - a[1].count || String(a[1].stock.name).localeCompare(String(b[1].stock.name), "zh-CN"));
+      const rows = allRows.filter((entry) => {
+        const monthMatches = !state.journalMonthFilter || journalMonthKey(entry) === state.journalMonthFilter;
+        const stockMatches = !state.journalStockFilter || (entry.stocks || []).some((stock) => journalStockKey(stock) === state.journalStockFilter);
+        return monthMatches && stockMatches;
+      });
+      const filters = allRows.length ? `<section class="journal-filters" aria-label="日志筛选">
+        <div class="journal-filter-row"><div class="journal-filter-label">时间</div><div class="journal-filter-tags">
+          ${journalFilterTag("全部月份", allRows.length, !state.journalMonthFilter, `data-action="filterJournalMonth" data-month=""`)}
+          ${months.map((month) => journalFilterTag(`${month.slice(0, 4)}年${Number(month.slice(5))}月`, allRows.filter((entry) => journalMonthKey(entry) === month).length, state.journalMonthFilter === month, `data-action="filterJournalMonth" data-month="${month}"`)).join("")}
+        </div></div>
+        <div class="journal-filter-row"><div class="journal-filter-label">股票</div><div class="journal-filter-tags">
+          ${journalFilterTag("全部股票", allRows.length, !state.journalStockFilter, `data-action="filterJournalStock" data-stock-key=""`)}
+          ${stocks.map(([key, item]) => journalFilterTag(`${item.stock.name} ${item.stock.code}`, item.count, state.journalStockFilter === key, `data-action="filterJournalStock" data-stock-key="${escapeHtml(key)}"`)).join("")}
+        </div></div>
+      </section>` : "";
       return `
         <section class="journal-head">
           <button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button>
         </section>
         ${state.journalDbError ? `<div class="simple-modal-error" style="margin-bottom:12px">日志数据库尚未启用。请先按部署说明执行建表 SQL，然后刷新页面；当前设备已有的本地日志会自动迁移。</div>` : ""}
+        ${filters}
         ${rows.length ? `<div class="journal-list">${rows.map((entry) => {
           const date = journalDateParts(entry.publishedAt || entry.createdAt);
           const expanded = state.expandedJournalIds.includes(entry.id);
@@ -3804,7 +3861,7 @@
               <button class="journal-action-delete" data-action="deleteJournal" data-id="${entry.id}" title="删除日志" aria-label="删除日志" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m7 7 1 13h8l1-13"></path><path d="M10 11v5M14 11v5"></path></svg></button>
             </div>
           </article>`;
-        }).join("")}</div>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>写第一篇日志</button></section>`}
+        }).join("")}</div>` : allRows.length ? `<section class="journal-empty"><h2>没有匹配的日志</h2><p>可以切换上方的月份或股票标签查看其他日志。</p><button data-action="clearJournalFilters">清除筛选</button></section>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>写第一篇日志</button></section>`}
       `;
     }
 
@@ -5899,6 +5956,9 @@
       if (action === "selectJournalStock") selectJournalStock(Number(event.currentTarget.dataset.index));
       if (action === "removeJournalStock" && state.journalModal) { state.journalModal.stocks.splice(Number(event.currentTarget.dataset.index), 1); render(); }
       if (action === "toggleJournal") { state.expandedJournalIds = state.expandedJournalIds.includes(stockId) ? state.expandedJournalIds.filter((id) => id !== stockId) : [...state.expandedJournalIds, stockId]; render(); }
+      if (action === "filterJournalMonth") { state.journalMonthFilter = event.currentTarget.dataset.month || ""; render(); }
+      if (action === "filterJournalStock") { state.journalStockFilter = event.currentTarget.dataset.stockKey || ""; render(); }
+      if (action === "clearJournalFilters") { state.journalMonthFilter = ""; state.journalStockFilter = ""; render(); }
       if (action === "selectPortfolio") {
         state.activePortfolioId = stockId;
         state.portfolioTagFilter = "";
