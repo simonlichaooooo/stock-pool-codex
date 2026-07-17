@@ -2604,6 +2604,29 @@
     .nav-publisher-select:hover { border-color:#41658f; background-color:#f8faff; }
     .nav-publisher-select:focus-visible { border-color:var(--brand); box-shadow:var(--focus); }
 
+    /* Keep header, frozen column, and row states visually continuous. */
+    .stock-pool-table th,
+    .portfolio-table th {
+      background:#f3f6fa;
+      border-bottom-color:#9cacbf;
+    }
+    .stock-pool-table th.sticky-col:not(.drag-col),
+    .portfolio-table th.sticky-col { background:#edf2f8; }
+    .stock-pool-table td.sticky-col:not(.drag-col),
+    .portfolio-table td.sticky-col {
+      background:#f8fafc;
+      box-shadow:inset -1px 0 0 #8fa1b5;
+    }
+    .stock-pool-table tbody tr:hover > td,
+    .stock-pool-table tbody tr:nth-child(even):hover > td,
+    .portfolio-table tbody tr:hover > td,
+    .portfolio-table tbody tr:nth-child(even):hover > td { background:#e8f1ff !important; }
+    .stock-pool-table tbody tr:hover > td.sticky-col:not(.drag-col),
+    .portfolio-table tbody tr:hover > td.sticky-col {
+      background:#dceaff !important;
+      box-shadow:inset -1px 0 0 #60778f !important;
+    }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
