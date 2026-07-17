@@ -6,26 +6,26 @@
   <title>钞·作业</title>
   <style>
     :root {
-      --bg: #eef2f6;
+      --bg: #e7edf5;
       --panel: #ffffff;
-      --panel-2: #f4f7fa;
-      --text: #0f172a;
-      --muted: #526077;
-      --line: #c7d0dc;
-      --soft: #e3e9f0;
-      --brand: #006b57;
-      --brand-strong: #004d40;
-      --brand-soft: #dff3ed;
-      --accent: #245f96;
-      --gain: #a71912;
-      --loss: #057044;
-      --warn: #855500;
-      --shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
-      --shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.09);
+      --panel-2: #edf2f8;
+      --text: #071426;
+      --muted: #40516a;
+      --line: #aebccc;
+      --soft: #d7e0eb;
+      --brand: #075ee8;
+      --brand-strong: #073b93;
+      --brand-soft: #dceaff;
+      --accent: #0057d9;
+      --gain: #c01b12;
+      --loss: #087443;
+      --warn: #8a4b00;
+      --shadow: 0 20px 48px rgba(7, 20, 38, 0.16);
+      --shadow-soft: 0 7px 20px rgba(7, 20, 38, 0.11);
       --radius-sm: 4px;
       --radius-md: 6px;
       --radius-lg: 8px;
-      --focus: 0 0 0 3px rgba(0, 107, 87, 0.22);
+      --focus: 0 0 0 3px rgba(7, 94, 232, 0.25);
     }
 
     * { box-sizing: border-box; }
@@ -2476,45 +2476,49 @@
     .journal-selected-stock { display:inline-flex; align-items:center; gap:7px; padding:7px 9px; border:1px solid #b9d6d1; background:var(--brand-soft); color:var(--brand-strong); font-size:12px; }
     .journal-selected-stock button { min-height:20px; width:20px; padding:0; border:0; background:transparent; }
 
-    /* High-contrast palette: clearer hierarchy without changing the product's green identity. */
-    body { background: linear-gradient(180deg, #f8fafc 0, #f1f5f9 260px, #e9eef5 100%); }
-    button { border-color:#b8c4d1; color:#1e293b; }
-    button:hover { border-color:#7c8da3; background:#f1f5f9; color:#0f172a; }
-    button.secondary, button.ghost, .actions .text-action { color:#334155; border-color:#bdc8d5; }
-    button.icon { color:#475569; }
-    input, select, textarea { border-color:#b9c5d2; color:#0f172a; }
-    input::placeholder, textarea::placeholder { color:#6b778b; }
-    .topbar { background:rgba(255,255,255,.96); border-bottom-color:rgba(172,185,201,.94); box-shadow:0 2px 10px rgba(15,23,42,.08); }
-    .brand { border-right-color:#bcc7d3; }
-    .userbar, .userbar .badge, .userbar button { color:#475569; }
-    .nav-tabs, .portfolio-tabs, .segmented { border-color:#b8c5d1; background:#e5ebf1; }
-    .nav-tabs button, .portfolio-tabs button, .segmented button, .topbar .topbar-nav button { color:#3d4b60; }
-    .topbar .topbar-nav button:hover { background:#e6f1ee; }
-    .topbar .topbar-nav button.active { background:#dff0eb; }
-    .toolbar, .publisher-panel, .portfolio-head, .share-banner, .update-banner, .table-panel { border-color:#bcc8d4; }
+    /* High-impact palette: crisp navy structure with electric-blue interaction states. */
+    body { background: linear-gradient(180deg, #f7f9fc 0, #edf2f8 240px, #e3eaf3 100%); }
+    .brand-logo { filter:hue-rotate(78deg) saturate(2.2) brightness(.72) contrast(1.32); }
+    button { border-color:#9eafc2; color:#15243a; }
+    button:hover { border-color:#46617f; background:#eaf1fa; color:#071426; }
+    button.primary { background:linear-gradient(180deg,#1476ff,#075ee8); border-color:#064dbd; box-shadow:0 7px 16px rgba(7,94,232,.28),inset 0 1px 0 rgba(255,255,255,.22); }
+    button.primary:hover { background:linear-gradient(180deg,#0968ed,#073b93); border-color:#073b93; }
+    button.secondary, button.ghost, .actions .text-action { color:#263b58; border-color:#a6b6c8; }
+    button.icon { color:#314765; }
+    input, select, textarea { border-color:#9fb0c3; color:#071426; }
+    input::placeholder, textarea::placeholder { color:#5f7087; }
+    .topbar { background:rgba(255,255,255,.98); border-bottom:2px solid #173b67; box-shadow:0 3px 14px rgba(7,20,38,.12); }
+    .brand { border-right-color:#9dacc0; }
+    .userbar, .userbar .badge, .userbar button { color:#314765; }
+    .nav-tabs, .portfolio-tabs, .segmented { border-color:#9eafc2; background:#dbe4ef; }
+    .nav-tabs button, .portfolio-tabs button, .segmented button, .topbar .topbar-nav button { color:#263b58; }
+    .nav-tabs button.active, .portfolio-tabs button.active, .segmented button.active { background:#fff; color:#073b93; border-color:#5c86bd; }
+    .topbar .topbar-nav button:hover { background:#e1ecfb; color:#073b93; }
+    .topbar .topbar-nav button.active { background:#d9e8ff; color:#073b93; }
+    .toolbar, .publisher-panel, .portfolio-head, .share-banner, .update-banner, .table-panel { border-color:#a8b8ca; }
     .toolbar, .portfolio-head { background:rgba(255,255,255,.96); }
     .toolbar-left input { background:#fff; }
-    .table-scroll { scrollbar-color:#8f9dae #e3e9f0; }
-    th { background:#e8eef4; color:#334155; border-bottom-color:#b9c5d1; }
-    td { border-bottom-color:#d8e0e8; color:#1e293b; }
-    tbody tr:nth-child(even) td:not(.sticky-col) { background:#f8fafc; }
-    .table-panel tbody tr:hover > td, .table-panel tbody tr:hover > td.sticky-col { background:#e3f3ee; }
-    th.sticky-col, td.sticky-col { box-shadow:1px 0 0 #c7d1dc, 8px 0 18px rgba(15,23,42,.06); }
-    .stock-code, .portfolio-metric-label, .portfolio-metric-sub, .section-card p, .result-metric strong, .rebalance-preview-item span { color:#526077; }
-    .badge { background:#e5eaf0; color:#334155; }
-    .badge.unshared { background:#e8edf2; border-color:#cbd4de; color:#4b5565; }
-    .badge.shared { background:#d9efe8; border-color:#9bcbbb; }
-    .portfolio-metric, .section-card, .result-panel, .simple-modal, .confirm-panel, .history-panel, .square-card { border-color:#becad6; }
+    .table-scroll { scrollbar-color:#758ba5 #dbe3ed; }
+    th { background:#dce5f0; color:#172b47; border-bottom:2px solid #9cadc0; }
+    td { border-bottom-color:#cbd6e2; color:#102039; }
+    tbody tr:nth-child(even) td:not(.sticky-col) { background:#f5f8fc; }
+    .table-panel tbody tr:hover > td, .table-panel tbody tr:hover > td.sticky-col { background:#dceaff; }
+    th.sticky-col, td.sticky-col { box-shadow:1px 0 0 #aebdcd, 8px 0 18px rgba(7,20,38,.08); }
+    .stock-code, .portfolio-metric-label, .portfolio-metric-sub, .section-card p, .result-metric strong, .rebalance-preview-item span { color:#40516a; }
+    .badge { background:#dce4ed; color:#203550; }
+    .badge.unshared { background:#e0e6ed; border-color:#b8c4d0; color:#3e4c60; }
+    .badge.shared { background:#dceaff; border-color:#88afe7; color:#073b93; }
+    .portfolio-metric, .section-card, .result-panel, .simple-modal, .confirm-panel, .history-panel, .square-card { border-color:#acbbcc; }
     .portfolio-metric { background:linear-gradient(180deg,#fff 0,#f6f8fb 100%); }
     .drawer-panel, .drawer-body { background:#edf1f5; }
     .drawer-head, .drawer-foot, .simple-modal-foot { background:rgba(255,255,255,.98); border-color:#bcc8d4; }
     .readonly-value, .result-metric, .trade-suggestion, .rebalance-preview-item, .position-plan-readonly, .portfolio-selected-stock { border-color:#c4ced9; background:#f3f6f9; }
-    .journal-filters { border-color:#aebdc9; background:#dde7e5; }
+    .journal-filters { border-color:#9bacc0; background:#dce5f0; }
     .journal-filter-tag { border-color:#bdc9d3; color:#3d4b60; }
     .journal-filter-count { color:#5e6b7d; }
     .journal-entry, .journal-empty { border-color:#bdc8d4; }
-    .journal-date-month { color:#3f5d56; }
-    .journal-stock-chip { border-color:#9fcbbf; }
+    .journal-date-month { color:#294c78; }
+    .journal-stock-chip { border-color:#8cafe0; }
 
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
