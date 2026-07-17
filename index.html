@@ -2426,11 +2426,11 @@
       100% { background-position: 0 0; }
     }
 
-    .journal-head { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-bottom:12px; }
-    .journal-head h2 { margin:0; font-size:24px; font-weight:700; }
-    .journal-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
-    .journal-filters { display:grid; gap:8px; margin:0 0 16px; padding:11px 12px; border:1px solid #dbe5e2; border-radius:5px; background:#f7faf9; }
-    .journal-filter-row { min-width:0; }
+    .journal-filters { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 14px; margin:0 0 16px; padding:12px 14px 14px; border:1px solid #bdcfcb; border-radius:6px; background:#e7efed; box-shadow:0 3px 10px rgba(30,65,57,.045); }
+    .journal-filter-action { display:flex; grid-column:2; grid-row:1; justify-content:flex-end; }
+    .journal-filter-action .primary { min-height:30px; }
+    .journal-filter-row { grid-column:1/-1; min-width:0; }
+    .journal-filter-action + .journal-filter-row { grid-column:1; grid-row:1; }
     .journal-filter-tags { display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
     .journal-filter-tag { display:inline-flex; align-items:baseline; min-height:28px; padding:4px 9px; border:1px solid #d7e1de; border-radius:4px; background:#fff; color:#50615d; font-size:12px; line-height:18px; font-weight:500; }
     .journal-filter-tag:hover { border-color:#9ebbb5; background:#fff; color:#263f39; }
@@ -2439,12 +2439,13 @@
     .journal-filter-count::before { content:"· "; }
     .journal-filter-tag.active .journal-filter-count { color:#6e8d86; }
     .journal-list { display:grid; gap:10px; }
-    .journal-entry { display:grid; grid-template-columns:130px minmax(0,1fr) 86px; gap:22px; padding:22px 20px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
-    .journal-date { border-right:1px solid var(--line); padding-right:20px; color:var(--brand-strong); font-family:"Baskerville","Songti SC","STSong",serif; }
-    .journal-date-day { display:block; font-size:42px; line-height:.9; font-style:italic; letter-spacing:-2px; }
-    .journal-date-month { display:block; margin-top:8px; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#60746f; }
+    .journal-entry { display:grid; grid-template-columns:96px minmax(0,1fr) 76px; gap:16px; padding:22px 20px; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-soft); }
+    .journal-date { border-right:1px solid var(--line); padding-right:14px; color:var(--brand-strong); font-family:"Baskerville","Songti SC","STSong",serif; }
+    .journal-date-day { display:block; font-size:44px; line-height:.88; font-weight:600; font-style:italic; letter-spacing:-2px; }
+    .journal-date-month { display:block; margin-top:9px; font-size:15px; line-height:1.1; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#4f6963; }
     .journal-content { min-width:0; }
     .journal-text { margin:0; color:#243145; font-size:15px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .journal-text::first-line { color:#172536; font-size:17px; font-weight:700; line-height:1.65; }
     .journal-text.collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:7; overflow:hidden; }
     .journal-expand { margin-top:10px; border:0; padding:0; min-height:auto; color:var(--brand); background:transparent; font-size:12px; }
     .journal-stocks { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); }
@@ -2492,10 +2493,10 @@
       .page-header-actions { width: 100%; justify-content: flex-start; }
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
-      .journal-head { align-items:stretch; flex-direction:column; }
-      .journal-entry { grid-template-columns:78px minmax(0,1fr); gap:14px; padding:16px 14px; }
-      .journal-date { padding-right:12px; }
-      .journal-date-day { font-size:34px; }
+      .journal-entry { grid-template-columns:68px minmax(0,1fr); gap:12px; padding:16px 14px; }
+      .journal-date { padding-right:10px; }
+      .journal-date-day { font-size:36px; }
+      .journal-date-month { font-size:13px; letter-spacing:1px; }
       .journal-actions { grid-column:2; justify-content:flex-start; }
       .nav-pool-controls { width: 100%; justify-content: flex-start; }
       .nav-publisher-select { width: 100%; min-width: 0; max-width: none; flex: 1 1 auto; }
@@ -3828,7 +3829,8 @@
         const stockMatches = !state.journalStockFilter || (entry.stocks || []).some((stock) => journalStockKey(stock) === state.journalStockFilter);
         return monthMatches && stockMatches;
       });
-      const filters = allRows.length ? `<section class="journal-filters" aria-label="日志筛选">
+      const filters = `<section class="journal-filters" aria-label="日志筛选">
+        <div class="journal-filter-action"><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button></div>
         <div class="journal-filter-row"><div class="journal-filter-tags">
           ${journalFilterTag("全部月份", null, !state.journalMonthFilter, `data-action="filterJournalMonth" data-month=""`)}
           ${months.map((month) => journalFilterTag(`${month.slice(0, 4)}年${Number(month.slice(5))}月`, allRows.filter((entry) => journalMonthKey(entry) === month).length, state.journalMonthFilter === month, `data-action="filterJournalMonth" data-month="${month}"`)).join("")}
@@ -3837,11 +3839,8 @@
           ${journalFilterTag("全部股票", null, !state.journalStockFilter, `data-action="filterJournalStock" data-stock-key=""`)}
           ${stocks.map(([key, item]) => journalFilterTag(`${item.stock.name} ${item.stock.code}`, item.count, state.journalStockFilter === key, `data-action="filterJournalStock" data-stock-key="${escapeHtml(key)}"`)).join("")}
         </div></div>
-      </section>` : "";
+      </section>`;
       return `
-        <section class="journal-head">
-          <button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button>
-        </section>
         ${state.journalDbError ? `<div class="simple-modal-error" style="margin-bottom:12px">日志数据库尚未启用。请先按部署说明执行建表 SQL，然后刷新页面；当前设备已有的本地日志会自动迁移。</div>` : ""}
         ${filters}
         ${rows.length ? `<div class="journal-list">${rows.map((entry) => {
@@ -3859,7 +3858,7 @@
               <button class="journal-action-delete" data-action="deleteJournal" data-id="${entry.id}" title="删除日志" aria-label="删除日志" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m7 7 1 13h8l1-13"></path><path d="M10 11v5M14 11v5"></path></svg></button>
             </div>
           </article>`;
-        }).join("")}</div>` : allRows.length ? `<section class="journal-empty"><h2>没有匹配的日志</h2><p>可以切换上方的月份或股票标签查看其他日志。</p><button data-action="clearJournalFilters">清除筛选</button></section>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>写第一篇日志</button></section>`}
+        }).join("")}</div>` : allRows.length ? `<section class="journal-empty"><h2>没有匹配的日志</h2><p>可以切换上方的月份或股票标签查看其他日志。</p><button data-action="clearJournalFilters">清除筛选</button></section>` : `<section class="journal-empty"><h2>还没有日志</h2><p>写下今天的判断，输入 $ 可以插入股票。</p></section>`}
       `;
     }
 
