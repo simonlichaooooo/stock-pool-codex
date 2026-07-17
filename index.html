@@ -20,8 +20,8 @@
       --gain: #c01b12;
       --loss: #087443;
       --warn: #8a4b00;
-      --shadow: 0 20px 48px rgba(7, 20, 38, 0.16);
-      --shadow-soft: 0 7px 20px rgba(7, 20, 38, 0.11);
+      --shadow: none;
+      --shadow-soft: none;
       --radius-sm: 4px;
       --radius-md: 6px;
       --radius-lg: 8px;
@@ -2477,8 +2477,8 @@
     .journal-selected-stock button { min-height:20px; width:20px; padding:0; border:0; background:transparent; }
 
     /* High-impact palette: crisp navy structure with electric-blue interaction states. */
-    body { background: linear-gradient(180deg, #f7f9fc 0, #edf2f8 240px, #e3eaf3 100%); }
-    .brand-logo { filter:hue-rotate(78deg) saturate(2.2) brightness(.72) contrast(1.32); }
+    body { background:#fff; }
+    .brand-logo { filter:hue-rotate(78deg) saturate(2.25) contrast(1.38); }
     button { border-color:#9eafc2; color:#15243a; }
     button:hover { border-color:#46617f; background:#eaf1fa; color:#071426; }
     button.primary { background:linear-gradient(180deg,#1476ff,#075ee8); border-color:#064dbd; box-shadow:0 7px 16px rgba(7,94,232,.28),inset 0 1px 0 rgba(255,255,255,.22); }
@@ -2487,7 +2487,7 @@
     button.icon { color:#314765; }
     input, select, textarea { border-color:#9fb0c3; color:#071426; }
     input::placeholder, textarea::placeholder { color:#5f7087; }
-    .topbar { background:rgba(255,255,255,.98); border-bottom:2px solid #173b67; box-shadow:0 3px 14px rgba(7,20,38,.12); }
+    .topbar { background:#fff; border-bottom:2px solid #173b67; box-shadow:none; backdrop-filter:none; }
     .brand { border-right-color:#9dacc0; }
     .userbar, .userbar .badge, .userbar button { color:#314765; }
     .nav-tabs, .portfolio-tabs, .segmented { border-color:#9eafc2; background:#dbe4ef; }
@@ -2519,6 +2519,43 @@
     .journal-entry, .journal-empty { border-color:#bdc8d4; }
     .journal-date-month { color:#294c78; }
     .journal-stock-chip { border-color:#8cafe0; }
+
+    /* Precision surfaces: pure whites, hard separators, and almost no atmospheric shadow. */
+    .login-panel,
+    .toolbar,
+    .nav-tabs,
+    .portfolio-tabs,
+    .segmented,
+    .table-panel,
+    .portfolio-head,
+    .portfolio-metric,
+    .publisher-panel,
+    .share-banner,
+    .update-banner,
+    .section-card,
+    .result-panel,
+    .square-card,
+    .simple-modal,
+    .confirm-panel,
+    .history-panel,
+    .journal-entry,
+    .journal-empty,
+    .portfolio-tag-filter-panel { box-shadow:none; }
+    .login-wrap { background:#fff; }
+    .login-panel { border:1px solid #9fb0c3; }
+    .toolbar, .portfolio-head, .table-panel, .portfolio-metric, .section-card, .result-panel, .square-card, .journal-entry, .journal-empty { background:#fff; }
+    .toolbar { backdrop-filter:none; }
+    .portfolio-metric, .portfolio-summary .portfolio-metric { background:#fff; }
+    .drawer-panel, .drawer-body { background:#f6f8fb; }
+    .drawer-panel { box-shadow:-1px 0 0 #9fb0c3; }
+    .drawer-head, .drawer-foot, .simple-modal-foot { backdrop-filter:none; }
+    .simple-modal { box-shadow:0 0 0 1px #8fa2b8; }
+    .portfolio-menu-panel, .journal-mention-popup, .portfolio-initialize-results { box-shadow:0 2px 8px rgba(7,20,38,.12); }
+    button.primary { box-shadow:none; }
+    button.primary:hover { box-shadow:none; }
+    .portfolio-list-head { background:#f4f7fb; border-bottom:1px solid #acbbcc; }
+    .table-panel { border-width:1px; }
+    .journal-filters { box-shadow:none; }
 
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
