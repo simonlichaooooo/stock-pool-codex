@@ -2429,14 +2429,13 @@
     .journal-head { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-bottom:12px; }
     .journal-head h2 { margin:0; font-size:24px; font-weight:700; }
     .journal-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
-    .journal-filters { display:grid; gap:6px; margin:0 0 16px; padding:2px 0 12px; border-bottom:1px solid #e5ebe9; }
-    .journal-filter-row { display:grid; grid-template-columns:42px minmax(0,1fr); gap:8px; align-items:start; }
-    .journal-filter-label { padding-top:6px; color:#87938f; font-size:11px; font-weight:600; letter-spacing:.04em; }
-    .journal-filter-tags { display:flex; flex-wrap:wrap; gap:3px 5px; min-width:0; }
-    .journal-filter-tag { min-height:27px; padding:3px 8px; border:1px solid transparent; border-radius:4px; background:transparent; color:#667571; font-size:12px; font-weight:500; }
-    .journal-filter-tag:hover { border-color:#d9e4e1; background:#f7faf9; color:#314943; }
-    .journal-filter-tag.active { border-color:#c8dcd7; background:#edf5f3; color:var(--brand-strong); font-weight:650; box-shadow:none; }
-    .journal-filter-count { margin-left:4px; color:#9aa5a2; font-size:10px; font-weight:500; font-variant-numeric:tabular-nums; }
+    .journal-filters { display:grid; gap:8px; margin:0 0 16px; padding:11px 12px; border:1px solid #dbe5e2; border-radius:5px; background:#f7faf9; }
+    .journal-filter-row { min-width:0; }
+    .journal-filter-tags { display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
+    .journal-filter-tag { display:inline-flex; align-items:baseline; min-height:28px; padding:4px 9px; border:1px solid #d7e1de; border-radius:4px; background:#fff; color:#50615d; font-size:12px; line-height:18px; font-weight:500; }
+    .journal-filter-tag:hover { border-color:#9ebbb5; background:#fff; color:#263f39; }
+    .journal-filter-tag.active { border-color:#8fb4ac; background:#e8f2ef; color:#174f44; font-weight:650; box-shadow:none; }
+    .journal-filter-count { margin-left:4px; color:#7e8f8b; font-size:12px; line-height:inherit; font-weight:500; font-variant-numeric:tabular-nums; }
     .journal-filter-count::before { content:"· "; }
     .journal-filter-tag.active .journal-filter-count { color:#6e8d86; }
     .journal-list { display:grid; gap:10px; }
@@ -2494,8 +2493,6 @@
       .nav-tabs { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .nav-tabs button { min-width: 0; }
       .journal-head { align-items:stretch; flex-direction:column; }
-      .journal-filter-row { grid-template-columns:1fr; gap:5px; }
-      .journal-filter-label { padding-top:0; }
       .journal-entry { grid-template-columns:78px minmax(0,1fr); gap:14px; padding:16px 14px; }
       .journal-date { padding-right:12px; }
       .journal-date-day { font-size:34px; }
@@ -3807,7 +3804,7 @@
     }
 
     function journalFilterTag(label, count, active, attrs) {
-      return `<button type="button" class="journal-filter-tag ${active ? "active" : ""}" ${attrs}>${escapeHtml(label)}<span class="journal-filter-count">${count}</span></button>`;
+      return `<button type="button" class="journal-filter-tag ${active ? "active" : ""}" ${attrs}>${escapeHtml(label)}${count == null ? "" : `<span class="journal-filter-count">${count}</span>`}</button>`;
     }
 
     function renderJournalView() {
@@ -3832,12 +3829,12 @@
         return monthMatches && stockMatches;
       });
       const filters = allRows.length ? `<section class="journal-filters" aria-label="日志筛选">
-        <div class="journal-filter-row"><div class="journal-filter-label">时间</div><div class="journal-filter-tags">
-          ${journalFilterTag("全部月份", allRows.length, !state.journalMonthFilter, `data-action="filterJournalMonth" data-month=""`)}
+        <div class="journal-filter-row"><div class="journal-filter-tags">
+          ${journalFilterTag("全部月份", null, !state.journalMonthFilter, `data-action="filterJournalMonth" data-month=""`)}
           ${months.map((month) => journalFilterTag(`${month.slice(0, 4)}年${Number(month.slice(5))}月`, allRows.filter((entry) => journalMonthKey(entry) === month).length, state.journalMonthFilter === month, `data-action="filterJournalMonth" data-month="${month}"`)).join("")}
         </div></div>
-        <div class="journal-filter-row"><div class="journal-filter-label">股票</div><div class="journal-filter-tags">
-          ${journalFilterTag("全部股票", allRows.length, !state.journalStockFilter, `data-action="filterJournalStock" data-stock-key=""`)}
+        <div class="journal-filter-row"><div class="journal-filter-tags">
+          ${journalFilterTag("全部股票", null, !state.journalStockFilter, `data-action="filterJournalStock" data-stock-key=""`)}
           ${stocks.map(([key, item]) => journalFilterTag(`${item.stock.name} ${item.stock.code}`, item.count, state.journalStockFilter === key, `data-action="filterJournalStock" data-stock-key="${escapeHtml(key)}"`)).join("")}
         </div></div>
       </section>` : "";
