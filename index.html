@@ -1864,7 +1864,7 @@
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
     .portfolio-tag-filter-panel .portfolio-tag-stat.active { border-color: #d6b45d; background: #fff9e8; box-shadow: none; }
     .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
-    .portfolio-tag-filter-item .portfolio-tag-stat { border-radius: 4px 0 0 4px; }
+    .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
     .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #d6b45d; border-radius: 0 4px 4px 0; background: #fff9e8; font-size: 15px; }
     .portfolio-tag-target { color: #667085; font-size: 10.5px; }
     .portfolio-tag-allocation { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; }
@@ -6076,7 +6076,7 @@
         const actualWeight = metrics.netBase ? value / metrics.netBase * 100 : 0;
         const targetWeight = portfolioTagTargetWeight(portfolio, tag);
         const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${actualWeight.toFixed(2)}%</span>${targetWeight > 0 ? `<span class="portfolio-tag-target">目标 ${targetWeight.toFixed(2)}%</span>${renderPortfolioTagAllocationIcon(actualWeight, targetWeight)}` : ""}<span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
-        return `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="editPortfolioTag" data-tag="${escapeHtml(tag)}" title="编辑标签" aria-label="编辑标签 ${escapeHtml(tag)}">✎</button></span>`;
+        return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="editPortfolioTag" data-tag="${escapeHtml(tag)}" title="编辑标签" aria-label="编辑标签 ${escapeHtml(tag)}">✎</button></span>` : stat;
       }).join("")}</div></section>`;
     }
 
@@ -6098,8 +6098,8 @@
     function renderPortfolioTagModal(modal) {
       return modalShell("编辑标签", `
         <label class="field"><span>标签名称</span><input name="tagName" maxlength="20" required value="${escapeHtml(modal.tag || "")}" placeholder="例如：AI / 高股息"></label>
-        <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-tag-target-weight-step="-1" aria-label="降低标签目标仓位">−</button><input name="tagTargetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(modal.targetWeight)}" required><button type="button" data-tag-target-weight-step="1" aria-label="提高标签目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-tag-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
-        <div class="portfolio-tag-edit-note">目标仓位仅应用于当前组合；设为 0% 时不显示超配或低配提示。</div>
+        <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-tag-target-weight-step="-1" aria-label="降低标签目标仓位">−</button><input name="tagTargetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(modal.targetWeight)}" required aria-label="标签目标仓位，支持 0% 到 100%"><button type="button" data-tag-target-weight-step="1" aria-label="提高标签目标仓位">+</button></div><div class="position-target-quick">${[3,5,8,15,20,30,50].map((value) => `<button type="button" data-tag-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
+        <div class="portfolio-tag-edit-note">可手动输入 0%–100% 的任意仓位；目标仅应用于当前组合，设为 0% 时不显示偏离提示。</div>
       `, "portfolioTag", "保存");
     }
 
@@ -8555,11 +8555,11 @@
     function stepPortfolioTagTargetWeight(direction) {
       const input = document.querySelector('input[name="tagTargetWeight"]');
       if (!input) return;
-      const tiers = [2, 3, 5, 8, 15, 25, 35];
+      const tiers = [0, 3, 5, 8, 15, 20, 30, 50, 100];
       const current = parsePositionTargetWeight(input.value);
       const next = direction > 0
-        ? (tiers.find((value) => value > current + 0.000001) ?? tiers.at(-1))
-        : ([...tiers].reverse().find((value) => value < current - 0.000001) ?? tiers[0]);
+        ? (tiers.find((value) => value > current + 0.000001) ?? 100)
+        : ([...tiers].reverse().find((value) => value < current - 0.000001) ?? 0);
       input.value = formatPositionTargetWeight(next);
       input.dispatchEvent(new Event("input", { bubbles: true }));
     }
