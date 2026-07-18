@@ -7620,6 +7620,26 @@
       return `${PORTFOLIO_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
     }
 
+    function normalizePortfolioPositionIds(portfolios) {
+      let changed = false;
+      const seenIds = new Set();
+      const normalized = (portfolios || []).map((portfolio) => ({
+        ...portfolio,
+        positions: (portfolio.positions || []).map((position) => {
+          const currentId = typeof position.id === "string" ? position.id.trim() : "";
+          if (currentId && !seenIds.has(currentId)) {
+            seenIds.add(currentId);
+            return position;
+          }
+          const positionId = id("position");
+          seenIds.add(positionId);
+          changed = true;
+          return { ...position, id: positionId };
+        })
+      }));
+      return { portfolios: normalized, changed };
+    }
+
     async function loadPortfolios() {
       const saved = readJson(portfolioStorageKey(), { portfolios: [], activePortfolioId: "" });
       state.portfolios = Array.isArray(saved?.portfolios) ? saved.portfolios : [];
@@ -7637,11 +7657,16 @@
           console.warn("组合云端表尚未就绪，暂时使用本地数据。", error);
         }
       }
+      const normalized = normalizePortfolioPositionIds(state.portfolios);
+      state.portfolios = normalized.portfolios;
       if (state.activePortfolioId && !state.portfolios.some((item) => item.id === state.activePortfolioId)) {
         state.activePortfolioId = state.portfolios[0]?.id || "";
       }
       if (!state.activePortfolioId) state.activePortfolioId = state.portfolios[0]?.id || "";
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+      if (normalized.changed && state.session?.access_token && state.session.access_token !== "local-demo") {
+        persistPortfoliosToCloud(state.portfolios).catch((error) => console.warn("旧持仓标识修复同步失败。", error));
+      }
     }
 
     function ensureLocalPortfolioDemo() {
