@@ -1822,7 +1822,7 @@
     .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
     .trade-suggestion strong { color: var(--brand-strong); }
     .simple-modal.position-edit-modal { width: min(1060px, 100%); }
-    .simple-modal.position-trade-modal { width: min(980px, 100%); }
+    .simple-modal.position-trade-modal { width: min(1020px, 100%); }
     .simple-modal.rebalance-modal { width: min(960px, 100%); overflow-x: hidden; }
     .simple-modal.portfolio-initialize-modal { width: min(1040px, 100%); overflow-x: hidden; }
     .portfolio-create-import { padding: 12px; border: 1px solid #c9ddd9; background: #f4faf8; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -1886,11 +1886,15 @@
     .input-with-suffix { position: relative; width: 100%; }
     .input-with-suffix input { padding-right: 38px; text-align: right; }
     .input-with-suffix .input-suffix { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); padding-left: 3px; background: #fff; color: var(--muted); font-size: 10px; line-height: 18px; pointer-events: none; }
+    .position-edit-modal .input-suffix,
+    .position-trade-modal .input-suffix { padding-left: 0; background: transparent; }
     .position-plan-row .input-with-suffix input { padding-right: 42px; font-size: 11px; }
     .position-plan-row .input-with-suffix .input-suffix { right: 5px; font-size: 9px; }
+    .position-plan-row .position-plan-metric input { padding-right: 22px; text-align: right; }
+    .position-plan-row input[data-plan-metric="forwardPE"] { padding-right: 20px; text-align: right; }
     .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; overflow-x: auto; }
     .position-plan h3 { margin: 0 0 4px; font-size: 14px; }
-    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 96px 80px 76px 92px 88px 38px; gap: 7px; align-items: center; min-width: 560px; }
+    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 100px 86px 104px 110px 92px 54px; gap: 7px; align-items: center; min-width: 636px; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
     .position-plan-head span:nth-child(n+2):nth-child(-n+6) { text-align: right; padding-right: 7px; }
     .position-plan-head span:last-child { text-align: center; }
@@ -1898,12 +1902,16 @@
     .position-plan-row span { font-size: 12px; font-weight: 700; }
     .position-plan-row input { min-height: 32px; padding: 5px 7px; text-align: right; }
     .position-plan-row input::placeholder { font-size: 11px; }
-    .position-plan-row input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    .position-plan-row input[type="number"] { appearance: textfield; -moz-appearance: textfield; text-align: right; }
     .position-plan-row input[type="number"]::-webkit-inner-spin-button, .position-plan-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .position-plan-row input[type="checkbox"] { width: 18px; min-height: 18px; margin: 0 auto; accent-color: var(--brand); }
-    .position-plan-readonly { border: 1px solid var(--line); border-radius: 5px; padding: 10px 11px 4px; background: #f8fafc; }
+    .position-plan-readonly { border: 1px solid var(--line); border-radius: 5px; padding: 10px 18px 4px 11px; background: #f8fafc; }
     .position-plan-readonly { overflow-x: auto; }
-    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px 92px 74px 70px 86px 76px 38px; min-width: 520px; }
+    .position-plan-readonly .position-plan-head,
+    .position-plan-readonly .position-plan-row {
+      grid-template-columns: 44px minmax(80px, 1.15fr) minmax(64px, .9fr) minmax(70px, .95fr) minmax(82px, 1.15fr) minmax(68px, .9fr) 52px;
+      min-width: 0;
+    }
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
     .position-plan-metric input:disabled { color: #667085; background: #f2f4f7; cursor: not-allowed; }
     .position-plan-metric input[aria-invalid="true"] { border-color: #d92d20; background: #fff6f5; }
