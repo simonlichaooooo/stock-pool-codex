@@ -1866,7 +1866,6 @@
     .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
     .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
     .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #d6b45d; border-radius: 0 4px 4px 0; background: #fff9e8; font-size: 15px; }
-    .portfolio-tag-target { color: #667085; font-size: 10.5px; }
     .portfolio-tag-allocation { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; }
     .portfolio-tag-allocation svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     .portfolio-tag-allocation.over { color: #b42318; background: #fee4e2; }
@@ -6075,7 +6074,7 @@
         const className = Number.isFinite(dailyPercent) ? (dailyPercent > 0 ? "gain" : dailyPercent < 0 ? "loss" : "muted") : "muted";
         const actualWeight = metrics.netBase ? value / metrics.netBase * 100 : 0;
         const targetWeight = portfolioTagTargetWeight(portfolio, tag);
-        const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${actualWeight.toFixed(2)}%</span>${targetWeight > 0 ? `<span class="portfolio-tag-target">目标 ${targetWeight.toFixed(2)}%</span>${renderPortfolioTagAllocationIcon(actualWeight, targetWeight)}` : ""}<span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
+        const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${actualWeight.toFixed(2)}%</span>${renderPortfolioTagAllocationIcon(actualWeight, targetWeight)}<span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
         return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="editPortfolioTag" data-tag="${escapeHtml(tag)}" title="编辑标签" aria-label="编辑标签 ${escapeHtml(tag)}">✎</button></span>` : stat;
       }).join("")}</div></section>`;
     }
