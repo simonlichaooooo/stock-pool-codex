@@ -3795,8 +3795,45 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 2px 7px color-mix(in srgb,var(--brand) 22%,transparent);
     }
 
+    .portfolio-trade-alerts {
+      margin-bottom:10px;
+      padding:12px 14px;
+      border:1px solid #e7b75b;
+      border-radius:7px;
+      background:linear-gradient(135deg,#fffaf0,#fffdf8);
+      box-shadow:0 5px 16px rgba(155,105,20,.08);
+    }
+    .portfolio-trade-alert-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; color:#7a5310; font-size:11px; }
+    .portfolio-trade-alert-head > div { display:flex; align-items:center; gap:7px; }
+    .portfolio-trade-alert-head strong { color:#543708; font-size:13px; }
+    .portfolio-trade-alert-icon { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; color:#9a670d; border-radius:50%; background:#ffefc2; }
+    .portfolio-trade-alert-icon svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .portfolio-trade-alert-count { padding:2px 6px; color:#7a5310; border:1px solid #ebca86; border-radius:10px; background:#fff5d8; font-size:10px; font-weight:700; }
+    .portfolio-trade-alert-groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:8px; }
+    .portfolio-trade-alert-stock { min-width:0; padding:9px; border:1px solid #ead9b6; border-radius:5px; background:rgba(255,255,255,.78); }
+    .portfolio-trade-alert-stock-head { display:flex; align-items:baseline; gap:7px; margin-bottom:7px; color:#7c6b4c; font-size:10.5px; }
+    .portfolio-trade-alert-stock-head strong { color:#2d3440; font-size:12.5px; }
+    .portfolio-trade-alert-stock-head span:last-child { margin-left:auto; font-variant-numeric:tabular-nums; }
+    .portfolio-trade-alert-items { display:grid; gap:5px; }
+    button.portfolio-trade-alert-item { display:grid; grid-template-columns:52px minmax(92px,auto) minmax(92px,auto) 1fr; align-items:center; gap:8px; min-height:34px; padding:6px 8px; text-align:left; border-radius:4px; box-shadow:none; font-size:10.5px; }
+    button.portfolio-trade-alert-item.buy { color:#8f2d26; border-color:#efc1bb; background:#fff7f5; }
+    button.portfolio-trade-alert-item.sell { color:#076047; border-color:#b5dccd; background:#f3fbf7; }
+    button.portfolio-trade-alert-item:hover { transform:translateY(-1px); }
+    button.portfolio-trade-alert-item.buy:hover { border-color:#db8277; background:#ffebe7; }
+    button.portfolio-trade-alert-item.sell:hover { border-color:#70ba9e; background:#e6f8ef; }
+    .portfolio-trade-alert-item > strong { justify-self:end; font-size:10.5px; }
+    .portfolio-trade-alert-side { font-weight:800; }
+    .portfolio-table .actions button.trade-plan-alert { display:inline-flex; align-items:center; gap:4px; font-weight:800; }
+    .portfolio-table .trade-add.trade-plan-alert { color:#8f2018; border-color:#df7469; background:#ffe9e6; box-shadow:0 0 0 2px rgba(210,74,59,.13); }
+    .portfolio-table .trade-reduce.trade-plan-alert { color:#056047; border-color:#56aa8b; background:#e3f7ed; box-shadow:0 0 0 2px rgba(27,136,96,.13); }
+    .trade-alert-dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:trade-alert-pulse 1.5s ease-in-out infinite; }
+    .trade-alert-count { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; color:#fff; border-radius:8px; background:currentColor; font-size:9px; line-height:1; }
+    .trade-add .trade-alert-count { color:#fff; background:#b42318; }
+    .trade-reduce .trade-alert-count { color:#fff; background:#067647; }
+    @keyframes trade-alert-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.38; transform:scale(.72); } }
+
     @media (prefers-reduced-motion: reduce) {
-      .theme-orb, .theme-orb::before { animation:none; }
+      .theme-orb, .theme-orb::before, .trade-alert-dot { animation:none; }
     }
 
     @media (max-width: 860px) {
@@ -3910,6 +3947,10 @@
       .portfolio-actions > button { width: auto; }
       .portfolio-list-head { align-items: stretch; flex-direction: column; }
       .portfolio-list-tools { width: 100%; justify-content: space-between; }
+      .portfolio-trade-alert-head { align-items:flex-start; flex-direction:column; }
+      .portfolio-trade-alert-groups { grid-template-columns:1fr; }
+      button.portfolio-trade-alert-item { grid-template-columns:48px 1fr 1fr; }
+      .portfolio-trade-alert-item > strong { grid-column:1 / -1; justify-self:start; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       .portfolio-table .table-scroll { max-height: none; }
@@ -4478,6 +4519,14 @@
       return new Date().toISOString().slice(0, 10);
     }
 
+    function isSameLocalDay(value, reference = new Date()) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return false;
+      return date.getFullYear() === reference.getFullYear()
+        && date.getMonth() === reference.getMonth()
+        && date.getDate() === reference.getDate();
+    }
+
     function formatDateTime(value) {
       if (!value) return "--";
       const date = new Date(value);
@@ -4687,7 +4736,7 @@
         catch (error) { console.warn("腾讯港股实时行情不可用，尝试东方财富备用行情。", error); }
       }
       const quoteId = stockQuoteId(stock);
-      const fields = "f43,f57,f58,f60,f116,f170";
+      const fields = "f43,f44,f45,f57,f58,f60,f116,f170";
       if (quoteId) {
         const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${encodeURIComponent(quoteId)}&fields=${fields}`;
         try {
@@ -4702,6 +4751,8 @@
             ? marketCap * (currencies[sourceCurrency]?.rateToCny || 1) / 100000000
             : Number(stock.latestMarketCapCny) || stock.marketCapCny || 0;
           const previousClose = Number(data?.f60) / priceScale || 0;
+          const dayHigh = Number(data?.f44) / priceScale || latestPrice;
+          const dayLow = Number(data?.f45) / priceScale || latestPrice;
           const changePercent = data?.f170 !== null && data?.f170 !== undefined && Number.isFinite(Number(data.f170))
             ? Number(data.f170) / 100
             : previousClose ? (latestPrice / previousClose - 1) * 100 : null;
@@ -4712,6 +4763,9 @@
             rawCode: data.f57 || stock.rawCode,
             latestPrice,
             previousClose,
+            dayHigh,
+            dayLow,
+            intradayQuoteAt: new Date().toISOString(),
             changePercent,
             latestMarketCapCny,
             marketCapSourceCurrency: sourceCurrency,
@@ -4727,6 +4781,7 @@
       }
       return {
         ...stock,
+        intradayQuoteAt: "",
         latestMarketCapCny: Number(stock.latestMarketCapCny) || stock.marketCapCny || 0,
         marketCapSourceCurrency: stock.currency || marketCurrency(stock.market),
         marketCapUpdatedAt: stock.marketCapUpdatedAt || stock.updatedAt || todayString()
@@ -4836,11 +4891,16 @@
       const latestPrice = Number(parts[3]) || Number(stock.latestPrice) || 0;
       if (!latestPrice || !Number.isFinite(latestPrice)) throw new Error("腾讯行情没有返回最新价");
       const previousClose = Number(parts[4]) || 0;
+      const dayHigh = Number(parts[33]) || latestPrice;
+      const dayLow = Number(parts[34]) || latestPrice;
       const quotedChangePercent = String(parts[32] || "").trim() === "" ? NaN : Number(parts[32]);
       return {
         ...stock,
         latestPrice,
         previousClose,
+        dayHigh,
+        dayLow,
+        intradayQuoteAt: new Date().toISOString(),
         changePercent: Number.isFinite(quotedChangePercent) ? quotedChangePercent : previousClose ? (latestPrice / previousClose - 1) * 100 : null,
         latestMarketCapCny: marketCapYi > 0 ? marketCapYi * (currencies[sourceCurrency]?.rateToCny || 1) : Number(stock.latestMarketCapCny) || 0,
         marketCapSourceCurrency: sourceCurrency,
@@ -5937,11 +5997,57 @@
       return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>${renderPortfolioNavHistory(rows, portfolio)}`;
     }
 
+    function triggeredPositionTradePlans(position) {
+      if (!isSameLocalDay(position?.intradayQuoteAt)) return [];
+      const latestPrice = Number(position.latestPrice);
+      if (!(latestPrice > 0)) return [];
+      const dayHigh = Math.max(latestPrice, Number(position.dayHigh) || latestPrice);
+      const dayLow = Math.min(latestPrice, Number(position.dayLow) || latestPrice);
+      const plan = normalizedPositionTradePlan(position);
+      return ["buy", "sell"].flatMap((side) => plan[side].map((row, index) => {
+        const price = Number(row.price);
+        if (!(price > 0) || row.done) return null;
+        const triggered = side === "buy" ? dayLow <= price : dayHigh >= price;
+        if (!triggered) return null;
+        return {
+          side,
+          index,
+          label: `${side === "buy" ? "买点" : "卖点"}${index + 1}`,
+          price,
+          shares: Number(row.shares) || 0,
+          touchedPrice: side === "buy" ? dayLow : dayHigh
+        };
+      })).filter(Boolean);
+    }
+
+    function renderPortfolioTradeAlerts(pendingByPosition) {
+      if (!pendingByPosition.length) return "";
+      const total = pendingByPosition.reduce((sum, row) => sum + row.items.length, 0);
+      const formatPrice = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      return `<section class="portfolio-trade-alerts" aria-label="今日待操作" aria-live="polite">
+        <div class="portfolio-trade-alert-head">
+          <div><span class="portfolio-trade-alert-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><strong>今日待操作</strong><span class="portfolio-trade-alert-count">${total} 项 · ${pendingByPosition.length} 只股票</span></div>
+          <span>行情触达未完成的买卖计划，点击事项可直接操作</span>
+        </div>
+        <div class="portfolio-trade-alert-groups">${pendingByPosition.map(({ position, items }) => `<article class="portfolio-trade-alert-stock">
+          <div class="portfolio-trade-alert-stock-head"><strong>${escapeHtml(position.name)}</strong><span>${escapeHtml(position.code)}</span><span>现价 ${formatPrice(position.latestPrice)} ${escapeHtml(position.currency || "")}</span></div>
+          <div class="portfolio-trade-alert-items">${items.map((item) => `<button type="button" class="portfolio-trade-alert-item ${item.side}" data-action="openPendingTrade" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}" data-side="${item.side}">
+            <span class="portfolio-trade-alert-side">${item.label}</span>
+            <span>计划价 ${formatPrice(item.price)}</span>
+            <span>${item.shares > 0 ? `计划 ${portfolioPrivate(`${item.shares.toLocaleString("zh-CN")} 股`)}` : "数量未设置"}</span>
+            <strong>${item.side === "buy" ? "最低" : "最高"} ${formatPrice(item.touchedPrice)} 已触达</strong>
+          </button>`).join("")}</div>
+        </article>`).join("")}</div>
+      </section>`;
+    }
+
     function renderPortfolioTable(portfolio, metrics) {
       const sort = state.portfolioTagFilter ? { key: "weight", dir: "desc" } : (state.portfolioSort || { key: "value", dir: "desc" });
       const positionWeight = (position) => metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase : 0;
       const sortValue = (position) => sort.key === "change" ? (position.changePercent == null ? NaN : Number(position.changePercent)) : sort.key === "weight" ? positionWeight(position) : positionBaseValue(position, portfolio);
       const allPositions = [...(portfolio.positions || [])];
+      const pendingByPosition = allPositions.map((position) => ({ position, items: triggeredPositionTradePlans(position) })).filter((row) => row.items.length);
+      const pendingByPositionId = new Map(pendingByPosition.map((row) => [row.position.id, row.items]));
       const positions = allPositions.filter((position) => !state.portfolioTagFilter || (position.tags || []).includes(state.portfolioTagFilter)).sort((a, b) => {
         const aValue = sortValue(a), bValue = sortValue(b);
         const aMissing = !Number.isFinite(aValue), bMissing = !Number.isFinite(bValue);
@@ -5954,6 +6060,7 @@
       const sortIndicator = (key) => sort.key === key ? `<span class="portfolio-sort-indicator">${sort.dir === "asc" ? "▲" : "▼"}</span>` : "";
       return `
         ${state.portfolioTagsExpanded ? renderPortfolioTagSummary(portfolio, metrics) : ""}
+        ${renderPortfolioTradeAlerts(pendingByPosition)}
         <section class="table-panel portfolio-table ${state.portfolioTagsExpanded ? "tags-expanded" : ""} ${state.portfolioSummaryExpanded ? "summary-expanded" : ""}">
           <div class="portfolio-list-head">
             <div class="portfolio-list-head-main">
@@ -5971,6 +6078,9 @@
           <div class="table-scroll"><table>
           <thead><tr><th class="sticky-col">股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值信息</th><th>操作</th></tr></thead>
           <tbody>${positions.map((position) => {
+            const pendingPlans = pendingByPositionId.get(position.id) || [];
+            const pendingBuys = pendingPlans.filter((item) => item.side === "buy");
+            const pendingSells = pendingPlans.filter((item) => item.side === "sell");
             const value = positionBaseValue(position, portfolio);
             const weight = positionWeight(position);
             const change = position.changePercent == null ? NaN : Number(position.changePercent);
@@ -6008,7 +6118,7 @@
               <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
-              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add ${pendingBuys.length ? "trade-plan-alert" : ""}" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingBuys.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>加仓<span class="trade-alert-count">${pendingBuys.length}</span>` : "加仓"}</button><button class="trade-reduce ${pendingSells.length ? "trade-plan-alert" : ""}" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingSells.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>减仓<span class="trade-alert-count">${pendingSells.length}</span>` : "减仓"}</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div>
@@ -7600,6 +7710,7 @@
       if (action === "redeemPortfolio") openPortfolioModal("redemption");
       if (action === "addPosition") openPortfolioModal("add", stockId, positionKey);
       if (action === "reducePosition") openPortfolioModal("reduce", stockId, positionKey);
+      if (action === "openPendingTrade") openPortfolioModal(event.currentTarget.dataset.side === "sell" ? "reduce" : "add", stockId, positionKey);
       if (action === "editPosition") openPortfolioModal("edit", stockId, positionKey);
       if (action === "addPositionTag" && state.portfolioModal?.type === "edit") {
         const input = document.querySelector('input[name="newTag"]');
@@ -8622,6 +8733,9 @@
             rawCode: updates[index].rawCode || position.rawCode,
             latestPrice: updates[index].latestPrice,
             previousClose: updates[index].previousClose,
+            dayHigh: updates[index].dayHigh,
+            dayLow: updates[index].dayLow,
+            intradayQuoteAt: updates[index].intradayQuoteAt || "",
             changePercent: updates[index].changePercent,
             priceUpdatedAt: new Date().toISOString()
           } : position)
