@@ -2892,6 +2892,142 @@
     }
     .stock-add-button:hover { background:linear-gradient(135deg,#0b6ce9,#0649b4); box-shadow:0 8px 20px rgba(7,94,232,.32),inset 0 1px 0 rgba(255,255,255,.24); }
 
+    /* Glass-theme cohesion pass: navigation, controls, and every overlay surface. */
+    .brand-logo {
+      background:transparent;
+      mix-blend-mode:normal;
+      filter:hue-rotate(78deg) saturate(2.4) contrast(1.28);
+    }
+    .topbar .topbar-nav { gap:5px; }
+    .topbar .topbar-nav button {
+      min-height:38px;
+      padding:0 15px;
+      border:1px solid rgba(122,157,198,.18);
+      background:rgba(225,238,253,.28);
+      border-radius:6px;
+    }
+    .topbar .topbar-nav button:hover {
+      border-color:rgba(93,143,203,.42);
+      background:rgba(255,255,255,.58);
+    }
+    .topbar .topbar-nav button.active {
+      border-color:rgba(83,139,210,.48);
+      background:rgba(203,225,252,.68);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 10px rgba(52,111,181,.10);
+    }
+    .topbar .topbar-nav button.active::after { left:14px; right:14px; bottom:2px; }
+
+    .nav-publisher-select {
+      appearance:none;
+      -webkit-appearance:none;
+      padding-right:38px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23124070' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 14px center;
+      background-size:12px 8px;
+    }
+    button[data-action="copyShareLink"] {
+      min-height:36px;
+      padding:0 14px;
+      border-color:rgba(83,137,201,.46);
+      background:rgba(255,255,255,.54);
+      color:#174775;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 4px 12px rgba(52,111,181,.09);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    button[data-action="copyShareLink"]:hover { background:rgba(255,255,255,.86); border-color:#6694c8; color:#0753bd; }
+    .stock-add-button {
+      border:1px solid rgba(255,255,255,.72);
+      background:linear-gradient(135deg,rgba(38,137,255,.92),rgba(7,89,218,.92));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 7px 18px rgba(35,117,217,.22);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    .stock-add-button:hover { background:linear-gradient(135deg,#1579ed,#0752c3); border-color:rgba(255,255,255,.86); }
+
+    .portfolio-list-head {
+      background:rgba(218,232,248,.72);
+      border-bottom:1px solid rgba(91,125,165,.40);
+      color:#0b2342;
+      backdrop-filter:blur(14px) saturate(135%);
+      -webkit-backdrop-filter:blur(14px) saturate(135%);
+    }
+    .portfolio-list-head-title { color:#0b2342; }
+    .portfolio-list-head .badge { background:rgba(255,255,255,.58); border-color:rgba(104,143,188,.36); color:#405875; }
+
+    .drawer,
+    .history-modal,
+    .simple-modal-backdrop {
+      background:rgba(39,71,108,.25);
+      backdrop-filter:blur(10px) saturate(120%);
+      -webkit-backdrop-filter:blur(10px) saturate(120%);
+    }
+    .drawer-panel,
+    .simple-modal,
+    .history-panel,
+    .confirm-panel {
+      background:rgba(242,248,255,.82);
+      border:1px solid rgba(255,255,255,.82);
+      box-shadow:0 22px 60px rgba(34,79,132,.20),inset 0 1px 0 rgba(255,255,255,.92);
+      backdrop-filter:blur(24px) saturate(140%);
+      -webkit-backdrop-filter:blur(24px) saturate(140%);
+    }
+    .drawer-head,
+    .simple-modal-head,
+    .history-head,
+    .confirm-head {
+      background:rgba(255,255,255,.58);
+      border-bottom:1px solid rgba(104,143,188,.34);
+      backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+    }
+    .drawer-title h2,
+    .simple-modal-head h2,
+    .history-head h3,
+    .confirm-head h3 { color:#0b2342; }
+    .drawer-head button,
+    .simple-modal-head button,
+    .history-head button,
+    .confirm-head button {
+      background:rgba(225,238,253,.64);
+      border-color:rgba(104,143,188,.40);
+      color:#214c78;
+    }
+    .drawer-body,
+    .simple-modal-body,
+    .history-body,
+    .confirm-body { background:rgba(238,246,255,.48); }
+    .drawer-foot,
+    .simple-modal-foot,
+    .confirm-actions {
+      background:rgba(255,255,255,.62);
+      border-top-color:rgba(104,143,188,.34);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+    }
+    .section-card,
+    .history-item,
+    .readonly-value,
+    .result-metric,
+    .trade-suggestion,
+    .rebalance-preview-item,
+    .position-plan-readonly {
+      background:rgba(255,255,255,.62);
+      border-color:rgba(126,157,192,.38);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.78);
+    }
+    .search-results,
+    .portfolio-menu-panel,
+    .journal-mention-popup,
+    .portfolio-initialize-results {
+      background:rgba(246,250,255,.90);
+      border-color:rgba(104,143,188,.42);
+      box-shadow:0 14px 34px rgba(34,79,132,.18),inset 0 1px 0 rgba(255,255,255,.90);
+      backdrop-filter:blur(18px) saturate(135%);
+      -webkit-backdrop-filter:blur(18px) saturate(135%);
+    }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
@@ -4122,7 +4258,7 @@
             <div class="topbar-inner">
               <div class="topbar-main">
                 <div class="brand">
-                  <img class="brand-logo" src="logo/logo-site.jpg?v=green-20260520" alt="钞·作业">
+                  <img class="brand-logo" src="logo/logo-site-transparent.png?v=glass-20260718" alt="钞·作业">
                   <h1>钞·作业</h1>
                 </div>
                 ${renderMainNavTabs()}
