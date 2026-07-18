@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="preconnect" href="https://woywnriyagjlfphezlnx.supabase.co" crossorigin>
   <title>钞·作业</title>
   <style>
     :root {
@@ -4129,6 +4130,7 @@
     let marketCapRefreshInFlight = false;
     let portfolioQuoteRefreshTimer = null;
     let portfolioQuoteRefreshInFlight = false;
+    let sessionRefreshPromise = null;
     let journalSearchTimer = null;
     let journalSearchRequestId = 0;
     let portfolioInitializationSearchTimer = null;
@@ -4419,7 +4421,10 @@
       if (!state.session?.access_token) throw new Error("请先登录。");
       const expiresAt = Number(state.session.expires_at || 0);
       if (expiresAt && expiresAt - Math.floor(Date.now() / 1000) < 60) {
-        await refreshSession();
+        if (!sessionRefreshPromise) {
+          sessionRefreshPromise = refreshSession().finally(() => { sessionRefreshPromise = null; });
+        }
+        await sessionRefreshPromise;
       }
     }
 
@@ -10019,7 +10024,7 @@
       render();
     }
 
-    async function loadStocks() {
+    async function loadStocks({ mergeSources = true } = {}) {
       let data;
       try {
         data = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,user_id,payload,source_user_id,source_stock_id,source_nickname,source_type,last_source_updated_at,source_seen_published_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc`);
@@ -10031,7 +10036,7 @@
       state.stocks = (data || [])
         .filter((row) => row.user_id === state.session.user.id)
         .map((row) => normalizeStockRow(row));
-      await mergeLatestSourceStocks();
+      if (mergeSources) await mergeLatestSourceStocks();
     }
 
     function normalizeStockRow(row) {
@@ -10293,17 +10298,31 @@
       }
     }
 
-    async function afterProfileReady() {
-      await loadPortfolios();
-      await loadJournals();
-      await loadAdminMarker();
-      await loadFollowedPublishers();
-      await loadShareInvite();
-      await loadStocks();
-      await refreshMarketCaps({ renderAfter: false });
+    async function afterProfileReady(initialStocksPromise = null) {
+      const stocksReady = initialStocksPromise || loadStocks({ mergeSources: false });
+      const auxiliaryReady = Promise.allSettled([
+        loadPortfolios(),
+        loadJournals(),
+        loadAdminMarker(),
+        loadFollowedPublishers(),
+        loadShareInvite()
+      ]);
+
+      await stocksReady;
+      state.loading = false;
+      render();
       startMarketCapAutoRefresh();
       startPortfolioQuoteAutoRefresh();
-      await openFollowedPendingShare();
+
+      auxiliaryReady.then(async () => {
+        await openFollowedPendingShare();
+        render();
+      }).catch((error) => console.warn("辅助数据后台加载失败。", error));
+
+      mergeLatestSourceStocks()
+        .then(() => refreshMarketCaps({ renderAfter: false }))
+        .then(() => render())
+        .catch((error) => console.warn("股池行情后台刷新失败。", error));
     }
 
     async function openFollowedPendingShare() {
@@ -10516,6 +10535,7 @@
     async function init() {
       applyColorTheme(readJson(THEME_STORAGE_KEY, DEFAULT_THEME_ID), { persist: false });
       rememberPendingShareFromUrl();
+      renderLoading();
       const localPortfolioDemo = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).has("portfolio-demo");
       if (localPortfolioDemo) {
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
@@ -10538,13 +10558,19 @@
       }
       state.session = currentSession();
       if (state.session) {
+        const exchangeRatesReady = fetchExchangeRates();
+        const initialStocksPromise = loadStocks({ mergeSources: false });
         try {
-          await fetchExchangeRates();
           await loadProfile();
-          if (!state.profileRequired) await afterProfileReady();
+          if (!state.profileRequired) {
+            await afterProfileReady(initialStocksPromise);
+            exchangeRatesReady.then(() => render());
+            return;
+          }
         } catch (error) {
           state.lastError = error.message || String(error);
         }
+        exchangeRatesReady.then(() => render());
       }
       state.loading = false;
       render();
