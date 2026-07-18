@@ -3423,25 +3423,27 @@
       pointer-events:none;
     }
 
-    .layout-debug-panel {
+    .layout-debug-trigger {
       position: fixed;
       left: 10px;
-      bottom: 54px;
+      bottom: 18px;
       z-index: 10000;
-      width: min(520px, calc(100vw - 20px));
-      max-height: 48vh;
+      width: 136px;
+      max-width: calc(100vw - 20px);
+      height: 38px;
+      min-height: 38px;
       margin: 0;
-      padding: 10px 12px;
-      overflow: auto;
+      padding: 0 12px;
+      overflow: hidden;
       border: 1px solid rgba(255,255,255,.72);
       border-radius: 6px;
       background: rgba(7, 20, 38, .92);
       color: #fff;
       box-shadow: 0 8px 26px rgba(7,20,38,.3);
-      font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space: pre-wrap;
-      user-select: text;
-      -webkit-user-select: text;
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
+      contain: strict;
     }
 
     /* Compact, aligned stock-pool sharing controls. */
@@ -5255,6 +5257,7 @@
     }
 
     let layoutDebugListenersBound = false;
+    let layoutDebugSnapshot = "";
 
     function layoutDebugNumber(value) {
       const number = Number(value);
@@ -5271,12 +5274,6 @@
 
     function updateLayoutDebugPanel() {
       if (!LAYOUT_DEBUG_ENABLED) return;
-      let panel = document.querySelector(".layout-debug-panel");
-      if (!panel) {
-        panel = document.createElement("pre");
-        panel.className = "layout-debug-panel";
-        document.body.appendChild(panel);
-      }
       const viewport = window.visualViewport;
       const screenWidth = Number(window.screen?.width) || 0;
       const estimatedScale = window.innerWidth ? screenWidth / window.innerWidth : 0;
@@ -5297,7 +5294,32 @@
         layoutDebugBox(".horizontal-data-table table"),
         `UA=${navigator.userAgent}`
       ];
-      panel.textContent = lines.join("\n");
+      layoutDebugSnapshot = lines.join("\n");
+      let trigger = document.querySelector(".layout-debug-trigger");
+      if (!trigger) {
+        trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "layout-debug-trigger";
+        trigger.textContent = "复制布局诊断";
+        trigger.addEventListener("click", async () => {
+          let copied = false;
+          try {
+            await navigator.clipboard.writeText(layoutDebugSnapshot);
+            copied = true;
+          } catch (_) {
+            const textarea = document.createElement("textarea");
+            textarea.value = layoutDebugSnapshot;
+            textarea.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            copied = document.execCommand("copy");
+            textarea.remove();
+          }
+          trigger.textContent = copied ? "诊断已复制" : "复制失败，请重试";
+          window.setTimeout(() => { trigger.textContent = "复制布局诊断"; }, 1800);
+        });
+        document.body.appendChild(trigger);
+      }
     }
 
     function scheduleLayoutDebugPanel() {
