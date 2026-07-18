@@ -3070,6 +3070,9 @@
     .topbar .topbar-nav button.active::after { display:none; }
     .topbar .topbar-nav button.active,
     .topbar .topbar-nav button:has(+ button.active) { border-right-color:transparent; }
+    .topbar .topbar-nav button,
+    .topbar .topbar-nav button:hover,
+    .topbar .topbar-nav button.active { border-right:0; }
 
     .position-plan-row input[type="checkbox"] {
       appearance:none;
@@ -3337,7 +3340,218 @@
     .portfolio-tag-rename-form input { border-color:rgba(104,143,188,.48); background:rgba(255,255,255,.68); }
     .portfolio-tag-rename-save { color:#fff; border-color:#2468b7; background:rgba(15,103,226,.84); }
 
+    /* Floating palette switcher. The current Glacier Aurora palette remains the untouched baseline. */
+    .theme-dock {
+      position:fixed;
+      right:max(22px, env(safe-area-inset-right));
+      bottom:max(22px, env(safe-area-inset-bottom));
+      z-index:420;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:10px;
+    }
+    .theme-orb {
+      position:relative;
+      width:48px;
+      min-width:48px;
+      height:48px;
+      min-height:48px;
+      padding:0;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.92);
+      border-radius:50%;
+      background:conic-gradient(from 20deg,#83c7ff,#8f78ef,#f09dc6,#f5c876,#68dfc7,#83c7ff);
+      background-size:160% 160%;
+      box-shadow:0 10px 28px rgba(43,91,151,.24),inset 0 1px 0 rgba(255,255,255,.94);
+      animation:themeOrbFlow 7s ease-in-out infinite;
+      isolation:isolate;
+    }
+    .theme-orb::before {
+      content:"";
+      position:absolute;
+      inset:-45%;
+      z-index:-1;
+      background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.86),transparent 28%,rgba(255,255,255,.26),transparent 62%);
+      animation:themeOrbSpin 5.5s linear infinite;
+    }
+    .theme-orb::after {
+      content:"";
+      position:absolute;
+      inset:4px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.72);
+      background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.96),rgba(255,255,255,.22) 34%,rgba(68,121,206,.16) 68%,rgba(255,255,255,.48));
+      backdrop-filter:blur(7px) saturate(165%);
+      -webkit-backdrop-filter:blur(7px) saturate(165%);
+    }
+    .theme-orb-core {
+      position:absolute;
+      z-index:2;
+      inset:17px;
+      border-radius:50%;
+      background:rgba(255,255,255,.92);
+      box-shadow:0 0 13px rgba(255,255,255,.9),0 0 0 3px rgba(255,255,255,.22);
+    }
+    .theme-orb:hover {
+      border-color:#fff;
+      transform:translateY(-2px) scale(1.035);
+      box-shadow:0 14px 34px rgba(43,91,151,.30),0 0 24px rgba(116,184,255,.22),inset 0 1px 0 #fff;
+    }
+    .theme-dock.open .theme-orb { box-shadow:0 14px 36px rgba(43,91,151,.31),0 0 0 5px rgba(255,255,255,.34); }
+    @keyframes themeOrbSpin { to { transform:rotate(360deg); } }
+    @keyframes themeOrbFlow { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+
+    .theme-popover {
+      width:224px;
+      padding:9px;
+      visibility:hidden;
+      opacity:0;
+      transform:translateY(8px) scale(.97);
+      transform-origin:right bottom;
+      pointer-events:none;
+      border:1px solid rgba(255,255,255,.90);
+      border-radius:12px;
+      background:rgba(244,249,255,.78);
+      box-shadow:0 18px 48px rgba(37,77,129,.22),inset 0 1px 0 rgba(255,255,255,.96);
+      backdrop-filter:blur(24px) saturate(150%);
+      -webkit-backdrop-filter:blur(24px) saturate(150%);
+      transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+    }
+    .theme-dock.open .theme-popover { visibility:visible; opacity:1; transform:none; pointer-events:auto; }
+    .theme-popover-current {
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:12px;
+      padding:4px 7px 9px;
+      color:#667b95;
+      font-size:11px;
+      border-bottom:1px solid rgba(114,145,180,.20);
+      margin-bottom:5px;
+    }
+    .theme-popover-current strong { color:var(--brand-strong); font-size:13px; font-weight:650; }
+    .theme-option {
+      width:100%;
+      min-height:45px;
+      display:grid;
+      grid-template-columns:26px minmax(0,1fr) 18px;
+      align-items:center;
+      gap:9px;
+      padding:5px 7px;
+      border-color:transparent;
+      background:transparent;
+      text-align:left;
+    }
+    .theme-option:hover { border-color:rgba(120,153,190,.22); background:rgba(255,255,255,.54); }
+    .theme-option.active { border-color:rgba(86,139,204,.30); background:rgba(224,239,255,.62); }
+    .theme-swatch { width:24px; height:24px; border-radius:50%; border:1px solid rgba(255,255,255,.90); box-shadow:0 3px 10px rgba(39,74,119,.17),inset 0 1px 0 rgba(255,255,255,.75); }
+    .theme-swatch-glacier { background:linear-gradient(135deg,#e8f6ff,#7dbaff 48%,#82e0dc); }
+    .theme-swatch-nebula { background:linear-gradient(135deg,#eee7ff,#886ee8 48%,#ef9dc9); }
+    .theme-swatch-emerald { background:linear-gradient(135deg,#e4fff7,#34bba8 48%,#7dd8df); }
+    .theme-swatch-amber { background:linear-gradient(135deg,#fff4d8,#e8a85b 48%,#d87e69); }
+    .theme-option-copy { min-width:0; display:grid; gap:1px; }
+    .theme-option-copy strong { color:var(--text); font-size:13px; font-weight:650; }
+    .theme-option-copy small { color:var(--muted); font-size:10.5px; font-weight:500; }
+    .theme-option-check { color:var(--brand); font-size:14px; text-align:center; }
+
+    /* Additional palettes use the same geometry and material system, only the chromatic atmosphere changes. */
+    html[data-theme="nebula"] {
+      --bg:#edeaf6; --panel:#fff; --panel-2:#f0ecf8; --text:#17132a; --muted:#574f70;
+      --line:#b9afd0; --soft:#ddd5eb; --brand:#7657d8; --brand-strong:#4f339f;
+      --brand-soft:#e8e0ff; --accent:#6850cf; --focus:0 0 0 3px rgba(118,87,216,.24);
+      --theme-glass:rgba(252,249,255,.70); --theme-glass-strong:rgba(248,244,255,.84);
+      --theme-border:rgba(255,255,255,.90); --theme-table:rgba(226,217,246,.72);
+      --theme-sticky:rgba(237,229,250,.84); --theme-hover:rgba(220,209,247,.58);
+      --theme-shadow:rgba(74,51,132,.15); --theme-active-a:rgba(216,201,255,.95); --theme-active-b:rgba(239,194,229,.82);
+    }
+    html[data-theme="emerald"] {
+      --bg:#e5f1ef; --panel:#fff; --panel-2:#eaf5f2; --text:#09241f; --muted:#3e665f;
+      --line:#a7c7c0; --soft:#d0e5e0; --brand:#078f83; --brand-strong:#05665f;
+      --brand-soft:#d8f5ef; --accent:#087f78; --focus:0 0 0 3px rgba(7,143,131,.22);
+      --theme-glass:rgba(246,255,252,.69); --theme-glass-strong:rgba(240,252,248,.84);
+      --theme-border:rgba(255,255,255,.91); --theme-table:rgba(205,237,229,.70);
+      --theme-sticky:rgba(218,243,237,.84); --theme-hover:rgba(198,236,227,.58);
+      --theme-shadow:rgba(22,104,91,.14); --theme-active-a:rgba(184,240,226,.94); --theme-active-b:rgba(190,231,246,.84);
+    }
+    html[data-theme="amber"] {
+      --bg:#f3ece2; --panel:#fff; --panel-2:#f7efe4; --text:#291a12; --muted:#70594b;
+      --line:#ceb9a5; --soft:#eadbcb; --brand:#b7652e; --brand-strong:#83421f;
+      --brand-soft:#f8e3ce; --accent:#a95827; --focus:0 0 0 3px rgba(183,101,46,.22);
+      --theme-glass:rgba(255,251,245,.72); --theme-glass-strong:rgba(255,248,239,.86);
+      --theme-border:rgba(255,255,255,.92); --theme-table:rgba(241,220,196,.70);
+      --theme-sticky:rgba(247,228,207,.86); --theme-hover:rgba(241,214,188,.58);
+      --theme-shadow:rgba(126,72,35,.14); --theme-active-a:rgba(255,222,173,.94); --theme-active-b:rgba(244,194,189,.82);
+    }
+    html[data-theme="nebula"] body { background:radial-gradient(circle at 10% 4%,rgba(193,174,245,.45),transparent 30%),radial-gradient(circle at 91% 17%,rgba(237,180,221,.30),transparent 31%),linear-gradient(137deg,#f4f0fa 0%,#e9e5f4 50%,#f2eaf4 100%); }
+    html[data-theme="emerald"] body { background:radial-gradient(circle at 9% 5%,rgba(126,220,203,.38),transparent 31%),radial-gradient(circle at 92% 19%,rgba(153,218,234,.31),transparent 32%),linear-gradient(137deg,#edf8f5 0%,#e1efec 50%,#e9f5f1 100%); }
+    html[data-theme="amber"] body { background:radial-gradient(circle at 10% 4%,rgba(248,205,142,.39),transparent 31%),radial-gradient(circle at 92% 18%,rgba(230,169,154,.27),transparent 32%),linear-gradient(137deg,#faf4ea 0%,#f0e7da 52%,#f7eee5 100%); }
+    html[data-theme]:not([data-theme="glacier"]) .topbar {
+      background:var(--theme-glass-strong);
+      border-bottom-color:color-mix(in srgb,var(--brand) 28%,transparent);
+      box-shadow:0 7px 25px var(--theme-shadow),inset 0 1px 0 rgba(255,255,255,.94);
+    }
+    html[data-theme="nebula"] .brand-logo { filter:hue-rotate(132deg) saturate(1.7) contrast(1.18); }
+    html[data-theme="emerald"] .brand-logo { filter:saturate(1.55) contrast(1.18) brightness(.86); }
+    html[data-theme="amber"] .brand-logo { filter:hue-rotate(250deg) saturate(1.7) contrast(1.18) brightness(.91); }
+    html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav {
+      border-color:color-mix(in srgb,var(--brand) 26%,transparent);
+      background:color-mix(in srgb,var(--theme-glass) 88%,transparent);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.92),0 7px 22px var(--theme-shadow);
+    }
+    html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button { color:var(--muted); }
+    html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
+      color:var(--brand-strong);
+      border-color:rgba(255,255,255,.80);
+      background:linear-gradient(118deg,var(--theme-active-a),rgba(255,255,255,.88),var(--theme-active-b),var(--theme-active-a));
+      background-size:230% 230%;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.96),inset 0 -1px 0 color-mix(in srgb,var(--brand) 18%,transparent),0 4px 14px var(--theme-shadow);
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(.login-panel,.toolbar,.portfolio-head,.portfolio-switcher,.portfolio-summary,.portfolio-tag-filter-panel,.journal-filters,.journal-entry,.publisher-panel,.share-banner,.update-banner,.table-panel,.section-card,.result-panel,.drawer-panel,.modal-card,.history-modal,.delete-modal) {
+      background:var(--theme-glass);
+      border-color:var(--theme-border);
+      box-shadow:0 11px 31px var(--theme-shadow),inset 0 1px 0 rgba(255,255,255,.93);
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(input,select,textarea,.readonly-value) {
+      border-color:color-mix(in srgb,var(--brand) 32%,#c8d0da);
+      background:rgba(255,255,255,.69);
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(input,textarea):focus {
+      border-color:var(--brand);
+      box-shadow:var(--focus);
+      background:rgba(255,255,255,.92);
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) thead th { background:var(--theme-table); border-bottom-color:color-mix(in srgb,var(--brand) 34%,transparent); }
+    html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) th.sticky-col { background:var(--theme-sticky); }
+    html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) td.sticky-col { background:color-mix(in srgb,var(--theme-sticky) 64%,rgba(255,255,255,.82)); }
+    html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) tbody tr:hover td,
+    html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) tbody tr:hover td.sticky-col { background:var(--theme-hover); }
+    html[data-theme]:not([data-theme="glacier"]) :is(button.primary,.stock-add-button,button.primary.stock-add-button,.journal-filter-action .primary,.portfolio-tag-rename-save) {
+      color:#fff;
+      border-color:rgba(255,255,255,.78);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 82%,white),var(--brand-strong));
+      box-shadow:0 7px 18px color-mix(in srgb,var(--brand) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.34);
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(.segmented button.active,.journal-filter-tag.active,.portfolio-tag-filter-panel .portfolio-tag-stat.active) {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 38%,transparent);
+      background:color-mix(in srgb,var(--brand-soft) 72%,rgba(255,255,255,.72));
+    }
+    html[data-theme]:not([data-theme="glacier"]) :is(.badge,.tag,.portfolio-daily-chip) { border-color:color-mix(in srgb,var(--brand) 24%,transparent); background:color-mix(in srgb,var(--brand-soft) 54%,rgba(255,255,255,.64)); }
+    html[data-theme]:not([data-theme="glacier"]) .theme-popover { background:var(--theme-glass-strong); box-shadow:0 18px 48px var(--theme-shadow),inset 0 1px 0 rgba(255,255,255,.96); }
+    html[data-theme]:not([data-theme="glacier"]) .theme-option.active { border-color:color-mix(in srgb,var(--brand) 34%,transparent); background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.58)); }
+    html[data-theme="nebula"] .theme-orb { background:conic-gradient(from 20deg,#8d76ee,#d68bd0,#86c5f7,#b397ff,#8d76ee); }
+    html[data-theme="emerald"] .theme-orb { background:conic-gradient(from 20deg,#25bca9,#78e0d0,#73bfdc,#a0e9c6,#25bca9); }
+    html[data-theme="amber"] .theme-orb { background:conic-gradient(from 20deg,#e7a557,#f3d58a,#dc8372,#f6b878,#e7a557); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .theme-orb, .theme-orb::before { animation:none; }
+    }
+
     @media (max-width: 860px) {
+      .theme-dock { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); }
+      .theme-orb { width:44px; min-width:44px; height:44px; min-height:44px; }
+      .theme-orb-core { inset:16px; }
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
       .topbar-main { width: 100%; flex-wrap: wrap; gap: 8px; }
@@ -3503,6 +3717,14 @@
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
+    const THEME_STORAGE_KEY = "stockpool.colorTheme.v1";
+    const DEFAULT_THEME_ID = "glacier";
+    const COLOR_THEMES = [
+      { id: "glacier", name: "冰川极光", note: "清透蓝白" },
+      { id: "nebula", name: "星云紫", note: "深邃紫蓝" },
+      { id: "emerald", name: "翡翠潮汐", note: "冷翠青绿" },
+      { id: "amber", name: "琥珀晨光", note: "暖金赤陶" }
+    ];
     const MARKET_CAP_REFRESH_MS = 15 * 60 * 1000;
     const PORTFOLIO_QUOTE_REFRESH_MS = 60 * 1000;
     let marketCapRefreshTimer = null;
@@ -3624,6 +3846,8 @@
         error: ""
       },
       tableLoading: false,
+      themeId: DEFAULT_THEME_ID,
+      themeMenuOpen: false,
       loginNotice: "",
       lastError: ""
     };
@@ -3645,6 +3869,38 @@
     function writeJson(key, value) {
       if (value === null) localStorage.removeItem(key);
       else localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function normalizeThemeId(themeId) {
+      return COLOR_THEMES.some((theme) => theme.id === themeId) ? themeId : DEFAULT_THEME_ID;
+    }
+
+    function applyColorTheme(themeId, { persist = true } = {}) {
+      const nextThemeId = normalizeThemeId(themeId);
+      state.themeId = nextThemeId;
+      document.documentElement.dataset.theme = nextThemeId;
+      if (persist) writeJson(THEME_STORAGE_KEY, nextThemeId);
+    }
+
+    function renderThemeDock() {
+      const activeTheme = COLOR_THEMES.find((theme) => theme.id === state.themeId) || COLOR_THEMES[0];
+      return `
+        <aside class="theme-dock ${state.themeMenuOpen ? "open" : ""}" aria-label="色系切换">
+          <div class="theme-popover" role="menu" aria-label="选择色系">
+            <div class="theme-popover-current"><span>当前色系</span><strong>${escapeHtml(activeTheme.name)}</strong></div>
+            ${COLOR_THEMES.map((theme) => `
+              <button class="theme-option ${theme.id === state.themeId ? "active" : ""}" type="button" role="menuitem" data-action="selectColorTheme" data-theme-id="${theme.id}">
+                <span class="theme-swatch theme-swatch-${theme.id}" aria-hidden="true"></span>
+                <span class="theme-option-copy"><strong>${escapeHtml(theme.name)}</strong><small>${escapeHtml(theme.note)}</small></span>
+                <span class="theme-option-check" aria-hidden="true">${theme.id === state.themeId ? "✓" : ""}</span>
+              </button>
+            `).join("")}
+          </div>
+          <button class="theme-orb" type="button" data-action="toggleColorThemeMenu" aria-label="切换色系，当前为${escapeHtml(activeTheme.name)}" aria-expanded="${state.themeMenuOpen ? "true" : "false"}" title="色系 · ${escapeHtml(activeTheme.name)}">
+            <span class="theme-orb-core" aria-hidden="true"></span>
+          </button>
+        </aside>
+      `;
     }
 
     function appBaseUrl() {
@@ -4589,6 +4845,7 @@
           ${renderDeleteConfirm()}
           ${renderPortfolioModal()}
           ${renderJournalModal()}
+          ${renderThemeDock()}
         </div>
       `;
       bindEvents();
@@ -6571,6 +6828,11 @@
 
     function bindEvents() {
       document.getElementById("app").onclick = (event) => {
+        if (state.themeMenuOpen && !event.target.closest(".theme-dock")) {
+          state.themeMenuOpen = false;
+          document.querySelector(".theme-dock")?.classList.remove("open");
+          document.querySelector(".theme-orb")?.setAttribute("aria-expanded", "false");
+        }
         const actionEl = event.target.closest("[data-action]");
         if (actionEl) onAction({ currentTarget: actionEl });
       };
@@ -6800,6 +7062,17 @@
     async function onAction(event) {
       const action = event.currentTarget.dataset.action;
       const stockId = event.currentTarget.dataset.id;
+      if (action === "toggleColorThemeMenu") {
+        state.themeMenuOpen = !state.themeMenuOpen;
+        render();
+        return;
+      }
+      if (action === "selectColorTheme") {
+        applyColorTheme(event.currentTarget.dataset.themeId);
+        state.themeMenuOpen = false;
+        render();
+        return;
+      }
       if (action === "logout") {
         stopMarketCapAutoRefresh();
         stopPortfolioQuoteAutoRefresh();
@@ -9181,6 +9454,7 @@
     }
 
     async function init() {
+      applyColorTheme(readJson(THEME_STORAGE_KEY, DEFAULT_THEME_ID), { persist: false });
       rememberPendingShareFromUrl();
       const localPortfolioDemo = ["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).has("portfolio-demo");
       if (localPortfolioDemo) {
