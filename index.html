@@ -3916,6 +3916,38 @@
       .theme-orb, .theme-orb::before, .trade-alert-dot { animation:none; }
     }
 
+    /*
+      Foldable Chrome can expose a desktop-width CSS viewport when page zoom is
+      below 100%. Keep the stock pool as a desktop table, but do not create the
+      18-column intrinsic width that makes Chrome scale the whole document.
+    */
+    @media (min-width: 861px) and (max-width: 1200px),
+           (any-pointer: coarse) and (min-width: 861px) {
+      .stock-pool-table table {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        table-layout: fixed;
+      }
+      .stock-pool-table .pool-col-fold-hide { display: none; }
+      .stock-pool-table th,
+      .stock-pool-table td {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .stock-pool-table .pool-col-drag { width: 42px; }
+      .stock-pool-table .pool-col-stock { width: 130px; }
+      .stock-pool-table .pool-col-version { width: 90px; }
+      .stock-pool-table .pool-col-market-cap { width: 90px; }
+      .stock-pool-table .pool-col-upside { width: 80px; }
+      .stock-pool-table .pool-col-forward-pe { width: 80px; }
+      .stock-pool-table .pool-col-return-rate { width: 95px; }
+      .stock-pool-table .pool-col-forward-cap { width: 95px; }
+      .stock-pool-table .pool-col-actions { width: 150px; }
+      .stock-pool-table .pool-col-actions .actions { flex-wrap: wrap; }
+    }
+
     @media (max-width: 860px) {
       .theme-dock { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); }
       .theme-orb { width:34px; min-width:34px; height:34px; min-height:34px; }
@@ -7053,23 +7085,23 @@
             <table>
               <thead>
                 <tr>
-                  ${viewingOwn ? `<th class="drag-col sticky-col" aria-label="拖拽排序"></th>` : ""}
-                  <th class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">股票名称</th>
-                  <th>版本</th>
-                  <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
-                  ${sortTh("upside", "Upside", "num")}
-                  ${sortTh("forwardPE", "Forward PE", "num")}
-                  ${sortTh("shareholderReturnRate", "股东回报率", "num")}
-                  ${sortTh("dividendYield", "股息率", "num")}
-                  ${sortTh("buybackRate", "回购率", "num")}
-                  <th class="num">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
-                  <th class="num">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
-                  <th class="num">前瞻 PE</th>
-                  <th class="num">净现金<br><span class="stock-code">CNY 亿</span></th>
-                  <th class="num">现金折扣</th>
-                  <th class="num">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th class=\"share-head\">分享</th><th>来源</th>" : ""}
-                  <th>操作</th>
+                  ${viewingOwn ? `<th class="drag-col sticky-col pool-col-drag" aria-label="拖拽排序"></th>` : ""}
+                  <th class="sticky-col pool-col-stock ${viewingOwn ? "stock-col-after-drag" : ""}">股票名称</th>
+                  <th class="pool-col-version">版本</th>
+                  <th class="num pool-col-market-cap">最新市值<br><span class="stock-code">CNY 亿</span></th>
+                  ${sortTh("upside", "Upside", "num pool-col-upside")}
+                  ${sortTh("forwardPE", "Forward PE", "num pool-col-forward-pe")}
+                  ${sortTh("shareholderReturnRate", "股东回报率", "num pool-col-return-rate")}
+                  ${sortTh("dividendYield", "股息率", "num pool-col-fold-hide")}
+                  ${sortTh("buybackRate", "回购率", "num pool-col-fold-hide")}
+                  <th class="num pool-col-forward-cap">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num pool-col-fold-hide">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num pool-col-fold-hide">前瞻 PE</th>
+                  <th class="num pool-col-fold-hide">净现金<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num pool-col-fold-hide">现金折扣</th>
+                  <th class="num pool-col-fold-hide">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
+                  ${viewingOwn ? "<th class=\"share-head pool-col-fold-hide\">分享</th><th class=\"pool-col-fold-hide\">来源</th>" : ""}
+                  <th class="pool-col-actions">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -7110,29 +7142,29 @@
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr class="stock-row" data-stock-row="${stock.id}">
-          ${viewingOwn ? `<td data-label="排序" class="drag-col sticky-col"><span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span></td>` : ""}
-          <td data-label="股票名称" class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">
+          ${viewingOwn ? `<td data-label="排序" class="drag-col sticky-col pool-col-drag"><span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span></td>` : ""}
+          <td data-label="股票名称" class="sticky-col pool-col-stock ${viewingOwn ? "stock-col-after-drag" : ""}">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
-          <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
-          <td data-label="最新市值" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
-          <td data-label="Forward PE" class="kpi plain-kpi">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
-          <td data-label="股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(shareholderRate)}</td>
-          <td data-label="股息率" class="kpi">${sourceDeleted ? "--" : percent(dividendYield)}</td>
-          <td data-label="回购率" class="kpi">${sourceDeleted ? "--" : percent(buybackRate)}</td>
-          <td data-label="前瞻市值" class="num">${sourceDeleted ? "--" : moneyYiCny(c.expectedMarketCapCny)}</td>
-          <td data-label="前瞻利润" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedProfitCny)}</td>
-          <td data-label="前瞻 PE" class="num">${sourceDeleted || !stock.expectedPE ? "--" : trimNumber(stock.expectedPE) + "x"}</td>
-          <td data-label="净现金" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
-          <td data-label="现金折扣" class="num">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
-          <td data-label="前瞻股东回报" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
+          <td data-label="版本" class="version-cell pool-col-version" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
+          <td data-label="最新市值" class="num pool-col-market-cap">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
+          <td data-label="Upside" class="kpi plain-kpi pool-col-upside ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
+          <td data-label="Forward PE" class="kpi plain-kpi pool-col-forward-pe">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
+          <td data-label="股东回报率" class="kpi pool-col-return-rate ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(shareholderRate)}</td>
+          <td data-label="股息率" class="kpi pool-col-fold-hide">${sourceDeleted ? "--" : percent(dividendYield)}</td>
+          <td data-label="回购率" class="kpi pool-col-fold-hide">${sourceDeleted ? "--" : percent(buybackRate)}</td>
+          <td data-label="前瞻市值" class="num pool-col-forward-cap">${sourceDeleted ? "--" : moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td data-label="前瞻利润" class="num pool-col-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.expectedProfitCny)}</td>
+          <td data-label="前瞻 PE" class="num pool-col-fold-hide">${sourceDeleted || !stock.expectedPE ? "--" : trimNumber(stock.expectedPE) + "x"}</td>
+          <td data-label="净现金" class="num pool-col-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣" class="num pool-col-fold-hide">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报" class="num pool-col-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
-            <td data-label="分享" class="share-cell">${renderShareState(stock)}</td>
-            <td data-label="来源">${renderSourceCell(stock)}</td>
+            <td data-label="分享" class="share-cell pool-col-fold-hide">${renderShareState(stock)}</td>
+            <td data-label="来源" class="pool-col-fold-hide">${renderSourceCell(stock)}</td>
           ` : ""}
-          <td data-label="操作">
+          <td data-label="操作" class="pool-col-actions">
             <div class="actions">
               ${viewingOwn ? `
                 <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
