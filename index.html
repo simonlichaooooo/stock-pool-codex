@@ -3604,9 +3604,9 @@
     .brand-logo {
       width:158px;
       height:44px;
-      padding:2px 0 3px;
+      padding:2px 0;
       object-fit:contain;
-      object-position:left calc(50% - 4px);
+      object-position:left center;
     }
     html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
       animation:none;
@@ -3815,22 +3815,25 @@
     .portfolio-trade-alert-stock-head { display:flex; align-items:baseline; gap:7px; margin-bottom:7px; color:#7c6b4c; font-size:10.5px; }
     .portfolio-trade-alert-stock-head strong { color:#2d3440; font-size:12.5px; }
     .portfolio-trade-alert-stock-head span:last-child { margin-left:auto; font-variant-numeric:tabular-nums; }
-    .portfolio-trade-alert-items { display:grid; gap:5px; }
-    button.portfolio-trade-alert-item { display:grid; grid-template-columns:52px minmax(92px,auto) minmax(92px,auto) 1fr; align-items:center; gap:8px; min-height:34px; padding:6px 8px; text-align:left; border-radius:4px; box-shadow:none; font-size:10.5px; }
+    .portfolio-trade-alert-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:6px; }
+    button.portfolio-trade-alert-item { position:relative; display:grid; grid-template-columns:24px minmax(0,1fr); gap:3px 7px; min-height:62px; padding:7px 9px; text-align:left; border-radius:4px; box-shadow:none; font-size:10.5px; }
     button.portfolio-trade-alert-item.buy { color:#8f2d26; border-color:#efc1bb; background:#fff7f5; }
     button.portfolio-trade-alert-item.sell { color:#076047; border-color:#b5dccd; background:#f3fbf7; }
     button.portfolio-trade-alert-item:hover { transform:translateY(-1px); }
     button.portfolio-trade-alert-item.buy:hover { border-color:#db8277; background:#ffebe7; }
     button.portfolio-trade-alert-item.sell:hover { border-color:#70ba9e; background:#e6f8ef; }
-    .portfolio-trade-alert-item > strong { justify-self:end; font-size:10.5px; }
+    .portfolio-trade-alert-sequence { grid-row:1 / 4; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; color:#fff; border-radius:50%; background:currentColor; font-size:10px; font-weight:800; }
+    .portfolio-trade-alert-item.buy .portfolio-trade-alert-sequence { background:#b42318; }
+    .portfolio-trade-alert-item.sell .portfolio-trade-alert-sequence { background:#067647; }
+    .portfolio-trade-alert-item-main { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+    .portfolio-trade-alert-item-main strong { font-size:10px; white-space:nowrap; }
+    .portfolio-trade-alert-detail, .portfolio-trade-alert-trigger { grid-column:2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .portfolio-trade-alert-trigger { font-weight:750; }
     .portfolio-trade-alert-side { font-weight:800; }
-    .portfolio-table .actions button.trade-plan-alert { display:inline-flex; align-items:center; gap:4px; font-weight:800; }
+    .portfolio-table .actions button.trade-plan-alert { position:relative; font-weight:800; }
     .portfolio-table .trade-add.trade-plan-alert { color:#8f2018; border-color:#df7469; background:#ffe9e6; box-shadow:0 0 0 2px rgba(210,74,59,.13); }
     .portfolio-table .trade-reduce.trade-plan-alert { color:#056047; border-color:#56aa8b; background:#e3f7ed; box-shadow:0 0 0 2px rgba(27,136,96,.13); }
-    .trade-alert-dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:trade-alert-pulse 1.5s ease-in-out infinite; }
-    .trade-alert-count { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; color:#fff; border-radius:8px; background:currentColor; font-size:9px; line-height:1; }
-    .trade-add .trade-alert-count { color:#fff; background:#b42318; }
-    .trade-reduce .trade-alert-count { color:#fff; background:#067647; }
+    .trade-alert-dot { position:absolute; top:3px; right:3px; width:5px; height:5px; border-radius:50%; background:currentColor; animation:trade-alert-pulse 1.5s ease-in-out infinite; pointer-events:none; }
     @keyframes trade-alert-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.38; transform:scale(.72); } }
 
     @media (prefers-reduced-motion: reduce) {
@@ -3950,8 +3953,7 @@
       .portfolio-list-tools { width: 100%; justify-content: space-between; }
       .portfolio-trade-alert-head { align-items:flex-start; flex-direction:column; }
       .portfolio-trade-alert-groups { grid-template-columns:1fr; }
-      button.portfolio-trade-alert-item { grid-template-columns:48px 1fr 1fr; }
-      .portfolio-trade-alert-item > strong { grid-column:1 / -1; justify-self:start; }
+      .portfolio-trade-alert-items { grid-template-columns:1fr; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       .portfolio-table .table-scroll { max-height: none; }
@@ -5997,7 +5999,7 @@
       return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>${renderPortfolioNavHistory(rows, portfolio)}`;
     }
 
-    function triggeredPositionTradePlans(position) {
+    function triggeredPositionTradePlans(position, portfolio) {
       if (!isSameLocalDay(position?.intradayQuoteAt)) return [];
       const latestPrice = Number(position.latestPrice);
       if (!(latestPrice > 0)) return [];
@@ -6015,6 +6017,8 @@
           label: `${side === "buy" ? "买点" : "卖点"}${index + 1}`,
           price,
           shares: Number(row.shares) || 0,
+          executionAmount: price * (Number(row.shares) || 0),
+          executionAmountBase: price * (Number(row.shares) || 0) * portfolioFx(position.currency, portfolioBaseCurrency(portfolio)),
           touchedPrice: side === "buy" ? dayLow : dayHigh
         };
       })).filter(Boolean);
@@ -6027,15 +6031,15 @@
       return `<section class="portfolio-trade-alerts" aria-label="今日待操作" aria-live="polite">
         <div class="portfolio-trade-alert-head">
           <div><span class="portfolio-trade-alert-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><strong>今日待操作</strong><span class="portfolio-trade-alert-count">${total} 项 · ${pendingByPosition.length} 只股票</span></div>
-          <span>行情触达未完成的买卖计划，点击事项可直接操作</span>
+          <span>按预计执行金额降序排列，点击事项可直接操作</span>
         </div>
         <div class="portfolio-trade-alert-groups">${pendingByPosition.map(({ position, items }) => `<article class="portfolio-trade-alert-stock">
           <div class="portfolio-trade-alert-stock-head"><strong>${escapeHtml(position.name)}</strong><span>${escapeHtml(position.code)}</span><span>现价 ${formatPrice(position.latestPrice)} ${escapeHtml(position.currency || "")}</span></div>
           <div class="portfolio-trade-alert-items">${items.map((item) => `<button type="button" class="portfolio-trade-alert-item ${item.side}" data-action="openPendingTrade" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}" data-side="${item.side}">
-            <span class="portfolio-trade-alert-side">${item.label}</span>
-            <span>计划价 ${formatPrice(item.price)}</span>
-            <span>${item.shares > 0 ? `计划 ${portfolioPrivate(`${item.shares.toLocaleString("zh-CN")} 股`)}` : "数量未设置"}</span>
-            <strong>${item.side === "buy" ? "最低" : "最高"} ${formatPrice(item.touchedPrice)} 已触达</strong>
+            <span class="portfolio-trade-alert-sequence">${item.sequence}</span>
+            <span class="portfolio-trade-alert-item-main"><span class="portfolio-trade-alert-side">${item.label}</span><strong>${item.executionAmount > 0 ? `预计 ${portfolioPrivate(formatPrice(item.executionAmount))} ${escapeHtml(position.currency || "")}` : "金额待补充"}</strong></span>
+            <span class="portfolio-trade-alert-detail">计划价 ${formatPrice(item.price)} · ${item.shares > 0 ? `计划 ${portfolioPrivate(`${item.shares.toLocaleString("zh-CN")} 股`)}` : "数量未设置"}</span>
+            <span class="portfolio-trade-alert-trigger">${item.side === "buy" ? "最低" : "最高"} ${formatPrice(item.touchedPrice)} 已触达</span>
           </button>`).join("")}</div>
         </article>`).join("")}</div>
       </section>`;
@@ -6046,7 +6050,12 @@
       const positionWeight = (position) => metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase : 0;
       const sortValue = (position) => sort.key === "change" ? (position.changePercent == null ? NaN : Number(position.changePercent)) : sort.key === "weight" ? positionWeight(position) : positionBaseValue(position, portfolio);
       const allPositions = [...(portfolio.positions || [])];
-      const pendingByPosition = allPositions.map((position) => ({ position, items: triggeredPositionTradePlans(position) })).filter((row) => row.items.length);
+      const pendingByPosition = allPositions.map((position) => {
+        const items = triggeredPositionTradePlans(position, portfolio).sort((a, b) => b.executionAmountBase - a.executionAmountBase || a.index - b.index);
+        return { position, items, totalExecutionAmountBase: items.reduce((sum, item) => sum + item.executionAmountBase, 0) };
+      }).filter((row) => row.items.length).sort((a, b) => b.totalExecutionAmountBase - a.totalExecutionAmountBase || a.position.name.localeCompare(b.position.name, "zh-CN"));
+      let pendingSequence = 1;
+      pendingByPosition.forEach((row) => row.items.forEach((item) => { item.sequence = pendingSequence; pendingSequence += 1; }));
       const pendingByPositionId = new Map(pendingByPosition.map((row) => [row.position.id, row.items]));
       const positions = allPositions.filter((position) => !state.portfolioTagFilter || (position.tags || []).includes(state.portfolioTagFilter)).sort((a, b) => {
         const aValue = sortValue(a), bValue = sortValue(b);
@@ -6118,7 +6127,7 @@
               <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
-              <td data-label="操作"><div class="actions"><button class="trade-add ${pendingBuys.length ? "trade-plan-alert" : ""}" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingBuys.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>加仓<span class="trade-alert-count">${pendingBuys.length}</span>` : "加仓"}</button><button class="trade-reduce ${pendingSells.length ? "trade-plan-alert" : ""}" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingSells.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>减仓<span class="trade-alert-count">${pendingSells.length}</span>` : "减仓"}</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add ${pendingBuys.length ? "trade-plan-alert" : ""}" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingBuys.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>加仓` : "加仓"}</button><button class="trade-reduce ${pendingSells.length ? "trade-plan-alert" : ""}" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingSells.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>减仓` : "减仓"}</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div>
