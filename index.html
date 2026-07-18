@@ -3215,6 +3215,78 @@
       .topbar .topbar-nav button.active { animation:none; }
     }
 
+    /* Portfolio action and P&L palette: one cool glass family with restrained semantics. */
+    .portfolio-actions > .portfolio-action-btn,
+    .portfolio-menu > .portfolio-action-btn {
+      min-height:34px;
+      padding:0 12px;
+      border:1px solid rgba(100,139,184,.40);
+      border-radius:5px;
+      background:rgba(255,255,255,.50);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.84),0 4px 11px rgba(52,111,181,.07);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    button.portfolio-action-open { color:#087473; border-color:rgba(63,151,148,.38); background:rgba(230,250,248,.54); }
+    button.portfolio-action-rebalance { color:#245f96; border-color:rgba(82,139,197,.38); background:rgba(230,241,255,.54); }
+    button.portfolio-action-summary { color:#525ca8; border-color:rgba(112,122,199,.36); background:rgba(237,237,255,.52); }
+    button.portfolio-action-tags,
+    button.portfolio-action-tags.active { color:#4d6592; border-color:rgba(91,123,169,.38); background:rgba(232,240,251,.54); }
+    button.portfolio-action-more { color:#405875; border-color:rgba(91,123,161,.38); background:rgba(239,244,251,.56); }
+    button.portfolio-action-open:hover,
+    button.portfolio-action-rebalance:hover,
+    button.portfolio-action-summary:hover,
+    button.portfolio-action-tags:hover,
+    button.portfolio-action-more:hover {
+      color:#0753bd;
+      border-color:rgba(73,130,197,.56);
+      background:rgba(224,239,255,.80);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.92),0 5px 14px rgba(52,111,181,.11);
+    }
+
+    .portfolio-daily-chip {
+      min-height:24px;
+      border-color:rgba(104,143,188,.34);
+      background:rgba(255,255,255,.50);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+      font-weight:650;
+    }
+    .portfolio-daily-chip.gain {
+      color:#aa3838;
+      border-color:rgba(190,86,86,.30);
+      background:rgba(255,236,236,.54);
+    }
+    .portfolio-daily-chip.loss {
+      color:#08705a;
+      border-color:rgba(46,139,110,.30);
+      background:rgba(231,249,242,.56);
+    }
+
+    .portfolio-table .actions { gap:5px; align-items:center; }
+    .portfolio-table .actions button {
+      min-height:28px;
+      padding:0 9px;
+      border-radius:5px;
+      background:rgba(255,255,255,.50);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+      font-weight:550;
+    }
+    .portfolio-table .trade-add { color:#aa3d3d; border-color:rgba(191,91,91,.32); background:rgba(255,239,239,.52); }
+    .portfolio-table .trade-reduce { color:#08705a; border-color:rgba(46,139,110,.30); background:rgba(233,249,243,.54); }
+    .portfolio-table .trade-edit { color:#245f96; border-color:rgba(82,139,197,.32); background:rgba(234,243,255,.54); }
+    .portfolio-table .trade-history { color:#525ca8; border-color:rgba(112,122,199,.30); background:rgba(240,240,255,.52); }
+    .portfolio-table .trade-add:hover,
+    .portfolio-table .trade-reduce:hover,
+    .portfolio-table .trade-edit:hover,
+    .portfolio-table .trade-history:hover {
+      color:#0753bd;
+      border-color:rgba(73,130,197,.52);
+      background:rgba(224,239,255,.78);
+    }
+    .portfolio-table td.gain { color:#b43d3d; font-weight:600; }
+    .portfolio-table td.loss { color:#08735b; font-weight:600; }
+    .portfolio-table .portfolio-holding-profit-rate { color:inherit; opacity:.76; font-weight:550; }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
