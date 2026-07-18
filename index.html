@@ -3632,6 +3632,7 @@
       object-position:left center;
       transform:translateY(-3px);
     }
+    .brand { border-right:0; padding-right:0; }
     html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
       animation:none;
       background:linear-gradient(145deg,rgba(255,255,255,.90),color-mix(in srgb,var(--brand-soft) 82%,rgba(255,255,255,.72)));
@@ -4413,6 +4414,14 @@
       })[char]);
     }
 
+    function maskEmail(email) {
+      const [localPart, domain] = String(email ?? "").split("@");
+      if (!domain) return localPart ? `${localPart.slice(0, 1)}***` : "";
+      const visiblePrefix = localPart.slice(0, Math.min(3, localPart.length));
+      const visibleSuffix = localPart.length > 5 ? localPart.slice(-2) : "";
+      return `${visiblePrefix}***${visibleSuffix}@${domain}`;
+    }
+
     function defaultCurrencyFor(stock) {
       if (!stock) return "CNY";
       if (stock.market === "CN" || stock.market === "HK") return "CNY";
@@ -5166,7 +5175,7 @@
                 ${renderMainNavTabs()}
               </div>
               <div class="userbar">
-                <span>${escapeHtml(state.session.user.email)}</span>
+                <span title="已隐藏部分邮箱地址">${escapeHtml(maskEmail(state.session.user.email))}</span>
                 ${state.profile?.nickname ? `<span class="badge">${escapeHtml(state.profile.nickname)}</span>` : ""}
                 <button class="ghost" data-action="logout">退出</button>
               </div>
