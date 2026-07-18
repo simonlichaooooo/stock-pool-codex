@@ -4874,8 +4874,9 @@
 
     async function refreshMarketCaps({ renderAfter = true } = {}) {
       if (marketCapRefreshInFlight || !state.session) return;
-      const ownTargets = state.stocks.filter((stock) => stock.quoteId && !stock.sourceDeletedAt);
-      const publisherTargets = state.publisherStocks.filter((stock) => stock.quoteId && !stock.sourceDeletedAt);
+      const canRefreshQuote = (stock) => !stock.sourceDeletedAt && Boolean(stock.quoteId || stockQuoteId(stock) || tencentSymbol(stock));
+      const ownTargets = state.stocks.filter(canRefreshQuote);
+      const publisherTargets = state.publisherStocks.filter(canRefreshQuote);
       const targets = [
         ...ownTargets.map((stock) => ({ scope: "own", stock })),
         ...publisherTargets.map((stock) => ({ scope: "publisher", stock }))
@@ -4968,8 +4969,12 @@
       };
     }
 
+    function stockMarketCapCny(stock) {
+      return Number(stock?.latestMarketCapCny) || Number(stock?.marketCapCny) || 0;
+    }
+
     function calc(stock) {
-      const latest = Number(stock.latestMarketCapCny) || 0;
+      const latest = stockMarketCapCny(stock);
       const profit = Number(stock.expectedProfitCny) || 0;
       const pe = Number(stock.expectedPE) || 0;
       const cash = Number(stock.netCashCny) || 0;
@@ -4988,7 +4993,7 @@
       const rate = computed.shareholderReturnRate;
       if (rate === null || rate === undefined) return rate;
       if (!state.stockConnectDividendTax || stock.market !== "HK") return rate;
-      const latest = Number(stock.latestMarketCapCny) || 0;
+      const latest = stockMarketCapCny(stock);
       if (!latest) return rate;
       return ((Number(stock.expectedDividendCny) || 0) * 0.8 + (Number(stock.expectedBuybackCny) || 0)) / latest;
     }
@@ -6241,7 +6246,7 @@
     function positionPlanValuation(position, price, selectedId = position?.valuationStockId) {
       const stock = portfolioValuationStock(position, selectedId);
       const targetPrice = Number(price);
-      const latestMarketCap = Number(stock?.latestMarketCapCny);
+      const latestMarketCap = stockMarketCapCny(stock);
       const referencePrice = Number(stock?.latestPrice) || Number(position?.latestPrice);
       if (!stock || !(targetPrice > 0) || !(latestMarketCap > 0) || !(referencePrice > 0)) return null;
       const targetMarketCap = latestMarketCap * targetPrice / referencePrice;
@@ -6251,7 +6256,7 @@
     function positionPlanPriceFromMetric(position, metric, value, selectedId = position?.valuationStockId) {
       const stock = portfolioValuationStock(position, selectedId);
       const inputValue = Number(value);
-      const latestMarketCap = Number(stock?.latestMarketCapCny);
+      const latestMarketCap = stockMarketCapCny(stock);
       const referencePrice = Number(stock?.latestPrice) || Number(position?.latestPrice);
       if (!stock || !Number.isFinite(inputValue) || !(latestMarketCap > 0) || !(referencePrice > 0)) return null;
       const cashValue = (Number(stock.netCashCny) || 0) * (Number(stock.netCashDiscountRate) || 0);
