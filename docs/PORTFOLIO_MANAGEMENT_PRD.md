@@ -1,4 +1,6 @@
-# 组合管理需求文档
+# 组合管理需求文档（历史归档）
+
+> 当前功能基线请以 [`PORTFOLIO_MANAGEMENT_PRD_CURRENT.md`](./PORTFOLIO_MANAGEMENT_PRD_CURRENT.md) 为准。
 
 最后更新：2026-07-10  
 文档状态：已按当前线上实现重新梳理

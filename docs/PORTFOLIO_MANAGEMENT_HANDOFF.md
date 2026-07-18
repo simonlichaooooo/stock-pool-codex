@@ -1,4 +1,6 @@
-# 组合管理工程 Handoff
+# 组合管理工程 Handoff（历史归档）
+
+> 当前项目交接基线请以 [`PROJECT_HANDOFF_CURRENT.md`](./PROJECT_HANDOFF_CURRENT.md) 为准。
 
 最后更新：2026-07-10  
 工程状态：已开发、已部署、可进入数据积累与运行观察阶段  

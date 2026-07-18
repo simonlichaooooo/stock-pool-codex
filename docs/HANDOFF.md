@@ -1,4 +1,6 @@
-# 股池管理项目交接文档
+# 股池管理项目交接文档（历史归档）
+
+> 当前工程基线请以 [`PROJECT_HANDOFF_CURRENT.md`](./PROJECT_HANDOFF_CURRENT.md) 为准。
 
 最后更新：2026-05-17  
 当前形态：静态单页应用 + Supabase 后端服务  
