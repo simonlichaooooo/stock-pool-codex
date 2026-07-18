@@ -1749,7 +1749,10 @@
     .portfolio-valuation-cell { min-width: 92px; font-variant-numeric: tabular-nums; }
     .portfolio-valuation-cell span { display: block; line-height: 1.55; white-space: nowrap; }
     .portfolio-valuation-cell .muted { font-size: 11px; }
-    .position-valuation-preview { margin-top: 7px; padding: 9px 10px; border: 1px solid #d5e4e1; border-radius: 4px; background: #f5faf9; color: #344054; font-size: 12px; line-height: 1.6; }
+    .position-valuation-preview { margin-top: 7px; padding: 9px 10px; border: 1px solid #d5e4e1; border-radius: 4px; background: #f5faf9; color: #344054; font-size: 12px; line-height: 1.6; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; font-variant-numeric: tabular-nums; }
+    .position-valuation-preview-item { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+    .position-valuation-preview-item strong { color: #667085; font-size: 11px; font-weight: 720; }
+    .position-valuation-preview-separator { color: #98a2b3; }
     .portfolio-table .trade-add {
       color: #b42318;
       border-color: #f3b6ad;
@@ -6157,6 +6160,14 @@
       return `<span>${percent(computed.upside)}</span><span>${computed.forwardPE == null ? "--" : `${trimNumber(computed.forwardPE)}x`}</span><span>${percent(computed.shareholderReturnRate)}</span>`;
     }
 
+    function renderPortfolioValuationPreview(position, selectedId = position?.valuationStockId) {
+      const stock = portfolioValuationStock(position, selectedId);
+      if (!stock) return "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。";
+      const computed = calc(stock);
+      const item = (label, value) => `<span class="position-valuation-preview-item"><strong>${label}</strong><span>${value}</span></span>`;
+      return `${item("Upside", percent(computed.upside))}<span class="position-valuation-preview-separator">·</span>${item("Forward PE", computed.forwardPE == null ? "--" : `${trimNumber(computed.forwardPE)}x`)}<span class="position-valuation-preview-separator">·</span>${item("股东回报率", percent(computed.shareholderReturnRate))}`;
+    }
+
     function positionPlanValuation(position, price, selectedId = position?.valuationStockId) {
       const stock = portfolioValuationStock(position, selectedId);
       const targetPrice = Number(price);
@@ -6486,7 +6497,7 @@
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
           <div class="grid-2 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label></div>
-          <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${position.valuationStockId ? renderPortfolioValuation(position) : "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。"}</div></label>
+          <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${renderPortfolioValuationPreview(position)}</div></label>
           <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
           <div class="position-tag-editor"><div class="position-tag-title">标签</div><div class="position-tag-input"><input name="newTag" maxlength="20" placeholder="自定义标签，如：AI / 高股息"><button type="button" data-action="addPositionTag">添加</button></div>${modal.tags.length ? `<div class="position-tags-selected">${modal.tags.map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)} ×</button>`).join("")}</div>` : `<div class="muted">暂未添加标签</div>`}${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).length ? `<div class="position-tag-existing"><span>快速选择已有标签</span><div>${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">+ ${escapeHtml(tag)}</button>`).join("")}</div></div>` : ""}</div>
         </div>
@@ -7642,9 +7653,7 @@
       const portfolioValuationVersion = document.querySelector("[data-input='portfolioValuationVersion']");
       if (portfolioValuationVersion) portfolioValuationVersion.addEventListener("change", (event) => {
         const preview = document.querySelector("[data-portfolio-valuation-preview]");
-        if (preview && state.portfolioModal?.position) preview.innerHTML = event.target.value
-          ? renderPortfolioValuation(state.portfolioModal.position, event.target.value)
-          : "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。";
+        if (preview && state.portfolioModal?.position) preview.innerHTML = renderPortfolioValuationPreview(state.portfolioModal.position, event.target.value);
         refreshPositionPlanValuations();
       });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
