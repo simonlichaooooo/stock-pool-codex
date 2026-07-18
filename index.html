@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>钞·作业</title>
   <style>
     :root {
@@ -32,12 +32,9 @@
     html, body {
       margin: 0;
       min-height: 100%;
-      width: 100%;
       max-width: 100%;
       overflow-x: hidden;
       overflow-x: clip;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -1741,26 +1738,19 @@
     @keyframes portfolio-refresh-spin { to { transform: rotate(360deg); } }
     .portfolio-table .actions { white-space: nowrap; gap: 5px; }
     .portfolio-table .actions button { min-height: 27px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
-    .stock-pool-table {
+    .horizontal-data-table {
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      overflow: hidden;
-      contain: layout inline-size paint;
     }
-    .stock-pool-table .table-scroll {
+    .horizontal-data-table .table-scroll {
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      overflow-x: auto;
-      overflow-y: auto;
-      overscroll-behavior-inline: contain;
-      -webkit-overflow-scrolling: touch;
-      contain: layout inline-size;
+      overflow: auto;
     }
-    .stock-pool-table table { width: max(100%, 1460px); min-width: 0; max-width: none; table-layout: auto; }
+    .horizontal-data-table table { min-width: 100%; table-layout: auto; }
     .portfolio-table .table-scroll { overflow: auto; max-height: calc(100vh - 198px); }
-    .portfolio-table table { min-width: 100%; table-layout: auto; }
     .portfolio-table.tags-expanded .table-scroll { max-height: calc(100vh - 288px); }
     .portfolio-table.summary-expanded .table-scroll { max-height: calc(100vh - 280px); }
     .portfolio-table.tags-expanded.summary-expanded .table-scroll { max-height: calc(100vh - 370px); }
@@ -3916,15 +3906,6 @@
       .theme-orb, .theme-orb::before, .trade-alert-dot { animation:none; }
     }
 
-    /* Counter Chrome's additional stock-pool shrink at 75% page zoom on foldables. */
-    @media (min-width: 861px) and (max-width: 1200px),
-           (any-pointer: coarse) and (min-width: 861px) {
-      .shell.view-pool > .topbar,
-      .shell.view-pool > .workspace {
-        zoom: 1.75;
-      }
-    }
-
     @media (max-width: 860px) {
       .theme-dock { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); }
       .theme-orb { width:34px; min-width:34px; height:34px; min-height:34px; }
@@ -5230,7 +5211,7 @@
     function render() {
       if (!ensureAuth()) return;
       document.getElementById("app").innerHTML = `
-        <div class="shell view-${state.mainView}">
+        <div class="shell">
           <header class="topbar">
             <div class="topbar-inner">
               <div class="topbar-main">
@@ -6190,7 +6171,7 @@
       return `
         ${state.portfolioTagsExpanded ? renderPortfolioTagSummary(portfolio, metrics) : ""}
         ${renderPortfolioTradeAlerts(pendingByPosition)}
-        <section class="table-panel portfolio-table ${state.portfolioTagsExpanded ? "tags-expanded" : ""} ${state.portfolioSummaryExpanded ? "summary-expanded" : ""}">
+        <section class="table-panel horizontal-data-table portfolio-table ${state.portfolioTagsExpanded ? "tags-expanded" : ""} ${state.portfolioSummaryExpanded ? "summary-expanded" : ""}">
           <div class="portfolio-list-head">
             <div class="portfolio-list-head-main">
               <div class="portfolio-list-head-title">持仓列表<span class="portfolio-account-badge">${base === "USD" ? "美元" : "人民币"}</span></div>
@@ -7057,7 +7038,7 @@
         `;
       }
       return `
-        <section class="table-panel stock-pool-table">
+        <section class="table-panel horizontal-data-table stock-pool-table">
           <div class="table-scroll">
             <table>
               <thead>
@@ -7093,7 +7074,7 @@
     function renderTableSkeleton(viewingOwn) {
       const colSpan = viewingOwn ? 18 : 15;
       return `
-        <section class="table-panel stock-pool-table">
+        <section class="table-panel horizontal-data-table stock-pool-table">
           <div class="table-scroll">
             <table>
               <thead><tr><th colspan="${colSpan}">正在加载股池数据</th></tr></thead>
