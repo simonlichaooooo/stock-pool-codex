@@ -3340,6 +3340,21 @@
     .portfolio-tag-rename-form input { border-color:rgba(104,143,188,.48); background:rgba(255,255,255,.68); }
     .portfolio-tag-rename-save { color:#fff; border-color:#2468b7; background:rgba(15,103,226,.84); }
 
+    .toolbar-left { position:relative; }
+    .toolbar-left:has(.pool-search-count) input { padding-right:72px; }
+    .pool-search-count {
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-50%);
+      color:var(--brand-strong);
+      font-size:11px;
+      font-weight:600;
+      line-height:1;
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
     /* Compact, aligned stock-pool sharing controls. */
     .stock-pool-table .share-cell .share-state {
       width:46px;
@@ -3569,14 +3584,61 @@
     html[data-theme="emerald"] .theme-orb { background:conic-gradient(from 20deg,#25bca9,#78e0d0,#73bfdc,#a0e9c6,#25bca9); }
     html[data-theme="amber"] .theme-orb { background:conic-gradient(from 20deg,#e7a557,#f3d58a,#dc8372,#f6b878,#e7a557); }
 
+    /* Fixed luminous glass: light moves through the material, while the color stays still. */
+    .topbar .topbar-nav button.active {
+      animation:none;
+      background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(190,221,252,.76));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,1),
+        inset 0 -1px 0 rgba(65,130,204,.18),
+        inset 9px 0 18px rgba(255,255,255,.22),
+        0 4px 14px rgba(62,126,201,.17),
+        0 0 15px rgba(112,181,248,.16);
+    }
+    html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
+      animation:none;
+      background:linear-gradient(145deg,rgba(255,255,255,.90),color-mix(in srgb,var(--brand-soft) 82%,rgba(255,255,255,.72)));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,1),
+        inset 0 -1px 0 color-mix(in srgb,var(--brand) 20%,transparent),
+        inset 9px 0 18px rgba(255,255,255,.24),
+        0 4px 14px var(--theme-shadow),
+        0 0 15px color-mix(in srgb,var(--brand) 15%,transparent);
+    }
+    .theme-orb,
+    html[data-theme="nebula"] .theme-orb,
+    html[data-theme="emerald"] .theme-orb,
+    html[data-theme="amber"] .theme-orb {
+      width:36px;
+      min-width:36px;
+      height:36px;
+      min-height:36px;
+      animation:none;
+      background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 74%,white),color-mix(in srgb,var(--brand) 78%,white));
+      box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 24%,transparent),inset 0 1px 0 rgba(255,255,255,.96);
+    }
+    .theme-orb::before {
+      inset:2px;
+      animation:none;
+      border-radius:50%;
+      background:linear-gradient(125deg,rgba(255,255,255,.92),transparent 42%,rgba(255,255,255,.20) 72%,transparent);
+      transform:none;
+    }
+    .theme-orb::after { inset:3px; }
+    .theme-orb-core { inset:12px; }
+    .theme-orb:hover {
+      transform:translateY(-1px) scale(1.025);
+      box-shadow:0 9px 23px color-mix(in srgb,var(--brand) 28%,transparent),0 0 15px color-mix(in srgb,var(--brand) 16%,transparent),inset 0 1px 0 #fff;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .theme-orb, .theme-orb::before { animation:none; }
     }
 
     @media (max-width: 860px) {
       .theme-dock { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); }
-      .theme-orb { width:44px; min-width:44px; height:44px; min-height:44px; }
-      .theme-orb-core { inset:16px; }
+      .theme-orb { width:34px; min-width:34px; height:34px; min-height:34px; }
+      .theme-orb-core { inset:11px; }
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
       .topbar-main { width: 100%; flex-wrap: wrap; gap: 8px; }
@@ -6173,7 +6235,8 @@
       return `
         <div class="toolbar">
           <div class="toolbar-left">
-            <input data-input="searchList" placeholder="股票名称、代码框" value="${escapeHtml(state.query)}">
+            <input autocomplete="off" data-input="searchList" placeholder="搜索股票名称、代码或别名" value="${escapeHtml(state.query)}">
+            ${state.query.trim() ? `<span class="pool-search-count" aria-live="polite">${userStocks().length} 条匹配</span>` : ""}
           </div>
           <div class="toolbar-filters">
             <div class="segmented" aria-label="市场筛选">
@@ -6206,15 +6269,37 @@
       `;
     }
 
+    function compactStockSearchValue(value) {
+      return String(value ?? "")
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[^\u4e00-\u9fffa-z0-9]+/g, "");
+    }
+
+    function stockMatchesPoolSearch(stock, rawQuery) {
+      const tokens = String(rawQuery ?? "").trim().split(/\s+/).map(compactStockSearchValue).filter(Boolean);
+      if (!tokens.length) return true;
+      const aliases = Array.isArray(stock.aliases) ? stock.aliases.join(" ") : stock.aliases;
+      const code = String(stock.code || "");
+      const codeWithoutLeadingZeros = code.replace(/^0+(?=\d)/, "");
+      const searchableValues = [
+        stock.name,
+        code,
+        codeWithoutLeadingZeros,
+        aliases,
+        stock.market,
+        stock.exchange
+      ].map(compactStockSearchValue).filter(Boolean);
+      return tokens.every((token) => searchableValues.some((value) => value.includes(token)));
+    }
+
     function userStocks() {
-      const query = state.query.trim().toLowerCase();
+      const query = state.query.trim();
       const viewingOwn = state.viewPublisherId === "own";
       let rows = viewingOwn ? [...state.stocks] : [...state.publisherStocks];
       if (state.filter !== "ALL") rows = rows.filter((item) => item.market === state.filter);
       if (viewingOwn && state.shareFilter === "SHARED") rows = rows.filter((item) => item.isShared);
-      if (query) {
-        rows = rows.filter((item) => `${item.name} ${item.code}`.toLowerCase().includes(query));
-      }
+      if (query) rows = rows.filter((item) => stockMatchesPoolSearch(item, query));
       rows.sort((a, b) => {
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
         const va = listSortValue(a, state.sort.key);
@@ -6912,18 +6997,29 @@
       const profileForm = document.querySelector("[data-form='profile']");
       if (profileForm) profileForm.addEventListener("submit", onProfileSubmit);
       const listSearch = document.querySelector("[data-input='searchList']");
-      if (listSearch) listSearch.addEventListener("input", (event) => {
-        const input = event.currentTarget;
-        state.query = input.value;
-        if (event.isComposing) return;
-        const selectionStart = input.selectionStart;
-        const selectionEnd = input.selectionEnd;
-        render();
-        const nextInput = document.querySelector("[data-input='searchList']");
-        if (!nextInput) return;
-        nextInput.focus({ preventScroll: true });
-        if (Number.isInteger(selectionStart) && Number.isInteger(selectionEnd)) nextInput.setSelectionRange(selectionStart, selectionEnd);
-      });
+      if (listSearch) {
+        const applyListSearch = (input) => {
+          state.query = input.value;
+          const selectionStart = input.selectionStart;
+          const selectionEnd = input.selectionEnd;
+          render();
+          const nextInput = document.querySelector("[data-input='searchList']");
+          if (!nextInput) return;
+          nextInput.focus({ preventScroll: true });
+          if (Number.isInteger(selectionStart) && Number.isInteger(selectionEnd)) nextInput.setSelectionRange(selectionStart, selectionEnd);
+        };
+        listSearch.addEventListener("compositionstart", () => { listSearch.dataset.composing = "true"; });
+        listSearch.addEventListener("compositionend", (event) => {
+          delete event.currentTarget.dataset.composing;
+          applyListSearch(event.currentTarget);
+        });
+        listSearch.addEventListener("input", (event) => {
+          const input = event.currentTarget;
+          state.query = input.value;
+          if (event.isComposing || input.dataset.composing === "true") return;
+          applyListSearch(input);
+        });
+      }
       const viewPublisher = document.querySelector("[data-input='viewPublisher']");
       if (viewPublisher) viewPublisher.addEventListener("change", async (event) => {
         state.viewPublisherId = event.target.value;
