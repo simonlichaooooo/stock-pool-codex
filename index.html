@@ -1753,6 +1753,15 @@
     .position-valuation-preview-item { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
     .position-valuation-preview-item strong { color: #667085; font-size: 11px; font-weight: 720; }
     .position-valuation-preview-separator { color: #98a2b3; }
+    .position-edit-modal select[name="valuationStockId"] {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 38px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='m2.5 5 4.5 4 4.5-4' fill='none' stroke='%23344054' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 12px center !important;
+      background-size: 14px 14px !important;
+    }
     .portfolio-table .trade-add {
       color: #b42318;
       border-color: #f3b6ad;
@@ -6625,7 +6634,7 @@
         sourceInput.setCustomValidity("");
         sourceInput.removeAttribute("aria-invalid");
         sourceInput.removeAttribute("title");
-        priceInput.value = formatPositionPlanNumber(nextPrice, 6);
+        priceInput.value = Number(nextPrice).toFixed(2);
       }
       const computed = positionPlanValuation(position, priceInput.value, selectedId);
       metricInputs.forEach((input) => {
