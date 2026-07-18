@@ -3815,16 +3815,14 @@
     .portfolio-trade-alert-stock-head { display:flex; align-items:baseline; gap:7px; margin-bottom:7px; color:#7c6b4c; font-size:10.5px; }
     .portfolio-trade-alert-stock-head strong { color:#2d3440; font-size:12.5px; }
     .portfolio-trade-alert-stock-head span:last-child { margin-left:auto; font-variant-numeric:tabular-nums; }
-    .portfolio-trade-alert-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:6px; }
-    button.portfolio-trade-alert-item { position:relative; display:grid; grid-template-columns:24px minmax(0,1fr); gap:3px 7px; min-height:62px; padding:7px 9px; text-align:left; border-radius:4px; box-shadow:none; font-size:10.5px; }
+    .portfolio-trade-alert-items { display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; }
+    button.portfolio-trade-alert-item { position:relative; display:grid; flex:0 0 258px; width:258px; grid-template-columns:16px minmax(0,1fr); gap:3px 5px; min-height:62px; padding:7px 9px; text-align:left; border-radius:4px; box-shadow:none; font-size:10.5px; }
     button.portfolio-trade-alert-item.buy { color:#8f2d26; border-color:#efc1bb; background:#fff7f5; }
     button.portfolio-trade-alert-item.sell { color:#076047; border-color:#b5dccd; background:#f3fbf7; }
     button.portfolio-trade-alert-item:hover { transform:translateY(-1px); }
     button.portfolio-trade-alert-item.buy:hover { border-color:#db8277; background:#ffebe7; }
     button.portfolio-trade-alert-item.sell:hover { border-color:#70ba9e; background:#e6f8ef; }
-    .portfolio-trade-alert-sequence { grid-row:1 / 4; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; color:#fff; border-radius:50%; background:currentColor; font-size:10px; font-weight:800; }
-    .portfolio-trade-alert-item.buy .portfolio-trade-alert-sequence { background:#b42318; }
-    .portfolio-trade-alert-item.sell .portfolio-trade-alert-sequence { background:#067647; }
+    .portfolio-trade-alert-sequence { grid-row:1 / 4; display:inline-flex; align-items:flex-start; justify-content:center; width:14px; padding-top:2px; color:#9a9185; font-size:9px; font-weight:600; line-height:1; }
     .portfolio-trade-alert-item-main { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
     .portfolio-trade-alert-item-main strong { font-size:10px; white-space:nowrap; }
     .portfolio-trade-alert-detail, .portfolio-trade-alert-trigger { grid-column:2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -3953,7 +3951,7 @@
       .portfolio-list-tools { width: 100%; justify-content: space-between; }
       .portfolio-trade-alert-head { align-items:flex-start; flex-direction:column; }
       .portfolio-trade-alert-groups { grid-template-columns:1fr; }
-      .portfolio-trade-alert-items { grid-template-columns:1fr; }
+      button.portfolio-trade-alert-item { flex-basis:100%; width:100%; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       .portfolio-table .table-scroll { max-height: none; }
@@ -6031,13 +6029,13 @@
       return `<section class="portfolio-trade-alerts" aria-label="今日待操作" aria-live="polite">
         <div class="portfolio-trade-alert-head">
           <div><span class="portfolio-trade-alert-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><strong>今日待操作</strong><span class="portfolio-trade-alert-count">${total} 项 · ${pendingByPosition.length} 只股票</span></div>
-          <span>按预计执行金额降序排列，点击事项可直接操作</span>
+          <span>按执行金额降序排列，点击事项可直接操作</span>
         </div>
         <div class="portfolio-trade-alert-groups">${pendingByPosition.map(({ position, items }) => `<article class="portfolio-trade-alert-stock">
           <div class="portfolio-trade-alert-stock-head"><strong>${escapeHtml(position.name)}</strong><span>${escapeHtml(position.code)}</span><span>现价 ${formatPrice(position.latestPrice)} ${escapeHtml(position.currency || "")}</span></div>
           <div class="portfolio-trade-alert-items">${items.map((item) => `<button type="button" class="portfolio-trade-alert-item ${item.side}" data-action="openPendingTrade" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}" data-side="${item.side}">
             <span class="portfolio-trade-alert-sequence">${item.sequence}</span>
-            <span class="portfolio-trade-alert-item-main"><span class="portfolio-trade-alert-side">${item.label}</span><strong>${item.executionAmount > 0 ? `预计 ${portfolioPrivate(formatPrice(item.executionAmount))} ${escapeHtml(position.currency || "")}` : "金额待补充"}</strong></span>
+            <span class="portfolio-trade-alert-item-main"><span class="portfolio-trade-alert-side">${item.label}</span><strong>${item.executionAmount > 0 ? `${portfolioPrivate(formatPrice(item.executionAmount))} ${escapeHtml(position.currency || "")}` : "金额待补充"}</strong></span>
             <span class="portfolio-trade-alert-detail">计划价 ${formatPrice(item.price)} · ${item.shares > 0 ? `计划 ${portfolioPrivate(`${item.shares.toLocaleString("zh-CN")} 股`)}` : "数量未设置"}</span>
             <span class="portfolio-trade-alert-trigger">${item.side === "buy" ? "最低" : "最高"} ${formatPrice(item.touchedPrice)} 已触达</span>
           </button>`).join("")}</div>
