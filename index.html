@@ -1832,8 +1832,8 @@
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
     .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
     .trade-suggestion strong { color: var(--brand-strong); }
-    .simple-modal.position-edit-modal { width: min(1060px, 100%); }
-    .simple-modal.position-trade-modal { width: min(1020px, 100%); }
+    .simple-modal.position-edit-modal { width: min(1220px, 100%); }
+    .simple-modal.position-trade-modal { width: min(1160px, 100%); }
     .simple-modal.rebalance-modal { width: min(960px, 100%); overflow-x: hidden; }
     .simple-modal.portfolio-initialize-modal { width: min(1040px, 100%); overflow-x: hidden; }
     .portfolio-create-import { padding: 12px; border: 1px solid #c9ddd9; background: #f4faf8; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -1854,8 +1854,8 @@
     .portfolio-initialize-result { min-height: 40px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-color: transparent; }
     .portfolio-initialize-result small { color: var(--muted); }
     .portfolio-initialize-remove { width: 36px; min-width: 36px; min-height: 38px; margin-top: 17px; padding: 0; color: #b42318; }
-    .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
-    .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(520px, 1.35fr); gap: 18px; align-items: start; }
+    .position-edit-layout { display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(620px, 1.5fr); gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
     .position-edit-main { display: grid; gap: 14px; min-width: 0; }
     .position-tag-editor { display: grid; gap: 8px; padding-top: 2px; }
@@ -1884,7 +1884,8 @@
     .portfolio-tag-allocation.under { color: #067647; background: #dcfae6; }
     .portfolio-tag-edit-note { margin-top: -3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
-    .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
+    .position-edit-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: start; }
+    .position-current-weight { min-height: 38px; display: flex; align-items: center; justify-content: flex-end; padding: 7px 10px; border: 1px solid #c4ced9; border-radius: 4px; background: rgba(255,255,255,.62); color: #243145; font-variant-numeric: tabular-nums; }
     .position-target-control { width: 150px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; }
     .position-target-control input, .position-target-control button { min-height: 30px; border-radius: 0; }
     .position-target-control input { width: 86px; padding: 4px; text-align: center; font-variant-numeric: tabular-nums; border-left: 0; border-right: 0; }
@@ -1905,9 +1906,10 @@
     .position-plan-row input[data-plan-metric="forwardPE"] { padding-right: 20px; text-align: right; }
     .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; overflow-x: auto; }
     .position-plan h3 { margin: 0 0 4px; font-size: 14px; }
-    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 100px 86px 104px 110px 92px 54px; gap: 7px; align-items: center; min-width: 636px; }
+    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px minmax(11ch, 1.05fr) minmax(9ch, .9fr) minmax(12ch, 1.1fr) minmax(12ch, 1.1fr) minmax(9ch, .9fr) minmax(10ch, .95fr) 54px; gap: 7px; align-items: center; min-width: 720px; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
-    .position-plan-head span:nth-child(n+2):nth-child(-n+6) { text-align: right; padding-right: 7px; }
+    .position-plan-head span { white-space: nowrap; }
+    .position-plan-head span:nth-child(n+2):nth-child(-n+7) { text-align: right; padding-right: 7px; }
     .position-plan-head span:last-child { text-align: center; }
     .position-plan-row { margin-bottom: 7px; }
     .position-plan-row span { font-size: 12px; font-weight: 700; }
@@ -1920,7 +1922,8 @@
     .position-plan-readonly { overflow-x: auto; }
     .position-plan-readonly .position-plan-head,
     .position-plan-readonly .position-plan-row {
-      grid-template-columns: 44px minmax(80px, 1.15fr) minmax(64px, .9fr) minmax(70px, .95fr) minmax(82px, 1.15fr) minmax(68px, .9fr) 52px;
+      grid-template-columns: 42px minmax(10ch, 1.1fr) minmax(8ch, .9fr) minmax(11ch, 1fr) minmax(12ch, 1.1fr) minmax(8ch, .9fr) minmax(10ch, .9fr) 48px;
+      gap: 5px;
       min-width: 0;
     }
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -3967,7 +3970,7 @@
       .rebalance-fields { grid-template-columns: 1fr; }
       .rebalance-preview { grid-template-columns: 1fr; }
       .rebalance-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .position-edit-fields { grid-template-columns: repeat(2, minmax(0, 124px)); }
+      .position-edit-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .position-plan { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; }
       .portfolio-switcher select, .portfolio-switcher button { width: 100%; }
       .portfolio-switcher > .portfolio-tabs { width:100%; display:flex; }
@@ -5754,6 +5757,32 @@
       };
     }
 
+    function positionWeightPercent(position, shares = position?.shares, price = null, portfolio = activePortfolio()) {
+      if (!position || !portfolio) return null;
+      const resolvedPrice = price == null
+        ? Number(position.latestPrice) || Number(position.averageCost) || 0
+        : Number(price) || 0;
+      const resolvedShares = Number(shares) || 0;
+      const total = portfolioMetrics(portfolio).netBase;
+      if (!(resolvedPrice > 0) || !(resolvedShares > 0) || !(total > 0)) return null;
+      const value = resolvedPrice * resolvedShares * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+      return value / total * 100;
+    }
+
+    function formatPositionWeight(value) {
+      return value !== null && value !== "" && Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}%` : "--";
+    }
+
+    function editedPositionWeightPercent(position, shares, portfolio = activePortfolio()) {
+      if (!position || !portfolio) return null;
+      const price = Number(position.latestPrice) || Number(position.averageCost) || 0;
+      const nextValue = positionWeightPercent(position, shares, price, portfolio);
+      if (nextValue == null) return null;
+      const nextBaseValue = (Number(shares) || 0) * price * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+      const adjustedTotal = portfolioMetrics(portfolio).netBase - positionBaseValue(position, portfolio) + nextBaseValue;
+      return adjustedTotal > 0 ? nextBaseValue / adjustedTotal * 100 : null;
+    }
+
     function formatWan(value) {
       return `${(Number(value || 0) / 10000).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 万元`;
     }
@@ -6514,7 +6543,7 @@
       const currency = modal.stock?.currency || position?.currency || "";
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
-          <div class="grid-2 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label></div>
+          <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
           <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${renderPortfolioValuationPreview(position)}</div></label>
           <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
           <div class="position-tag-editor"><div class="position-tag-title">标签</div><div class="position-tag-input"><input name="newTag" maxlength="20" placeholder="自定义标签，如：AI / 高股息"><button type="button" data-action="addPositionTag">添加</button></div>${modal.tags.length ? `<div class="position-tags-selected">${modal.tags.map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)} ×</button>`).join("")}</div>` : `<div class="muted">暂未添加标签</div>`}${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).length ? `<div class="position-tag-existing"><span>快速选择已有标签</span><div>${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">+ ${escapeHtml(tag)}</button>`).join("")}</div></div>` : ""}</div>
@@ -6579,17 +6608,19 @@
       const valuationStock = portfolioValuationStock(position);
       const rows = (side, label) => plan[side].map((row, index) => {
         const computed = positionPlanValuation(position, row.price);
+        const weight = positionWeightPercent(position, row.shares, row.price);
         return `<div class="position-plan-row plan-${side}">
         <span>${label}${index + 1}</span>
         <div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="any" value="${row.price}" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${currency}</span></div>
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="upside" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.upside * 100) : ""}" placeholder="--" aria-label="${label}${index + 1} Upside" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="forwardPE" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.forwardPE) : ""}" placeholder="--" aria-label="${label}${index + 1} Forward PE" ${valuationStock ? "" : "disabled"}><span class="input-suffix">x</span></div>
-        <div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.shareholderReturnRate * 100) : ""}" placeholder="--" aria-label="${label}${index + 1}前瞻股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
-        <div class="input-with-suffix"><input name="plan_${side}_${index}_shares" type="number" min="0" step="1" value="${row.shares}" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div>
+        <div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.shareholderReturnRate * 100) : ""}" placeholder="--" aria-label="${label}${index + 1}股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
+        <div class="input-with-suffix"><input name="plan_${side}_${index}_shares" data-plan-shares data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="1" value="${row.shares}" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div>
+        <div class="position-plan-value position-plan-weight" data-plan-weight data-plan-side="${side}" data-plan-index="${index}">${formatPositionWeight(weight)}</div>
         <input name="plan_${side}_${index}_done" type="checkbox" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成">
       </div>`;
       }).join("");
-      return `<section class="position-plan"><h3>加减仓计划</h3><p class="position-plan-help">${valuationStock ? "填写价格，三项指标自动计算；也可只填写任一指标反算价格和其余两项。" : "关联股池估值版本后，可按价格查看指标或用任一指标反算价格。"}</p><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>前瞻股东回报率</span><span>股数</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
+      return `<section class="position-plan"><h3>加减仓计划</h3><p class="position-plan-help">${valuationStock ? "填写价格，三项指标自动计算；也可只填写任一指标反算价格和其余两项。" : "关联股池估值版本后，可按价格查看指标或用任一指标反算价格。"}</p><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>股东回报率</span><span>股数</span><span>对应仓位</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
     }
 
     function renderPositionTradePlanReadonly(position, side) {
@@ -6598,9 +6629,26 @@
       const currency = position?.currency || "原币";
       const rows = plan.map((row, index) => {
         const computed = positionPlanValuation(position, row.price);
-        return `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "upside")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "forwardPE")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "shareholderReturnRate")}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`;
+        const weight = positionWeightPercent(position, row.shares, row.price);
+        return `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "upside")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "forwardPE")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "shareholderReturnRate")}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><div class="position-plan-value">${formatPositionWeight(weight)}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`;
       }).join("");
-      return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>前瞻股东回报率</span><span>股数</span><span>完成</span></div>${rows}</section>`;
+      return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>股东回报率</span><span>股数</span><span>对应仓位</span><span>完成</span></div>${rows}</section>`;
+    }
+
+    function syncPositionPlanWeight(side, index) {
+      const position = state.portfolioModal?.position;
+      if (!position || state.portfolioModal?.type !== "edit") return;
+      const price = document.querySelector(`[data-plan-price][data-plan-side='${side}'][data-plan-index='${index}']`)?.value;
+      const shares = document.querySelector(`[data-plan-shares][data-plan-side='${side}'][data-plan-index='${index}']`)?.value;
+      const target = document.querySelector(`[data-plan-weight][data-plan-side='${side}'][data-plan-index='${index}']`);
+      if (target) target.textContent = formatPositionWeight(positionWeightPercent(position, shares, price));
+    }
+
+    function syncPositionEditWeight() {
+      const position = state.portfolioModal?.position;
+      const shares = document.querySelector("[data-position-edit-shares]")?.value;
+      const target = document.querySelector("[data-position-current-weight]");
+      if (position && target) target.textContent = formatPositionWeight(editedPositionWeightPercent(position, shares));
     }
 
     function currentPositionPlanValuationId() {
@@ -6634,7 +6682,7 @@
             ? "Upside 需大于 -100%，且估值需能计算出正的前瞻市值。"
             : sourceMetric === "forwardPE"
             ? "当前估值缺少有效的前瞻利润，无法按 Forward PE 反算。"
-            : "前瞻股东回报率和前瞻股东回报需为非零值。";
+            : "股东回报率和前瞻股东回报需为非零值。";
           sourceInput.setCustomValidity(message);
           sourceInput.setAttribute("aria-invalid", "true");
           sourceInput.title = message;
@@ -7131,7 +7179,7 @@
             ${historyMetric("现金折扣", percent(stock.netCashDiscountRate))}
             ${historyMetric("净现金口径", stock.netCashScope || "--", { text: true, tooltip: stock.netCashScope || "" })}
             ${historyMetric("前瞻股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
-            ${historyMetric("前瞻股东回报率", percent(c.shareholderReturnRate))}
+            ${historyMetric("股东回报率", percent(c.shareholderReturnRate))}
             ${historyMetric("股东回报政策", stock.shareholderReturnRemark || "--", { text: true, tooltip: stock.shareholderReturnRemark || "" })}
           </div>
         </article>
@@ -7324,7 +7372,7 @@
                       ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
                       ${resultItem("Upside", percent(c.upside))}
                       ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
-                      ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
+                      ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
                     </div>
                     <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
                     ${!isSubscribed ? `
@@ -7726,11 +7774,22 @@
         checkbox.addEventListener("change", () => updatePositionPlanDone(checkbox.dataset.positionId, checkbox.dataset.planSide, Number(checkbox.dataset.planIndex), checkbox.checked));
       });
       document.querySelectorAll("[data-plan-price]").forEach((input) => {
-        input.addEventListener("input", () => syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex)));
+        input.addEventListener("input", () => {
+          syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex));
+          syncPositionPlanWeight(input.dataset.planSide, Number(input.dataset.planIndex));
+        });
       });
       document.querySelectorAll("[data-plan-metric]").forEach((input) => {
-        input.addEventListener("input", () => syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex), input.dataset.planMetric));
+        input.addEventListener("input", () => {
+          syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex), input.dataset.planMetric);
+          syncPositionPlanWeight(input.dataset.planSide, Number(input.dataset.planIndex));
+        });
       });
+      document.querySelectorAll("[data-plan-shares]").forEach((input) => {
+        input.addEventListener("input", () => syncPositionPlanWeight(input.dataset.planSide, Number(input.dataset.planIndex)));
+      });
+      const positionEditShares = document.querySelector("[data-position-edit-shares]");
+      if (positionEditShares) positionEditShares.addEventListener("input", syncPositionEditWeight);
       const targetWeightInput = document.querySelector('input[name="targetWeight"]');
       if (targetWeightInput) targetWeightInput.addEventListener("blur", () => {
         const value = parsePositionTargetWeight(targetWeightInput.value);
@@ -9356,7 +9415,7 @@
         ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
         ${resultItem("Upside", percent(c.upside))}
         ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
-        ${resultItem("前瞻股东回报率", percent(c.shareholderReturnRate))}
+        ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
       `;
     }
 
