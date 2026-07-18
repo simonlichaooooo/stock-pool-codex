@@ -1803,25 +1803,26 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .stock-pool-table .pool-fold-hide { display: none; }
       .stock-pool-table .actions { flex-wrap: wrap; }
       .stock-pool-table col.pool-width-drag { width: 42px; }
-      .stock-pool-table col.pool-width-stock { width: 110px; }
-      .stock-pool-table col.pool-width-version { width: 70px; }
-      .stock-pool-table col.pool-width-market-cap { width: 65px; }
-      .stock-pool-table col.pool-width-upside { width: 60px; }
-      .stock-pool-table col.pool-width-forward-pe { width: 65px; }
-      .stock-pool-table col.pool-width-return-rate { width: 70px; }
-      .stock-pool-table col.pool-width-dividend { width: 55px; }
-      .stock-pool-table col.pool-width-buyback { width: 55px; }
-      .stock-pool-table col.pool-width-forward-cap { width: 70px; }
-      .stock-pool-table col.pool-width-profit { width: 65px; }
-      .stock-pool-table col.pool-width-expected-pe { width: 55px; }
+      .stock-pool-table col.pool-width-stock { width: 125px; }
+      .stock-pool-table col.pool-width-version { width: 90px; }
+      .stock-pool-table col.pool-width-market-cap { width: 85px; }
+      .stock-pool-table col.pool-width-upside { width: 75px; }
+      .stock-pool-table col.pool-width-forward-pe { width: 90px; }
+      .stock-pool-table col.pool-width-return-rate { width: 95px; }
+      .stock-pool-table col.pool-width-dividend { width: 75px; }
+      .stock-pool-table col.pool-width-buyback { width: 75px; }
+      .stock-pool-table col.pool-width-forward-cap { width: 90px; }
+      .stock-pool-table col.pool-width-profit { width: 85px; }
+      .stock-pool-table col.pool-width-expected-pe { width: 70px; }
       .stock-pool-table col.pool-width-cash { width: 65px; }
       .stock-pool-table col.pool-width-discount { width: 55px; }
       .stock-pool-table col.pool-width-forward-return { width: 70px; }
       .stock-pool-table col.pool-width-share { width: 50px; }
       .stock-pool-table col.pool-width-source { width: 55px; }
-      .stock-pool-table col.pool-width-actions { width: 140px; }
+      .stock-pool-table col.pool-width-actions { width: 160px; }
     }
 
     .portfolio-nav-history { margin-top: 12px; }
@@ -5318,6 +5319,22 @@
       window.visualViewport?.addEventListener("resize", scheduleLayoutDebugPanel, { passive: true });
     }
 
+    function schedulePoolViewportReset() {
+      if (state.mainView !== "pool" || !matchMedia("(any-pointer: coarse)").matches) return;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const scale = Number(window.visualViewport?.scale) || 1;
+        if (scale >= 0.9) return;
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (!viewportMeta) return;
+        const normalContent = "width=device-width, initial-scale=1";
+        viewportMeta.setAttribute("content", `${normalContent}, minimum-scale=1, maximum-scale=1`);
+        window.setTimeout(() => {
+          viewportMeta.setAttribute("content", normalContent);
+          scheduleLayoutDebugPanel();
+        }, 250);
+      }));
+    }
+
     function render() {
       if (!ensureAuth()) return;
       document.getElementById("app").innerHTML = `
@@ -5353,6 +5370,7 @@
       `;
       bindEvents();
       scheduleLayoutDebugPanel();
+      schedulePoolViewportReset();
     }
 
     function renderNavTabs() {
@@ -7145,10 +7163,10 @@
         <col class="pool-width-forward-cap">
         <col class="pool-width-profit">
         <col class="pool-width-expected-pe">
-        <col class="pool-width-cash">
-        <col class="pool-width-discount">
-        <col class="pool-width-forward-return">
-        ${viewingOwn ? `<col class="pool-width-share"><col class="pool-width-source">` : ""}
+        <col class="pool-width-cash pool-fold-hide">
+        <col class="pool-width-discount pool-fold-hide">
+        <col class="pool-width-forward-return pool-fold-hide">
+        ${viewingOwn ? `<col class="pool-width-share pool-fold-hide"><col class="pool-width-source pool-fold-hide">` : ""}
         <col class="pool-width-actions">
       </colgroup>`;
     }
@@ -7189,10 +7207,10 @@
                   <th class="num">前瞻市值<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻利润<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num">前瞻 PE</th>
-                  <th class="num">净现金<br><span class="stock-code">CNY 亿</span></th>
-                  <th class="num">现金折扣</th>
-                  <th class="num">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th class=\"share-head\">分享</th><th>来源</th>" : ""}
+                  <th class="num pool-fold-hide">净现金<br><span class="stock-code">CNY 亿</span></th>
+                  <th class="num pool-fold-hide">现金折扣</th>
+                  <th class="num pool-fold-hide">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
+                  ${viewingOwn ? "<th class=\"share-head pool-fold-hide\">分享</th><th class=\"pool-fold-hide\">来源</th>" : ""}
                   <th>操作</th>
                 </tr>
               </thead>
@@ -7250,12 +7268,12 @@
           <td data-label="前瞻市值" class="num">${sourceDeleted ? "--" : moneyYiCny(c.expectedMarketCapCny)}</td>
           <td data-label="前瞻利润" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedProfitCny)}</td>
           <td data-label="前瞻 PE" class="num">${sourceDeleted || !stock.expectedPE ? "--" : trimNumber(stock.expectedPE) + "x"}</td>
-          <td data-label="净现金" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
-          <td data-label="现金折扣" class="num">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
-          <td data-label="前瞻股东回报" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
+          <td data-label="净现金" class="num pool-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣" class="num pool-fold-hide">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报" class="num pool-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           ${viewingOwn ? `
-            <td data-label="分享" class="share-cell">${renderShareState(stock)}</td>
-            <td data-label="来源">${renderSourceCell(stock)}</td>
+            <td data-label="分享" class="share-cell pool-fold-hide">${renderShareState(stock)}</td>
+            <td data-label="来源" class="pool-fold-hide">${renderSourceCell(stock)}</td>
           ` : ""}
           <td data-label="操作">
             <div class="actions">
