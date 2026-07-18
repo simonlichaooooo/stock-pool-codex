@@ -3068,6 +3068,8 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 2px 7px rgba(52,111,181,.10);
     }
     .topbar .topbar-nav button.active::after { display:none; }
+    .topbar .topbar-nav button.active,
+    .topbar .topbar-nav button:has(+ button.active) { border-right-color:transparent; }
 
     .position-plan-row input[type="checkbox"] {
       appearance:none;
@@ -4397,7 +4399,7 @@
             <div class="topbar-inner">
               <div class="topbar-main">
                 <div class="brand">
-                  <img class="brand-logo" src="logo/logo-site-mark.png?v=mark-20260718" alt="钞·作业">
+                  <img class="brand-logo" src="logo/logo-site-mark.png?v=mark-20260718b" alt="钞·作业">
                   <h1>钞·作业</h1>
                 </div>
                 ${renderMainNavTabs()}
