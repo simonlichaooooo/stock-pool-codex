@@ -1864,12 +1864,14 @@
     .portfolio-tag-stat strong { color: #243145; font-size: 13px; }
     .portfolio-tag-filter-panel .portfolio-tag-stat.active { border-color: #d6b45d; background: #fff9e8; box-shadow: none; }
     .portfolio-tag-filter-item { display: inline-flex; align-items: stretch; }
-    .portfolio-tag-filter-item .portfolio-tag-stat.active { border-radius: 4px 0 0 4px; }
+    .portfolio-tag-filter-item .portfolio-tag-stat { border-radius: 4px 0 0 4px; }
     .portfolio-tag-rename-trigger { width: 30px; min-width: 30px; padding: 0; color: #704b08; border-left: 0; border-color: #d6b45d; border-radius: 0 4px 4px 0; background: #fff9e8; font-size: 15px; }
-    .portfolio-tag-rename-form { display: inline-flex; align-items: center; gap: 5px; }
-    .portfolio-tag-rename-form input { width: 140px; min-height: 32px; padding: 5px 8px; border-color: #c79a34; font-size: 13px; font-weight: 700; }
-    .portfolio-tag-rename-form button { min-height: 32px; padding: 5px 9px; font-size: 11px; }
-    .portfolio-tag-rename-save { color: #fff; border-color: #9a6b10; background: #9a6b10; }
+    .portfolio-tag-target { color: #667085; font-size: 10.5px; }
+    .portfolio-tag-allocation { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; }
+    .portfolio-tag-allocation svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .portfolio-tag-allocation.over { color: #b42318; background: #fee4e2; }
+    .portfolio-tag-allocation.under { color: #067647; background: #dcfae6; }
+    .portfolio-tag-edit-note { margin-top: -3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
     .position-edit-fields { grid-template-columns: repeat(2, 124px); justify-content: start; }
     .position-target-control { width: 150px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; }
@@ -3337,8 +3339,6 @@
       background:rgba(218,235,255,.76);
     }
     .portfolio-tag-rename-trigger:hover { color:#0753bd; border-color:#5c8fc8; background:rgba(232,243,255,.90); }
-    .portfolio-tag-rename-form input { border-color:rgba(104,143,188,.48); background:rgba(255,255,255,.68); }
-    .portfolio-tag-rename-save { color:#fff; border-color:#2468b7; background:rgba(15,103,226,.84); }
 
     .toolbar-left { position:relative; }
     .toolbar-left:has(.pool-search-count) input { padding-right:72px; }
@@ -3568,7 +3568,7 @@
     html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) td.sticky-col { background:color-mix(in srgb,var(--theme-sticky) 64%,rgba(255,255,255,.82)); }
     html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) tbody tr:hover td,
     html[data-theme]:not([data-theme="glacier"]) :is(.stock-pool-table,.portfolio-table) tbody tr:hover td.sticky-col { background:var(--theme-hover); }
-    html[data-theme]:not([data-theme="glacier"]) :is(button.primary,.stock-add-button,button.primary.stock-add-button,.journal-filter-action .primary,.portfolio-tag-rename-save) {
+    html[data-theme]:not([data-theme="glacier"]) :is(button.primary,.stock-add-button,button.primary.stock-add-button,.journal-filter-action .primary) {
       color:#fff;
       border-color:rgba(255,255,255,.78);
       background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 82%,white),var(--brand-strong));
@@ -4037,7 +4037,6 @@
       portfolioPage: "positions",
       portfolioSort: { key: "value", dir: "desc" },
       portfolioTagFilter: "",
-      portfolioTagRenaming: "",
       portfolioQuotesUpdatedAt: "",
       portfolioBenchmarks: {},
       portfolioPrivacyMode: false,
@@ -6038,6 +6037,21 @@
         .sort((a, b) => a.localeCompare(b, "zh-CN"));
     }
 
+    function portfolioTagTargetWeight(portfolio, tag) {
+      const value = Number(portfolio?.tagTargets?.[tag]);
+      return Number.isFinite(value) && value > 0 ? Math.min(100, value) : 0;
+    }
+
+    function renderPortfolioTagAllocationIcon(actualWeight, targetWeight) {
+      if (!(targetWeight > 0) || Math.abs(actualWeight - targetWeight) < 0.005) return "";
+      const over = actualWeight > targetWeight;
+      const label = `${over ? "超配" : "低配"} ${Math.abs(actualWeight - targetWeight).toFixed(2)}%`;
+      const path = over
+        ? `<path d="M12 19V5"/><path d="m6 11 6-6 6 6"/>`
+        : `<path d="M12 5v14"/><path d="m18 13-6 6-6-6"/>`;
+      return `<span class="portfolio-tag-allocation ${over ? "over" : "under"}" title="${label}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg></span>`;
+    }
+
     function renderPortfolioTagSummary(portfolio, metrics) {
       const tagRows = [...new Set((portfolio.positions || []).flatMap((position) => position.tags || []))]
         .map((tag) => {
@@ -6059,9 +6073,10 @@
         const dailyPercent = quoted && previousValue > 0 ? profit / previousValue * 100 : NaN;
         const active = state.portfolioTagFilter === tag;
         const className = Number.isFinite(dailyPercent) ? (dailyPercent > 0 ? "gain" : dailyPercent < 0 ? "loss" : "muted") : "muted";
-        if (state.portfolioTagRenaming === tag) return `<form class="portfolio-tag-rename-form" data-form="renamePortfolioTag"><input name="tagName" value="${escapeHtml(tag)}" maxlength="20" required aria-label="新标签名"><button class="portfolio-tag-rename-save" type="submit">保存</button><button type="button" data-action="cancelPortfolioTagRename">取消</button></form>`;
-        const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${metrics.netBase ? (value / metrics.netBase * 100).toFixed(2) : "0.00"}%</span><span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
-        return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="startPortfolioTagRename" data-tag="${escapeHtml(tag)}" title="修改标签名" aria-label="修改标签名">✎</button></span>` : stat;
+        const actualWeight = metrics.netBase ? value / metrics.netBase * 100 : 0;
+        const targetWeight = portfolioTagTargetWeight(portfolio, tag);
+        const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${actualWeight.toFixed(2)}%</span>${targetWeight > 0 ? `<span class="portfolio-tag-target">目标 ${targetWeight.toFixed(2)}%</span>${renderPortfolioTagAllocationIcon(actualWeight, targetWeight)}` : ""}<span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
+        return `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="editPortfolioTag" data-tag="${escapeHtml(tag)}" title="编辑标签" aria-label="编辑标签 ${escapeHtml(tag)}">✎</button></span>`;
       }).join("")}</div></section>`;
     }
 
@@ -6076,7 +6091,16 @@
       if (modal.type === "subscription" || modal.type === "redemption") return renderCashFlowModal(modal);
       if (modal.type === "rebalance") return renderRebalanceModal(modal);
       if (modal.type === "history") return renderPositionHistoryModal(modal);
+      if (modal.type === "tag") return renderPortfolioTagModal(modal);
       return renderPositionModal(modal);
+    }
+
+    function renderPortfolioTagModal(modal) {
+      return modalShell("编辑标签", `
+        <label class="field"><span>标签名称</span><input name="tagName" maxlength="20" required value="${escapeHtml(modal.tag || "")}" placeholder="例如：AI / 高股息"></label>
+        <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-tag-target-weight-step="-1" aria-label="降低标签目标仓位">−</button><input name="tagTargetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(modal.targetWeight)}" required><button type="button" data-tag-target-weight-step="1" aria-label="提高标签目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-tag-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
+        <div class="portfolio-tag-edit-note">目标仓位仅应用于当前组合；设为 0% 时不显示超配或低配提示。</div>
+      `, "portfolioTag", "保存");
     }
 
     function renderPositionHistoryModal(modal) {
@@ -7391,22 +7415,8 @@
       if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
       const rebalanceForm = document.querySelector("[data-form='rebalanceTrade']");
       if (rebalanceForm) rebalanceForm.addEventListener("submit", submitRebalanceTrade);
-      const renamePortfolioTagForm = document.querySelector("[data-form='renamePortfolioTag']");
-      if (renamePortfolioTagForm) {
-        renamePortfolioTagForm.addEventListener("submit", submitPortfolioTagRename);
-        const input = renamePortfolioTagForm.querySelector('input[name="tagName"]');
-        input?.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            renamePortfolioTagForm.requestSubmit();
-          }
-          if (event.key === "Escape") {
-            event.preventDefault();
-            state.portfolioTagRenaming = "";
-            render();
-          }
-        });
-      }
+      const portfolioTagForm = document.querySelector("[data-form='portfolioTag']");
+      if (portfolioTagForm) portfolioTagForm.addEventListener("submit", submitPortfolioTagEdit);
       document.querySelectorAll("[data-rebalance-shares]").forEach((input) => {
         input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalanceShares, "shares"));
       });
@@ -7422,6 +7432,12 @@
       document.querySelectorAll("[data-target-weight-value]").forEach((button) => {
         button.addEventListener("click", () => setPositionTargetWeight(Number(button.dataset.targetWeightValue)));
       });
+      document.querySelectorAll("[data-tag-target-weight-step]").forEach((button) => {
+        button.addEventListener("click", () => stepPortfolioTagTargetWeight(Number(button.dataset.tagTargetWeightStep)));
+      });
+      document.querySelectorAll("[data-tag-target-weight-value]").forEach((button) => {
+        button.addEventListener("click", () => setPortfolioTagTargetWeight(Number(button.dataset.tagTargetWeightValue)));
+      });
       document.querySelectorAll("[data-plan-live-done]").forEach((checkbox) => {
         checkbox.addEventListener("change", () => updatePositionPlanDone(checkbox.dataset.positionId, checkbox.dataset.planSide, Number(checkbox.dataset.planIndex), checkbox.checked));
       });
@@ -7429,6 +7445,11 @@
       if (targetWeightInput) targetWeightInput.addEventListener("blur", () => {
         const value = parsePositionTargetWeight(targetWeightInput.value);
         targetWeightInput.value = formatPositionTargetWeight(Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0);
+      });
+      const tagTargetWeightInput = document.querySelector('input[name="tagTargetWeight"]');
+      if (tagTargetWeightInput) tagTargetWeightInput.addEventListener("blur", () => {
+        const value = parsePositionTargetWeight(tagTargetWeightInput.value);
+        tagTargetWeightInput.value = formatPositionTargetWeight(Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0);
       });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
@@ -7517,7 +7538,6 @@
       if (action === "selectPortfolio") {
         state.activePortfolioId = stockId;
         state.portfolioTagFilter = "";
-        state.portfolioTagRenaming = "";
         state.navHistory = [];
         state.navHistoryPortfolioId = "";
         state.benchmarkHistory = [];
@@ -7542,20 +7562,9 @@
         const tag = event.currentTarget.dataset.tag || "";
         state.portfolioTagFilter = state.portfolioTagFilter === tag ? "" : tag;
         if (state.portfolioTagFilter) state.portfolioSort = { key: "weight", dir: "desc" };
-        state.portfolioTagRenaming = "";
         render();
       }
-      if (action === "startPortfolioTagRename") {
-        state.portfolioTagRenaming = event.currentTarget.dataset.tag || "";
-        render();
-        const input = document.querySelector('[data-form="renamePortfolioTag"] input[name="tagName"]');
-        input?.focus();
-        input?.select();
-      }
-      if (action === "cancelPortfolioTagRename") {
-        state.portfolioTagRenaming = "";
-        render();
-      }
+      if (action === "editPortfolioTag") openPortfolioTagModal(event.currentTarget.dataset.tag || "");
       if (action === "refreshPortfolioQuotes") {
         await refreshPortfolioQuotes();
       }
@@ -7571,7 +7580,6 @@
         state.portfolioTagsExpanded = !state.portfolioTagsExpanded;
         if (!state.portfolioTagsExpanded) {
           state.portfolioTagFilter = "";
-          state.portfolioTagRenaming = "";
         }
         render();
       }
@@ -7778,34 +7786,40 @@
       }
     }
 
-    function submitPortfolioTagRename(event) {
+    function submitPortfolioTagEdit(event) {
       event.preventDefault();
-      const oldTag = state.portfolioTagRenaming;
-      const input = event.currentTarget.querySelector('input[name="tagName"]');
-      const newTag = String(input?.value || "").trim().replace(/\s+/g, " ");
+      const modal = state.portfolioModal;
+      const portfolio = activePortfolio();
+      if (!portfolio || modal?.type !== "tag") return;
+      const form = new FormData(event.currentTarget);
+      const oldTag = modal.tag;
+      const newTag = String(form.get("tagName") || "").trim().replace(/\s+/g, " ");
+      const targetWeight = parsePositionTargetWeight(form.get("tagTargetWeight"));
       if (!newTag) {
+        const input = event.currentTarget.querySelector('input[name="tagName"]');
         input?.setCustomValidity("请输入标签名。");
         input?.reportValidity();
         return;
       }
-      if (newTag === oldTag) {
-        state.portfolioTagRenaming = "";
-        render();
-        return;
-      }
+      if (!Number.isFinite(targetWeight) || targetWeight < 0 || targetWeight > 100) return showPortfolioError("目标仓位请输入 0 到 100 之间的百分比。");
       const now = new Date().toISOString();
-      state.portfolios = state.portfolios.map((portfolio) => ({
-        ...portfolio,
-        positions: (portfolio.positions || []).map((position) => ({
-          ...position,
-          tags: [...new Set((position.tags || []).map((tag) => tag === oldTag ? newTag : tag))]
-        })),
-        updatedAt: now
-      }));
-      state.portfolioTagFilter = newTag;
-      state.portfolioTagRenaming = "";
-      savePortfolios();
-      render();
+      updateActivePortfolio((item) => {
+        const tagTargets = { ...(item.tagTargets || {}) };
+        if (oldTag !== newTag) delete tagTargets[oldTag];
+        if (targetWeight > 0) tagTargets[newTag] = targetWeight;
+        else delete tagTargets[newTag];
+        return {
+          ...item,
+          tagTargets,
+          positions: (item.positions || []).map((position) => ({
+            ...position,
+            tags: [...new Set((position.tags || []).map((tag) => tag === oldTag ? newTag : tag))]
+          })),
+          updatedAt: now
+        };
+      });
+      if (state.portfolioTagFilter === oldTag) state.portfolioTagFilter = newTag;
+      closePortfolioModal();
     }
 
     async function persistPortfoliosToCloud(portfolios) {
@@ -7841,6 +7855,17 @@
           .catch((error) => console.warn("组合云端删除失败。", error));
       }
       render();
+    }
+
+    function openPortfolioTagModal(tag) {
+      const portfolio = activePortfolio();
+      if (!portfolio || !(portfolio.positions || []).some((position) => (position.tags || []).includes(tag))) return;
+      state.portfolioError = "";
+      state.portfolioModal = { type: "tag", tag, targetWeight: portfolioTagTargetWeight(portfolio, tag) };
+      render();
+      const input = document.querySelector('[data-form="portfolioTag"] input[name="tagName"]');
+      input?.focus();
+      input?.select();
     }
 
     function openPortfolioModal(type, positionId = "", positionKey = "") {
@@ -8522,6 +8547,25 @@
 
     function setPositionTargetWeight(value) {
       const input = document.querySelector('input[name="targetWeight"]');
+      if (!input) return;
+      input.value = formatPositionTargetWeight(value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function stepPortfolioTagTargetWeight(direction) {
+      const input = document.querySelector('input[name="tagTargetWeight"]');
+      if (!input) return;
+      const tiers = [2, 3, 5, 8, 15, 25, 35];
+      const current = parsePositionTargetWeight(input.value);
+      const next = direction > 0
+        ? (tiers.find((value) => value > current + 0.000001) ?? tiers.at(-1))
+        : ([...tiers].reverse().find((value) => value < current - 0.000001) ?? tiers[0]);
+      input.value = formatPositionTargetWeight(next);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function setPortfolioTagTargetWeight(value) {
+      const input = document.querySelector('input[name="tagTargetWeight"]');
       if (!input) return;
       input.value = formatPositionTargetWeight(value);
       input.dispatchEvent(new Event("input", { bubbles: true }));

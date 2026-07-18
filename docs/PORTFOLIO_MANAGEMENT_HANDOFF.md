@@ -231,11 +231,15 @@ pg_cron
 - `totalUnits`；
 - `cash.CNY/HKD/USD`；
 - `positions[]`；
+- `positions[].tags[]`：持仓所属标签，标签名以字符串随持仓保存；
+- `tagTargets`：当前组合的标签目标仓位映射，结构为 `{ "标签名": 百分比数值 }`，不跨组合共享；
 - `cashFlows[]`；
 - `tradeHistory[]`；
 - 创建、更新时间。
 
 前端每次变更后将组合整体 upsert 到 Supabase，同时保留用户维度 localStorage 缓存。首次启用云端且云端为空时，会迁移本地组合。
+
+标签没有独立数据库表：标签名保存在各持仓的 `tags` 数组内，标签目标仓位保存在所属组合的 `tagTargets` 内，两者都随 `payload jsonb` 整体持久化。因此标签目标仓位功能不需要额外执行 SQL。
 
 ### 6.2 `public.portfolio_cash_flows`
 
