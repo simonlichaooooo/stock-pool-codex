@@ -5620,6 +5620,23 @@
       return Number(position.shares || 0) * price * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
     }
 
+    function portfolioPositionKey(position) {
+      const market = String(position?.market || "").trim().toUpperCase();
+      const code = String(position?.code || "").trim().toUpperCase();
+      return market && code ? `${market}:${code}` : "";
+    }
+
+    function findPortfolioPosition(portfolio, positionId = "", positionKey = "") {
+      const positions = portfolio?.positions || [];
+      const idMatch = positionId
+        ? positions.find((item) => String(item.id || "") === String(positionId))
+        : null;
+      if (idMatch) return idMatch;
+      return positionKey
+        ? positions.find((item) => portfolioPositionKey(item) === positionKey)
+        : null;
+    }
+
     function portfolioMetrics(portfolio) {
       if (!portfolio) return { positionBase: 0, cashBase: 0, netBase: 0, netCny: 0, positionCny: 0, cashCny: 0, nav: 0 };
       const base = portfolioBaseCurrency(portfolio);
@@ -5658,6 +5675,46 @@
       const amount = Number(value || 0) / 10000;
       const sign = signed && amount > 0 ? "+" : "";
       return `${sign}${amount.toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}万`;
+    }
+
+    function parseCashAmount(value) {
+      const normalized = String(value ?? "").replace(/,/g, "").trim();
+      return normalized ? Number(normalized) : NaN;
+    }
+
+    function formatCashAmount(value, fixed = true) {
+      const amount = Number(value || 0);
+      if (!Number.isFinite(amount)) return "";
+      return amount.toLocaleString("en-US", {
+        useGrouping: true,
+        minimumFractionDigits: fixed ? 2 : 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatCashAmountInput(input) {
+      const previous = input.value;
+      const selectionStart = input.selectionStart ?? previous.length;
+      const logicalCaret = previous.slice(0, selectionStart).replace(/,/g, "").length;
+      const clean = previous.replace(/,/g, "").replace(/[^\d.]/g, "");
+      if (!clean) {
+        input.value = "";
+        return;
+      }
+      const dotIndex = clean.indexOf(".");
+      const hasDecimal = dotIndex >= 0;
+      const integer = (hasDecimal ? clean.slice(0, dotIndex) : clean).replace(/^0+(?=\d)/, "") || "0";
+      const decimal = hasDecimal ? clean.slice(dotIndex + 1).replace(/\./g, "").slice(0, 2) : "";
+      const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      const formatted = hasDecimal ? `${grouped}.${decimal}` : grouped;
+      input.value = formatted;
+      let nextCaret = 0;
+      let logicalCount = 0;
+      while (nextCaret < formatted.length && logicalCount < logicalCaret) {
+        if (formatted[nextCaret] !== ",") logicalCount += 1;
+        nextCaret += 1;
+      }
+      input.setSelectionRange(nextCaret, nextCaret);
     }
 
     function portfolioTotalProfit(portfolio, metrics) {
@@ -5951,7 +6008,7 @@
               <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
-              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${position.id}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${position.id}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${position.id}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${position.id}">交易历史</button></div></td>
+              <td data-label="操作"><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">减仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div>
@@ -6122,8 +6179,8 @@
       const portfolio = activePortfolio();
       const isHkus = portfolio?.accountType === "HKUS";
       return modalShell("校准现金", isHkus ? `
-        <div class="grid-2"><label class="field"><span>港币余额（港元）</span><input name="cashHkd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.HKD || 0).toFixed(2)}" required></label><label class="field"><span>美元余额（美元）</span><input name="cashUsd" type="number" min="0" step="0.01" value="${Number(portfolio.cash?.USD || 0).toFixed(2)}" required></label></div>
-      ` : `<label class="field"><span>人民币余额（元）</span><input name="cashCny" type="number" min="0" step="0.01" value="${Number(portfolio?.cash?.CNY || 0).toFixed(2)}" required></label>`, "calibrateCash", "保存");
+        <div class="grid-2"><label class="field"><span>港币余额（港元）</span><input data-input="cashAmount" name="cashHkd" inputmode="decimal" value="${formatCashAmount(portfolio.cash?.HKD)}" required></label><label class="field"><span>美元余额（美元）</span><input data-input="cashAmount" name="cashUsd" inputmode="decimal" value="${formatCashAmount(portfolio.cash?.USD)}" required></label></div>
+      ` : `<label class="field"><span>人民币余额（元）</span><input data-input="cashAmount" name="cashCny" inputmode="decimal" value="${formatCashAmount(portfolio?.cash?.CNY)}" required></label>`, "calibrateCash", "保存");
     }
 
     function renderCashFlowModal(modal) {
@@ -7316,7 +7373,16 @@
       const deletePortfolioForm = document.querySelector("[data-form='deletePortfolio']");
       if (deletePortfolioForm) deletePortfolioForm.addEventListener("submit", submitDeletePortfolio);
       const cashForm = document.querySelector("[data-form='calibrateCash']");
-      if (cashForm) cashForm.addEventListener("submit", submitCalibrateCash);
+      if (cashForm) {
+        cashForm.querySelectorAll("[data-input='cashAmount']").forEach((input) => {
+          input.addEventListener("input", () => formatCashAmountInput(input));
+          input.addEventListener("blur", () => {
+            const value = parseCashAmount(input.value);
+            if (Number.isFinite(value)) input.value = formatCashAmount(value);
+          });
+        });
+        cashForm.addEventListener("submit", submitCalibrateCash);
+      }
       const cashFlowForm = document.querySelector("[data-form='portfolioCashFlow']");
       if (cashFlowForm) cashFlowForm.addEventListener("submit", submitPortfolioCashFlow);
       const tradeForm = document.querySelector("[data-form='positionTrade']");
@@ -7406,6 +7472,7 @@
     async function onAction(event) {
       const action = event.currentTarget.dataset.action;
       const stockId = event.currentTarget.dataset.id;
+      const positionKey = event.currentTarget.dataset.positionKey || "";
       if (action === "toggleColorThemeMenu") {
         state.themeMenuOpen = !state.themeMenuOpen;
         render();
@@ -7522,9 +7589,9 @@
       if (action === "calibrateCash") openPortfolioModal("cash");
       if (action === "subscribePortfolio") openPortfolioModal("subscription");
       if (action === "redeemPortfolio") openPortfolioModal("redemption");
-      if (action === "addPosition") openPortfolioModal("add", stockId);
-      if (action === "reducePosition") openPortfolioModal("reduce", stockId);
-      if (action === "editPosition") openPortfolioModal("edit", stockId);
+      if (action === "addPosition") openPortfolioModal("add", stockId, positionKey);
+      if (action === "reducePosition") openPortfolioModal("reduce", stockId, positionKey);
+      if (action === "editPosition") openPortfolioModal("edit", stockId, positionKey);
       if (action === "addPositionTag" && state.portfolioModal?.type === "edit") {
         const input = document.querySelector('input[name="newTag"]');
         const tag = String(input?.value || "").trim().replace(/\s+/g, " ");
@@ -7536,7 +7603,7 @@
         state.portfolioModal.tags = state.portfolioModal.tags.includes(tag) ? state.portfolioModal.tags.filter((item) => item !== tag) : [...state.portfolioModal.tags, tag];
         render();
       }
-      if (action === "positionHistory") openPortfolioModal("history", stockId);
+      if (action === "positionHistory") openPortfolioModal("history", stockId, positionKey);
       if (action === "rollbackTrade") rollbackPortfolioTrade(event.currentTarget.dataset.tradeId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
@@ -7774,9 +7841,9 @@
       render();
     }
 
-    function openPortfolioModal(type, positionId = "") {
+    function openPortfolioModal(type, positionId = "", positionKey = "") {
       const portfolio = activePortfolio();
-      const position = portfolio?.positions?.find((item) => item.id === positionId) || null;
+      const position = findPortfolioPosition(portfolio, positionId, positionKey);
       state.portfolioError = "";
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
@@ -8077,8 +8144,8 @@
       if (!portfolio) return;
       const form = new FormData(event.currentTarget);
       const next = portfolio.accountType === "HKUS"
-        ? { HKD: Number(form.get("cashHkd")), USD: Number(form.get("cashUsd")) }
-        : { CNY: Number(form.get("cashCny")) };
+        ? { HKD: parseCashAmount(form.get("cashHkd")), USD: parseCashAmount(form.get("cashUsd")) }
+        : { CNY: parseCashAmount(form.get("cashCny")) };
       if (Object.values(next).some((value) => !Number.isFinite(value) || value < 0)) return showPortfolioError("现金余额不能小于 0。");
       updateActivePortfolio((item) => ({ ...item, cash: { ...item.cash, ...next }, updatedAt: new Date().toISOString() }));
       closePortfolioModal();
