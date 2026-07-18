@@ -1821,8 +1821,8 @@
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
     .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
     .trade-suggestion strong { color: var(--brand-strong); }
-    .simple-modal.position-edit-modal { width: min(840px, 100%); }
-    .simple-modal.position-trade-modal { width: min(760px, 100%); }
+    .simple-modal.position-edit-modal { width: min(1060px, 100%); }
+    .simple-modal.position-trade-modal { width: min(980px, 100%); }
     .simple-modal.rebalance-modal { width: min(960px, 100%); overflow-x: hidden; }
     .simple-modal.portfolio-initialize-modal { width: min(1040px, 100%); overflow-x: hidden; }
     .portfolio-create-import { padding: 12px; border: 1px solid #c9ddd9; background: #f4faf8; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -1844,7 +1844,7 @@
     .portfolio-initialize-result small { color: var(--muted); }
     .portfolio-initialize-remove { width: 36px; min-width: 36px; min-height: 38px; margin-top: 17px; padding: 0; color: #b42318; }
     .position-edit-layout { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 20px; align-items: start; }
-    .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) 320px; gap: 18px; align-items: start; }
+    .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(520px, 1.35fr); gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
     .position-edit-main { display: grid; gap: 14px; min-width: 0; }
     .position-tag-editor { display: grid; gap: 8px; padding-top: 2px; }
@@ -1888,11 +1888,11 @@
     .input-with-suffix .input-suffix { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); padding-left: 3px; background: #fff; color: var(--muted); font-size: 10px; line-height: 18px; pointer-events: none; }
     .position-plan-row .input-with-suffix input { padding-right: 42px; font-size: 11px; }
     .position-plan-row .input-with-suffix .input-suffix { right: 5px; font-size: 9px; }
-    .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; }
+    .position-plan { border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; overflow-x: auto; }
     .position-plan h3 { margin: 0 0 4px; font-size: 14px; }
-    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 100px 100px 38px; gap: 7px; align-items: center; }
+    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 96px 80px 76px 92px 88px 38px; gap: 7px; align-items: center; min-width: 560px; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
-    .position-plan-head span:nth-child(2), .position-plan-head span:nth-child(3) { text-align: right; padding-right: 7px; }
+    .position-plan-head span:nth-child(n+2):nth-child(-n+6) { text-align: right; padding-right: 7px; }
     .position-plan-head span:last-child { text-align: center; }
     .position-plan-row { margin-bottom: 7px; }
     .position-plan-row span { font-size: 12px; font-weight: 700; }
@@ -1902,8 +1902,12 @@
     .position-plan-row input[type="number"]::-webkit-inner-spin-button, .position-plan-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .position-plan-row input[type="checkbox"] { width: 18px; min-height: 18px; margin: 0 auto; accent-color: var(--brand); }
     .position-plan-readonly { border: 1px solid var(--line); border-radius: 5px; padding: 10px 11px 4px; background: #f8fafc; }
-    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px 100px 100px 38px; }
+    .position-plan-readonly { overflow-x: auto; }
+    .position-plan-readonly .position-plan-head, .position-plan-readonly .position-plan-row { grid-template-columns: 48px 92px 74px 70px 86px 76px 38px; min-width: 520px; }
     .position-plan-value { min-height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 5px 7px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #475467; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .position-plan-metric input:disabled { color: #667085; background: #f2f4f7; cursor: not-allowed; }
+    .position-plan-metric input[aria-invalid="true"] { border-color: #d92d20; background: #fff6f5; }
+    .position-plan-help { margin: 0 0 8px; color: var(--muted); font-size: 11px; line-height: 1.45; }
     .position-plan-row.plan-sell > span { color: #067647; }
     .position-plan-row.plan-buy > span { color: #b42318; }
     .rebalance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; justify-content: center; min-width: 0; }
@@ -6145,6 +6149,56 @@
       return `<span>${percent(computed.upside)}</span><span>${computed.forwardPE == null ? "--" : `${trimNumber(computed.forwardPE)}x`}</span><span>${percent(computed.shareholderReturnRate)}</span>`;
     }
 
+    function positionPlanValuation(position, price, selectedId = position?.valuationStockId) {
+      const stock = portfolioValuationStock(position, selectedId);
+      const targetPrice = Number(price);
+      const latestMarketCap = Number(stock?.latestMarketCapCny);
+      const referencePrice = Number(stock?.latestPrice) || Number(position?.latestPrice);
+      if (!stock || !(targetPrice > 0) || !(latestMarketCap > 0) || !(referencePrice > 0)) return null;
+      const targetMarketCap = latestMarketCap * targetPrice / referencePrice;
+      return { ...calc({ ...stock, latestMarketCapCny: targetMarketCap }), targetMarketCap, targetPrice };
+    }
+
+    function positionPlanPriceFromMetric(position, metric, value, selectedId = position?.valuationStockId) {
+      const stock = portfolioValuationStock(position, selectedId);
+      const inputValue = Number(value);
+      const latestMarketCap = Number(stock?.latestMarketCapCny);
+      const referencePrice = Number(stock?.latestPrice) || Number(position?.latestPrice);
+      if (!stock || !Number.isFinite(inputValue) || !(latestMarketCap > 0) || !(referencePrice > 0)) return null;
+      const cashValue = (Number(stock.netCashCny) || 0) * (Number(stock.netCashDiscountRate) || 0);
+      let targetMarketCap = 0;
+      if (metric === "upside") {
+        const upside = inputValue / 100;
+        const expectedMarketCap = calc(stock).expectedMarketCapCny;
+        if (!(upside > -1) || !(expectedMarketCap > 0)) return null;
+        targetMarketCap = expectedMarketCap / (1 + upside);
+      } else if (metric === "forwardPE") {
+        const profit = Number(stock.expectedProfitCny) || 0;
+        if (!profit) return null;
+        targetMarketCap = inputValue * profit + cashValue;
+      } else if (metric === "shareholderReturnRate") {
+        const rate = inputValue / 100;
+        const shareholderReturn = shareholderReturnTotal(stock);
+        if (!rate || !shareholderReturn) return null;
+        targetMarketCap = shareholderReturn / rate;
+      } else {
+        return null;
+      }
+      const price = referencePrice * targetMarketCap / latestMarketCap;
+      return Number.isFinite(price) && price > 0 ? price : null;
+    }
+
+    function formatPositionPlanNumber(value, digits = 2) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "";
+      return Number(value).toFixed(digits).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+    }
+
+    function renderPositionPlanMetricValue(computed, metric) {
+      if (!computed) return "--";
+      if (metric === "forwardPE") return computed.forwardPE == null ? "--" : `${formatPositionPlanNumber(computed.forwardPE)}x`;
+      return percent(computed[metric]);
+    }
+
     function allPortfolioTags() {
       return [...new Set(state.portfolios.flatMap((portfolio) => (portfolio.positions || []).flatMap((position) => position.tags || [])).map((tag) => String(tag).trim()).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, "zh-CN"));
@@ -6485,21 +6539,102 @@
     function renderPositionTradePlan(position) {
       const plan = normalizedPositionTradePlan(position);
       const currency = position?.currency || "原币";
-      const rows = (side, label) => plan[side].map((row, index) => `<div class="position-plan-row plan-${side}">
+      const valuationStock = portfolioValuationStock(position);
+      const rows = (side, label) => plan[side].map((row, index) => {
+        const computed = positionPlanValuation(position, row.price);
+        return `<div class="position-plan-row plan-${side}">
         <span>${label}${index + 1}</span>
-        <div class="input-with-suffix"><input name="plan_${side}_${index}_price" type="number" min="0" step="any" value="${row.price}" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${currency}</span></div>
+        <div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="any" value="${row.price}" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${currency}</span></div>
+        <div class="input-with-suffix position-plan-metric"><input data-plan-metric="upside" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.upside * 100) : ""}" placeholder="--" aria-label="${label}${index + 1} Upside" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
+        <div class="input-with-suffix position-plan-metric"><input data-plan-metric="forwardPE" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.forwardPE) : ""}" placeholder="--" aria-label="${label}${index + 1} Forward PE" ${valuationStock ? "" : "disabled"}><span class="input-suffix">x</span></div>
+        <div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.shareholderReturnRate * 100) : ""}" placeholder="--" aria-label="${label}${index + 1}前瞻股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
         <div class="input-with-suffix"><input name="plan_${side}_${index}_shares" type="number" min="0" step="1" value="${row.shares}" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div>
         <input name="plan_${side}_${index}_done" type="checkbox" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成">
-      </div>`).join("");
-      return `<section class="position-plan"><h3>加减仓计划</h3><div class="position-plan-head"><span>计划</span><span>价格</span><span>股数</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
+      </div>`;
+      }).join("");
+      return `<section class="position-plan"><h3>加减仓计划</h3><p class="position-plan-help">${valuationStock ? "填写价格，三项指标自动计算；也可只填写任一指标反算价格和其余两项。" : "关联股池估值版本后，可按价格查看指标或用任一指标反算价格。"}</p><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>前瞻股东回报率</span><span>股数</span><span>完成</span></div>${rows("buy", "买点")}${rows("sell", "卖点")}</section>`;
     }
 
     function renderPositionTradePlanReadonly(position, side) {
       const plan = normalizedPositionTradePlan(position)[side];
       const label = side === "buy" ? "买点" : "卖点";
       const currency = position?.currency || "原币";
-      const rows = plan.map((row, index) => `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`).join("");
-      return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>股数</span><span>完成</span></div>${rows}</section>`;
+      const rows = plan.map((row, index) => {
+        const computed = positionPlanValuation(position, row.price);
+        return `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "upside")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "forwardPE")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "shareholderReturnRate")}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`;
+      }).join("");
+      return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>前瞻股东回报率</span><span>股数</span><span>完成</span></div>${rows}</section>`;
+    }
+
+    function currentPositionPlanValuationId() {
+      const selected = document.querySelector("[data-input='portfolioValuationVersion']")?.value;
+      return selected === undefined ? state.portfolioModal?.position?.valuationStockId : selected;
+    }
+
+    function syncPositionPlanRow(side, index, sourceMetric = "") {
+      const position = state.portfolioModal?.position;
+      if (!position || state.portfolioModal?.type !== "edit") return;
+      const selectedId = currentPositionPlanValuationId();
+      const stock = portfolioValuationStock(position, selectedId);
+      const priceInput = document.querySelector(`[data-plan-price][data-plan-side='${side}'][data-plan-index='${index}']`);
+      const metricInputs = [...document.querySelectorAll(`[data-plan-metric][data-plan-side='${side}'][data-plan-index='${index}']`)];
+      metricInputs.forEach((input) => { input.disabled = !stock; });
+      if (!stock || !priceInput) {
+        metricInputs.forEach((input) => { input.value = ""; input.setCustomValidity(""); input.removeAttribute("aria-invalid"); });
+        return;
+      }
+      if (sourceMetric) {
+        const sourceInput = metricInputs.find((input) => input.dataset.planMetric === sourceMetric);
+        if (!sourceInput) return;
+        if (!sourceInput.value.trim()) {
+          priceInput.value = "";
+          metricInputs.forEach((input) => { input.value = ""; input.setCustomValidity(""); input.removeAttribute("aria-invalid"); });
+          return;
+        }
+        const nextPrice = positionPlanPriceFromMetric(position, sourceMetric, sourceInput.value, selectedId);
+        if (!(nextPrice > 0)) {
+          const message = sourceMetric === "upside"
+            ? "Upside 需大于 -100%，且估值需能计算出正的前瞻市值。"
+            : sourceMetric === "forwardPE"
+            ? "当前估值缺少有效的前瞻利润，无法按 Forward PE 反算。"
+            : "前瞻股东回报率和前瞻股东回报需为非零值。";
+          sourceInput.setCustomValidity(message);
+          sourceInput.setAttribute("aria-invalid", "true");
+          sourceInput.title = message;
+          return;
+        }
+        sourceInput.setCustomValidity("");
+        sourceInput.removeAttribute("aria-invalid");
+        sourceInput.removeAttribute("title");
+        priceInput.value = formatPositionPlanNumber(nextPrice, 6);
+      }
+      const computed = positionPlanValuation(position, priceInput.value, selectedId);
+      metricInputs.forEach((input) => {
+        input.setCustomValidity("");
+        input.removeAttribute("aria-invalid");
+        input.removeAttribute("title");
+        if (!computed) {
+          input.value = "";
+          return;
+        }
+        if (input.dataset.planMetric === sourceMetric) return;
+        const value = input.dataset.planMetric === "forwardPE"
+          ? computed.forwardPE
+          : computed[input.dataset.planMetric] == null ? null : computed[input.dataset.planMetric] * 100;
+        input.value = formatPositionPlanNumber(value);
+      });
+    }
+
+    function refreshPositionPlanValuations() {
+      if (state.portfolioModal?.type !== "edit") return;
+      const hasValuation = Boolean(portfolioValuationStock(state.portfolioModal.position, currentPositionPlanValuationId()));
+      const help = document.querySelector(".position-plan-help");
+      if (help) help.textContent = hasValuation
+        ? "填写价格，三项指标自动计算；也可只填写任一指标反算价格和其余两项。"
+        : "关联股池估值版本后，可按价格查看指标或用任一指标反算价格。";
+      for (const side of ["buy", "sell"]) {
+        for (let index = 0; index < 3; index += 1) syncPositionPlanRow(side, index);
+      }
     }
 
     function renderSquare() {
@@ -7502,6 +7637,7 @@
         if (preview && state.portfolioModal?.position) preview.innerHTML = event.target.value
           ? renderPortfolioValuation(state.portfolioModal.position, event.target.value)
           : "选择后将在持仓列表展示 Upside、Forward PE、股东回报率。";
+        refreshPositionPlanValuations();
       });
       const createPortfolioForm = document.querySelector("[data-form='createPortfolio']");
       if (createPortfolioForm) createPortfolioForm.addEventListener("submit", submitCreatePortfolio);
@@ -7553,6 +7689,12 @@
       });
       document.querySelectorAll("[data-plan-live-done]").forEach((checkbox) => {
         checkbox.addEventListener("change", () => updatePositionPlanDone(checkbox.dataset.positionId, checkbox.dataset.planSide, Number(checkbox.dataset.planIndex), checkbox.checked));
+      });
+      document.querySelectorAll("[data-plan-price]").forEach((input) => {
+        input.addEventListener("input", () => syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex)));
+      });
+      document.querySelectorAll("[data-plan-metric]").forEach((input) => {
+        input.addEventListener("input", () => syncPositionPlanRow(input.dataset.planSide, Number(input.dataset.planIndex), input.dataset.planMetric));
       });
       const targetWeightInput = document.querySelector('input[name="targetWeight"]');
       if (targetWeightInput) targetWeightInput.addEventListener("blur", () => {
@@ -7891,6 +8033,45 @@
       state.portfolios = [portfolio];
       state.activePortfolioId = portfolio.id;
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+    }
+
+    function ensureLocalPortfolioValuationDemo() {
+      const now = new Date().toISOString();
+      const valuation = {
+        id: "stock-demo-600519-neutral",
+        name: "贵州茅台",
+        code: "600519.SH",
+        rawCode: "600519",
+        market: "CN",
+        exchange: "SSE",
+        currency: "CNY",
+        version: "neutral",
+        latestPrice: 1253,
+        latestMarketCapCny: 15750,
+        expectedProfitCny: 900,
+        expectedPE: 18,
+        expectedDividendCny: 300,
+        expectedBuybackCny: 50,
+        expectedShareholderReturnCny: 350,
+        netCashCny: 200,
+        netCashDiscountRate: 0.5,
+        updatedAt: now,
+        marketCapUpdatedAt: todayString()
+      };
+      state.stocks = [...state.stocks.filter((stock) => stock.id !== valuation.id), valuation];
+      state.portfolios = state.portfolios.map((portfolio) => ({
+        ...portfolio,
+        positions: (portfolio.positions || []).map((position) => position.code === valuation.code && position.market === valuation.market
+          ? {
+            ...position,
+            valuationStockId: valuation.id,
+            tradePlan: position.tradePlan || {
+              buy: [{ price: 1100, shares: 15, done: false }, { price: 1000, shares: 15, done: false }, { price: 900, shares: 20, done: false }],
+              sell: [{ price: 1400, shares: 15, done: false }, { price: 1500, shares: 15, done: false }, { price: 1600, shares: 20, done: false }]
+            }
+          }
+          : position)
+      }));
     }
 
     function savePortfolios() {
@@ -10062,6 +10243,7 @@
         await loadPortfolios();
         await loadJournals();
         ensureLocalPortfolioDemo();
+        ensureLocalPortfolioValuationDemo();
         await fetchExchangeRates();
         const demoPreviousDate = new Date();
         demoPreviousDate.setDate(demoPreviousDate.getDate() - 1);
