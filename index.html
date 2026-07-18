@@ -3704,6 +3704,30 @@
       background:linear-gradient(145deg,rgba(255,255,255,.88),color-mix(in srgb,var(--brand-soft) 67%,rgba(255,255,255,.56)));
       box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 2px 7px color-mix(in srgb,var(--brand) 11%,transparent);
     }
+    .portfolio-privacy-toggle {
+      width:38px;
+      min-width:38px;
+      height:38px;
+      min-height:38px;
+      border:1px solid color-mix(in srgb,var(--brand) 24%,rgba(255,255,255,.74));
+      border-radius:7px;
+      color:var(--muted);
+      background:color-mix(in srgb,var(--brand-soft) 28%,rgba(255,255,255,.58));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 3px 9px color-mix(in srgb,var(--brand) 8%,transparent);
+      backdrop-filter:blur(10px) saturate(116%);
+      -webkit-backdrop-filter:blur(10px) saturate(116%);
+    }
+    .portfolio-privacy-toggle:hover {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 33%,rgba(255,255,255,.70));
+      background:rgba(255,255,255,.68);
+    }
+    .portfolio-privacy-toggle.active {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 31%,rgba(255,255,255,.72));
+      background:linear-gradient(145deg,rgba(255,255,255,.90),color-mix(in srgb,var(--brand-soft) 72%,rgba(255,255,255,.56)));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 color-mix(in srgb,var(--brand) 14%,transparent),0 2px 8px color-mix(in srgb,var(--brand) 12%,transparent);
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .theme-orb, .theme-orb::before { animation:none; }
@@ -5082,7 +5106,55 @@
     }
 
     function journalStockKey(stock) {
-      return `${stock.market || ""}:${stock.code || ""}`;
+      return journalSecurityCodeKey(stock);
+    }
+
+    function journalSecurityCodeKey(stock) {
+      const rawCode = String(stock?.code || "").trim().toUpperCase();
+      const parts = rawCode.split(".");
+      const suffix = parts.length > 1 ? parts.at(-1) : "";
+      const market = String(stock?.market || suffix || "").toUpperCase();
+      let symbol = parts[0] || rawCode;
+      if (market === "HK" || suffix === "HK") symbol = symbol.replace(/^0+(?=\d)/, "");
+      return `${market}:${symbol}`;
+    }
+
+    function normalizeJournalStockName(name, market) {
+      let value = String(name || "").trim().replace(/[‐‑‒–—]/g, "-");
+      if (String(market || "").toUpperCase() !== "HK") return value;
+      value = value.replace(/-([a-z]{1,3})$/i, (_, suffix) => `-${suffix.toUpperCase()}`);
+      if (!value.includes("-")) value = value.replace(/([\u4e00-\u9fff])([a-z]{1,3})$/i, (_, chinese, suffix) => `${chinese}-${suffix.toUpperCase()}`);
+      return value;
+    }
+
+    function canonicalJournalStock(stock) {
+      if (!stock) return stock;
+      const candidates = [
+        ...state.stocks,
+        ...state.publisherStocks,
+        ...state.portfolios.flatMap((portfolio) => portfolio.positions || []),
+        ...stockCatalog
+      ];
+      const key = journalSecurityCodeKey(stock);
+      const canonical = candidates.find((candidate) => journalSecurityCodeKey(candidate) === key);
+      const market = stock.market || canonical?.market || "";
+      return {
+        ...stock,
+        market,
+        name: normalizeJournalStockName(canonical?.name || stock.name, market)
+      };
+    }
+
+    function canonicalJournalEntry(entry) {
+      const originalStocks = entry?.stocks || [];
+      const stocks = originalStocks.map(canonicalJournalStock);
+      let content = String(entry?.content || "");
+      originalStocks.forEach((stock, index) => {
+        const canonical = stocks[index];
+        if (!stock?.name || !canonical?.name || stock.name === canonical.name) return;
+        content = content.split(`$${stock.name}(${stock.code})`).join(`$${canonical.name}(${canonical.code || stock.code})`);
+      });
+      return { ...entry, content, stocks };
     }
 
     function journalFilterTag(label, count, active, attrs) {
@@ -5099,7 +5171,7 @@
           const key = journalStockKey(stock);
           if (!stock.code || seen.has(key)) return;
           seen.add(key);
-          const current = stockStats.get(key) || { stock, count: 0 };
+          const current = stockStats.get(key) || { stock: canonicalJournalStock(stock), count: 0 };
           current.count += 1;
           stockStats.set(key, current);
         });
@@ -5111,7 +5183,7 @@
         return monthMatches && stockMatches;
       });
       const filters = `<section class="journal-filters" aria-label="日志筛选">
-        <div class="journal-filter-action"><button class="primary" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button></div>
+        <div class="journal-filter-action"><button class="primary stock-add-button journal-write-button" data-action="newJournal" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}>+ 写日志</button></div>
         <div class="journal-filter-row"><div class="journal-filter-tags">
           ${journalFilterTag("全部月份", null, !state.journalMonthFilter, `data-action="filterJournalMonth" data-month=""`)}
           ${months.map((month) => journalFilterTag(`${month.slice(0, 4)}年${Number(month.slice(5))}月`, allRows.filter((entry) => journalMonthKey(entry) === month).length, state.journalMonthFilter === month, `data-action="filterJournalMonth" data-month="${month}"`)).join("")}
@@ -5128,11 +5200,12 @@
           const date = journalDateParts(entry.publishedAt || entry.createdAt);
           const expanded = state.expandedJournalIds.includes(entry.id);
           const long = String(entry.content || "").length > 260 || String(entry.content || "").split("\n").length > 7;
+          const displayEntry = canonicalJournalEntry(entry);
           return `<article class="journal-entry">
             <time class="journal-date" datetime="${escapeHtml(entry.publishedAt || entry.createdAt)}"><span class="journal-date-day">${date.day}</span><span class="journal-date-month">${escapeHtml(date.month)}</span></time>
-            <div class="journal-content"><p class="journal-text ${expanded ? "" : "collapsed"}">${escapeHtml(entry.content)}</p>
+            <div class="journal-content"><p class="journal-text ${expanded ? "" : "collapsed"}">${escapeHtml(displayEntry.content)}</p>
               ${long ? `<button class="journal-expand" data-action="toggleJournal" data-id="${entry.id}">${expanded ? "收起" : "展开阅读全文"}</button>` : ""}
-              ${(entry.stocks || []).length ? `<div class="journal-stocks">${entry.stocks.map((stock) => `<span class="journal-stock-chip"><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)}</span><small>${escapeHtml(journalPriceText(stock))}</small></span>`).join("")}</div>` : ""}
+              ${displayEntry.stocks.length ? `<div class="journal-stocks">${displayEntry.stocks.map((stock) => `<span class="journal-stock-chip"><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)}</span><small>${escapeHtml(journalPriceText(stock))}</small></span>`).join("")}</div>` : ""}
             </div>
             <div class="journal-actions">
               <button class="journal-action-edit" data-action="editJournal" data-id="${entry.id}" title="修改日志" aria-label="修改日志" ${!state.journalDbReady && state.session?.access_token !== "local-demo" ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg></button>
@@ -5151,7 +5224,7 @@
         <form data-form="journal"><div class="simple-modal-body">
           <label class="field journal-content-field"><span>日志内容</span><textarea name="content" data-input="journalContent" maxlength="30000" placeholder="写下你的所思所想。输入 $ 后直接搜索并插入股票。" required>${escapeHtml(modal.content || "")}</textarea><div class="journal-mention-popup" data-journal-mention-popup></div></label>
           <div class="journal-editor-help">在正文中输入 $ 后直接继续输入股票名称或代码；匹配浮层不会打断输入，选择后会在原光标位置插入股票并在发布时记录实时价格。</div>
-          ${(modal.stocks || []).length ? `<div class="journal-selected-stocks">${modal.stocks.map((stock, index) => `<span class="journal-selected-stock"><strong>${escapeHtml(stock.name)}</strong>${escapeHtml(stock.code)}<button type="button" data-action="removeJournalStock" data-index="${index}" aria-label="移除">×</button></span>`).join("")}</div>` : ""}
+          ${(modal.stocks || []).length ? `<div class="journal-selected-stocks">${modal.stocks.map(canonicalJournalStock).map((stock, index) => `<span class="journal-selected-stock"><strong>${escapeHtml(stock.name)}</strong>${escapeHtml(stock.code)}<button type="button" data-action="removeJournalStock" data-index="${index}" aria-label="移除">×</button></span>`).join("")}</div>` : ""}
           ${state.journalError ? `<div class="simple-modal-error">${escapeHtml(state.journalError)}</div>` : ""}
         </div><div class="simple-modal-foot"><button type="button" data-action="closeJournal">取消</button><button class="primary" type="submit" ${state.journalSaving ? "disabled" : ""}>${state.journalSaving ? "正在记录价格..." : modal.id ? "保存更改" : "发布日志"}</button></div></form>
       </section></div>`;
@@ -5227,7 +5300,7 @@
 
     function openJournal(entryId = "") {
       const entry = state.journals.find((item) => item.id === entryId);
-      state.journalModal = entry ? JSON.parse(JSON.stringify(entry)) : { id: "", content: "", stocks: [] };
+      state.journalModal = entry ? canonicalJournalEntry(JSON.parse(JSON.stringify(entry))) : { id: "", content: "", stocks: [] };
       state.journalSearchResults = [];
       state.journalSearchQuery = "";
       state.journalInsertCursor = state.journalModal.content.length;
@@ -5296,7 +5369,10 @@
 
     function journalMentionResultsHtml(results) {
       if (!results.length) return `<div class="journal-mention-hint">没有匹配结果，请继续输入或更换名称、代码。</div>`;
-      return results.map((item, index) => `<button type="button" class="journal-mention-result" data-action="selectJournalStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong> <small>${escapeHtml(item.code)} · ${marketLabel(item.market)}</small></span><span>插入</span></button>`).join("");
+      return results.map((rawItem, index) => {
+        const item = canonicalJournalStock(rawItem);
+        return `<button type="button" class="journal-mention-result" data-action="selectJournalStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong> <small>${escapeHtml(item.code)} · ${marketLabel(item.market)}</small></span><span>插入</span></button>`;
+      }).join("");
     }
 
     function scheduleJournalSearch(query, focusTarget = "content", cursor = null) {
@@ -5325,7 +5401,7 @@
     }
 
     function selectJournalStock(index) {
-      const stock = state.journalSearchResults[index];
+      const stock = canonicalJournalStock(state.journalSearchResults[index]);
       if (!stock || !state.journalModal) return;
       if (!state.journalModal.stocks.some((item) => item.code === stock.code && item.market === stock.market)) state.journalModal.stocks.push(stock);
       const textarea = document.querySelector("[data-input='journalContent']");
@@ -5377,7 +5453,7 @@
         render();
         return;
       }
-      const stocks = priceResults.map((result) => result.value);
+      const stocks = priceResults.map((result) => canonicalJournalStock(result.value));
       const entry = { ...state.journalModal, id: state.journalModal.id || id("journal"), content, stocks, publishedAt: state.journalModal.publishedAt || now, createdAt: state.journalModal.createdAt || now, updatedAt: now };
       if (state.session?.access_token && state.session.access_token !== "local-demo") {
         try {
