@@ -3340,6 +3340,31 @@
     .portfolio-tag-rename-form input { border-color:rgba(104,143,188,.48); background:rgba(255,255,255,.68); }
     .portfolio-tag-rename-save { color:#fff; border-color:#2468b7; background:rgba(15,103,226,.84); }
 
+    /* Compact, aligned stock-pool sharing controls. */
+    .stock-pool-table .share-cell .share-state {
+      width:46px;
+      gap:3px;
+      justify-items:stretch;
+    }
+    .stock-pool-table .share-cell > .share-action,
+    .stock-pool-table .share-cell .share-state .badge.shared,
+    .stock-pool-table .share-cell .share-state .share-action {
+      width:46px;
+      min-width:46px;
+      max-width:46px;
+      height:22px;
+      min-height:22px;
+      margin:0 auto;
+      padding:0 4px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:4px;
+      font-size:11px;
+      line-height:1;
+      white-space:nowrap;
+    }
+
     /* Floating palette switcher. The current Glacier Aurora palette remains the untouched baseline. */
     .theme-dock {
       position:fixed;
