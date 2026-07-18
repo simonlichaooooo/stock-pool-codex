@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
   <title>钞·作业</title>
   <style>
     :root {
@@ -88,18 +88,6 @@
     textarea { min-height: 76px; resize: vertical; }
 
     .shell { min-height: 100vh; }
-    .page-frame {
-      min-height: 100vh;
-      transform-origin: 0 0;
-    }
-    html.pool-visual-compensated,
-    html.pool-visual-compensated body {
-      max-width: none;
-      overflow-x: visible;
-    }
-    html.pool-visual-compensated .page-frame {
-      transform: scale(var(--pool-visual-compensation, 1));
-    }
     .topbar {
       min-height: 56px;
       display: flex;
@@ -5284,8 +5272,7 @@
         `document client=${document.documentElement.clientWidth} scroll=${document.documentElement.scrollWidth} bodyScroll=${document.body.scrollWidth}`,
         `visual=${layoutDebugNumber(viewport?.width)}x${layoutDebugNumber(viewport?.height)} scale=${layoutDebugNumber(viewport?.scale)} offset=${layoutDebugNumber(viewport?.offsetLeft)},${layoutDebugNumber(viewport?.offsetTop)}`,
         `screen/inner=${layoutDebugNumber(estimatedScale)} media860=${matchMedia("(max-width: 860px)").matches} coarse=${matchMedia("(any-pointer: coarse)").matches}`,
-        `visual-compensation=${document.documentElement.style.getPropertyValue("--pool-visual-compensation") || "1"}`,
-        layoutDebugBox(".page-frame"),
+        `viewport-meta=${document.querySelector('meta[name="viewport"]')?.getAttribute("content") || "missing"}`,
         layoutDebugBox(".topbar"),
         layoutDebugBox(".topbar-inner"),
         layoutDebugBox(".workspace"),
@@ -5331,79 +5318,31 @@
       window.visualViewport?.addEventListener("resize", scheduleLayoutDebugPanel, { passive: true });
     }
 
-    let poolVisualCompensationTimers = [];
-    let poolVisualCompensationBound = false;
-
-    function applyPoolVisualCompensation() {
-      const pageFrame = document.querySelector(".page-frame");
-      if (!pageFrame) return;
-      const viewport = window.visualViewport;
-      const layoutWidth = Number(document.documentElement.clientWidth) || 0;
-      const visualWidth = Number(viewport?.width) || 0;
-      const visualScale = Number(viewport?.scale) || 1;
-      const factor = layoutWidth > 0 ? visualWidth / layoutWidth : 1;
-      const shouldCompensate = state.mainView === "pool"
-        && matchMedia("(any-pointer: coarse)").matches
-        && layoutWidth > 860
-        && visualScale < 0.8
-        && factor > 1.2;
-
-      document.documentElement.classList.toggle("pool-visual-compensated", shouldCompensate);
-      if (shouldCompensate) {
-        document.documentElement.style.setProperty("--pool-visual-compensation", String(Math.min(2.25, factor)));
-      } else {
-        document.documentElement.style.removeProperty("--pool-visual-compensation");
-      }
-    }
-
-    function schedulePoolVisualCompensation() {
-      poolVisualCompensationTimers.forEach((timer) => window.clearTimeout(timer));
-      poolVisualCompensationTimers = [];
-      applyPoolVisualCompensation();
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        applyPoolVisualCompensation();
-        scheduleLayoutDebugPanel();
-      }));
-      poolVisualCompensationTimers.push(
-        window.setTimeout(applyPoolVisualCompensation, 160),
-        window.setTimeout(() => {
-          applyPoolVisualCompensation();
-          scheduleLayoutDebugPanel();
-        }, 480)
-      );
-      if (!poolVisualCompensationBound) {
-        poolVisualCompensationBound = true;
-        window.visualViewport?.addEventListener("resize", schedulePoolVisualCompensation, { passive: true });
-      }
-    }
-
     function render() {
       if (!ensureAuth()) return;
       document.getElementById("app").innerHTML = `
         <div class="shell">
-          <div class="page-frame">
-            <header class="topbar">
-              <div class="topbar-inner">
-                <div class="topbar-main">
-                  <div class="brand">
-                    <img class="brand-logo" src="logo/logo-site-mark-v2.png?v=mark-20260718d" alt="钞·作业">
-                    <h1>钞·作业</h1>
-                  </div>
-                  ${renderMainNavTabs()}
+          <header class="topbar">
+            <div class="topbar-inner">
+              <div class="topbar-main">
+                <div class="brand">
+                  <img class="brand-logo" src="logo/logo-site-mark-v2.png?v=mark-20260718d" alt="钞·作业">
+                  <h1>钞·作业</h1>
                 </div>
-                <div class="userbar">
-                  <span title="已隐藏部分邮箱地址">${escapeHtml(maskEmail(state.session.user.email))}</span>
-                  ${state.profile?.nickname ? `<span class="badge">${escapeHtml(state.profile.nickname)}</span>` : ""}
-                  <button class="ghost" data-action="logout">退出</button>
-                </div>
+                ${renderMainNavTabs()}
               </div>
-            </header>
-            <main class="workspace">
-              ${renderNavTabs()}
-              ${renderShareInvite()}
-              ${renderCurrentView()}
-            </main>
-          </div>
+              <div class="userbar">
+                <span title="已隐藏部分邮箱地址">${escapeHtml(maskEmail(state.session.user.email))}</span>
+                ${state.profile?.nickname ? `<span class="badge">${escapeHtml(state.profile.nickname)}</span>` : ""}
+                <button class="ghost" data-action="logout">退出</button>
+              </div>
+            </div>
+          </header>
+          <main class="workspace">
+            ${renderNavTabs()}
+            ${renderShareInvite()}
+            ${renderCurrentView()}
+          </main>
           ${renderDrawer()}
           ${renderPublicationHistory()}
           ${renderDeleteConfirm()}
@@ -5413,7 +5352,6 @@
         </div>
       `;
       bindEvents();
-      schedulePoolVisualCompensation();
       scheduleLayoutDebugPanel();
     }
 
