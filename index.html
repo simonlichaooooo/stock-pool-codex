@@ -2744,6 +2744,39 @@
     button.secondary { background:#fff; border-color:#8fa2b9; color:#183451; }
     input, select, textarea { border-color:#92a5bb; }
 
+    /* Stock-pool refinements: stronger anchors without zebra-striping. */
+    .stock-pool-table th { background:#e2e9f2; }
+    .stock-pool-table th.sticky-col:not(.drag-col) { background:#d9e3ee; }
+    .stock-pool-table td.sticky-col:not(.drag-col) { background:#eef3f8; }
+    .stock-pool-table tbody tr:nth-child(even) td:not(.sticky-col) { background:#fff; }
+    .stock-pool-table tbody tr:hover > td,
+    .stock-pool-table tbody tr:nth-child(even):hover > td { background:#e5efff !important; }
+    .stock-pool-table tbody tr:hover > td.sticky-col:not(.drag-col) { background:#d6e6ff !important; }
+    .stock-add-button {
+      min-height:36px;
+      padding:0 16px;
+      background:#0c2748;
+      border:1px solid #2878dc;
+      color:#fff;
+      box-shadow:inset 3px 0 0 #2f8cff;
+      letter-spacing:.01em;
+    }
+    .stock-add-button:hover { background:#123761; border-color:#4b91e8; box-shadow:inset 3px 0 0 #56a1ff; }
+    .stock-pool-table .share-state { width:64px; justify-items:stretch; }
+    .stock-pool-table .share-state .badge.shared,
+    .stock-pool-table .share-state .share-action {
+      width:64px;
+      min-height:26px;
+      margin:0;
+      padding:0 7px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:4px;
+      font-size:12px;
+      line-height:1;
+    }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
@@ -5314,7 +5347,7 @@
           </div>
           <div class="toolbar-actions">
             ${viewingOwn ? `
-              <button class="primary" data-action="newStock">+添加股票</button>
+              <button class="primary stock-add-button" data-action="newStock">+添加股票</button>
             ` : ""}
           </div>
         </div>
@@ -5370,7 +5403,7 @@
             <div class="empty">
               <strong>${title}</strong>
               <p>${text}</p>
-              ${viewingOwn ? `<button class="primary" data-action="newStock">+添加股票</button>` : ""}
+              ${viewingOwn ? `<button class="primary stock-add-button" data-action="newStock">+添加股票</button>` : ""}
             </div>
           </section>
         `;
