@@ -3287,6 +3287,56 @@
     .portfolio-table td.loss { color:#08735b; font-weight:600; }
     .portfolio-table .portfolio-holding-profit-rate { color:inherit; opacity:.76; font-weight:550; }
 
+    /* Portfolio tag filters share the same cool glass material as the holdings workspace. */
+    .portfolio-tag-filter-panel {
+      margin-bottom:10px;
+      padding:12px 14px 13px;
+      border:1px solid rgba(255,255,255,.86);
+      border-radius:8px;
+      background:rgba(255,255,255,.58);
+      box-shadow:0 9px 25px rgba(45,101,166,.09),inset 0 1px 0 rgba(255,255,255,.88);
+      backdrop-filter:blur(18px) saturate(135%);
+      -webkit-backdrop-filter:blur(18px) saturate(135%);
+    }
+    .portfolio-tag-filter-head {
+      margin-bottom:9px;
+      color:#294b72;
+      font-size:12px;
+      font-weight:650;
+    }
+    .portfolio-tag-summary { gap:7px; }
+    .portfolio-tag-stat {
+      min-height:32px;
+      padding:5px 10px;
+      border:1px solid rgba(104,143,188,.34);
+      border-radius:5px;
+      background:rgba(255,255,255,.50);
+      color:#405875;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+    }
+    .portfolio-tag-stat strong { color:#17395f; font-size:12.5px; font-weight:650; }
+    .portfolio-tag-stat .gain { color:#aa3838; }
+    .portfolio-tag-stat .loss { color:#08705a; }
+    .portfolio-tag-stat:hover {
+      border-color:rgba(75,132,199,.52);
+      background:rgba(231,242,255,.72);
+      color:#174775;
+    }
+    .portfolio-tag-filter-panel .portfolio-tag-stat.active {
+      border-color:rgba(72,132,205,.56);
+      background:rgba(201,225,253,.72);
+      color:#0753bd;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 3px 9px rgba(52,111,181,.09);
+    }
+    .portfolio-tag-rename-trigger {
+      color:#245f96;
+      border-color:rgba(72,132,205,.56);
+      background:rgba(218,235,255,.76);
+    }
+    .portfolio-tag-rename-trigger:hover { color:#0753bd; border-color:#5c8fc8; background:rgba(232,243,255,.90); }
+    .portfolio-tag-rename-form input { border-color:rgba(104,143,188,.48); background:rgba(255,255,255,.68); }
+    .portfolio-tag-rename-save { color:#fff; border-color:#2468b7; background:rgba(15,103,226,.84); }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
@@ -6575,7 +6625,18 @@
       const profileForm = document.querySelector("[data-form='profile']");
       if (profileForm) profileForm.addEventListener("submit", onProfileSubmit);
       const listSearch = document.querySelector("[data-input='searchList']");
-      if (listSearch) listSearch.addEventListener("input", (event) => { state.query = event.target.value; render(); });
+      if (listSearch) listSearch.addEventListener("input", (event) => {
+        const input = event.currentTarget;
+        state.query = input.value;
+        if (event.isComposing) return;
+        const selectionStart = input.selectionStart;
+        const selectionEnd = input.selectionEnd;
+        render();
+        const nextInput = document.querySelector("[data-input='searchList']");
+        if (!nextInput) return;
+        nextInput.focus({ preventScroll: true });
+        if (Number.isInteger(selectionStart) && Number.isInteger(selectionEnd)) nextInput.setSelectionRange(selectionStart, selectionEnd);
+      });
       const viewPublisher = document.querySelector("[data-input='viewPublisher']");
       if (viewPublisher) viewPublisher.addEventListener("change", async (event) => {
         state.viewPublisherId = event.target.value;
