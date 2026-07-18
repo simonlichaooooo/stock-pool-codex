@@ -3118,6 +3118,55 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 6px 16px rgba(35,117,217,.22);
     }
 
+    /* Journal filters use the same luminous glass hierarchy as the main workspace. */
+    .journal-filters {
+      padding:13px 15px 14px;
+      gap:9px 14px;
+      border:1px solid rgba(255,255,255,.88);
+      border-radius:8px;
+      background:rgba(255,255,255,.58);
+      box-shadow:0 10px 28px rgba(45,101,166,.10),inset 0 1px 0 rgba(255,255,255,.88);
+      backdrop-filter:blur(18px) saturate(135%);
+      -webkit-backdrop-filter:blur(18px) saturate(135%);
+    }
+    .journal-filter-row + .journal-filter-row {
+      padding-top:9px;
+      border-top:1px solid rgba(104,143,188,.20);
+    }
+    .journal-filter-tags { gap:7px; }
+    .journal-filter-tag {
+      min-height:30px;
+      padding:4px 10px;
+      border:1px solid rgba(104,143,188,.38);
+      border-radius:5px;
+      background:rgba(255,255,255,.54);
+      color:#405875;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+    }
+    .journal-filter-tag:hover {
+      border-color:rgba(83,137,201,.58);
+      background:rgba(255,255,255,.82);
+      color:#174775;
+    }
+    .journal-filter-tag.active {
+      border-color:rgba(72,132,205,.58);
+      background:rgba(201,225,253,.72);
+      color:#0753bd;
+      font-weight:600;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 3px 9px rgba(52,111,181,.09);
+    }
+    .journal-filter-count { color:#607690; }
+    .journal-filter-tag.active .journal-filter-count { color:#376da9; }
+    .journal-filter-action .primary {
+      min-height:34px;
+      padding:0 14px;
+      border:1px solid rgba(255,255,255,.70);
+      border-radius:5px;
+      background:rgba(15,103,226,.84);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 5px 14px rgba(35,117,217,.17);
+    }
+    .journal-filter-action .primary:hover { background:rgba(9,83,190,.92); border-color:rgba(255,255,255,.82); }
+
     @media (max-width: 860px) {
       .topbar { height: auto; min-height: 56px; }
       .topbar-inner { width: calc(100vw - 20px); padding: 10px 0; min-height: 56px; flex-wrap: wrap; align-items: flex-start; }
