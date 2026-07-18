@@ -3399,6 +3399,27 @@
       pointer-events:none;
     }
 
+    .layout-debug-panel {
+      position: fixed;
+      left: 10px;
+      bottom: 54px;
+      z-index: 10000;
+      width: min(520px, calc(100vw - 20px));
+      max-height: 48vh;
+      margin: 0;
+      padding: 10px 12px;
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 6px;
+      background: rgba(7, 20, 38, .92);
+      color: #fff;
+      box-shadow: 0 8px 26px rgba(7,20,38,.3);
+      font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
     /* Compact, aligned stock-pool sharing controls. */
     .stock-pool-table .share-cell .share-state {
       width:46px;
@@ -4074,6 +4095,7 @@
     const SUPABASE_URL = "https://woywnriyagjlfphezlnx.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndveXducml5YWdqbGZwaGV6bG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjA0MDAsImV4cCI6MjA5NDQzNjQwMH0.fQRfiZBOYjxSGKANEMD0HZKg7jKJGwGtR-vUx5ULt2s";
     const APP_GITHUB_PAGES_PATH = "/stock-pool-codex/";
+    const LAYOUT_DEBUG_ENABLED = new URLSearchParams(window.location.search).get("layoutDebug") === "1";
     const AUTH_REDIRECT_URL = appBaseUrl();
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
@@ -5208,6 +5230,59 @@
       `;
     }
 
+    let layoutDebugListenersBound = false;
+
+    function layoutDebugNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.round(number * 100) / 100 : "--";
+    }
+
+    function layoutDebugBox(selector) {
+      const element = document.querySelector(selector);
+      if (!element) return `${selector}=missing`;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return `${selector}=x:${layoutDebugNumber(rect.x)} w:${layoutDebugNumber(rect.width)} r:${layoutDebugNumber(rect.right)} client:${element.clientWidth} scroll:${element.scrollWidth} css:${style.width} max:${style.maxWidth} zoom:${style.zoom || "1"}`;
+    }
+
+    function updateLayoutDebugPanel() {
+      if (!LAYOUT_DEBUG_ENABLED) return;
+      let panel = document.querySelector(".layout-debug-panel");
+      if (!panel) {
+        panel = document.createElement("pre");
+        panel.className = "layout-debug-panel";
+        document.body.appendChild(panel);
+      }
+      const viewport = window.visualViewport;
+      const screenWidth = Number(window.screen?.width) || 0;
+      const estimatedScale = window.innerWidth ? screenWidth / window.innerWidth : 0;
+      const lines = [
+        `布局诊断 view=${state.mainView} time=${new Date().toLocaleTimeString("zh-CN")}`,
+        `screen=${screenWidth}x${window.screen?.height || 0} avail=${window.screen?.availWidth || 0}x${window.screen?.availHeight || 0}`,
+        `inner=${window.innerWidth}x${window.innerHeight} outer=${window.outerWidth}x${window.outerHeight} DPR=${layoutDebugNumber(window.devicePixelRatio)}`,
+        `document client=${document.documentElement.clientWidth} scroll=${document.documentElement.scrollWidth} bodyScroll=${document.body.scrollWidth}`,
+        `visual=${layoutDebugNumber(viewport?.width)}x${layoutDebugNumber(viewport?.height)} scale=${layoutDebugNumber(viewport?.scale)} offset=${layoutDebugNumber(viewport?.offsetLeft)},${layoutDebugNumber(viewport?.offsetTop)}`,
+        `screen/inner=${layoutDebugNumber(estimatedScale)} media860=${matchMedia("(max-width: 860px)").matches} coarse=${matchMedia("(any-pointer: coarse)").matches}`,
+        layoutDebugBox(".topbar"),
+        layoutDebugBox(".topbar-inner"),
+        layoutDebugBox(".workspace"),
+        layoutDebugBox(".horizontal-data-table"),
+        layoutDebugBox(".horizontal-data-table .table-scroll"),
+        layoutDebugBox(".horizontal-data-table table"),
+        `UA=${navigator.userAgent}`
+      ];
+      panel.textContent = lines.join("\n");
+    }
+
+    function scheduleLayoutDebugPanel() {
+      if (!LAYOUT_DEBUG_ENABLED) return;
+      requestAnimationFrame(() => requestAnimationFrame(updateLayoutDebugPanel));
+      if (layoutDebugListenersBound) return;
+      layoutDebugListenersBound = true;
+      window.addEventListener("resize", scheduleLayoutDebugPanel, { passive: true });
+      window.visualViewport?.addEventListener("resize", scheduleLayoutDebugPanel, { passive: true });
+    }
+
     function render() {
       if (!ensureAuth()) return;
       document.getElementById("app").innerHTML = `
@@ -5242,6 +5317,7 @@
         </div>
       `;
       bindEvents();
+      scheduleLayoutDebugPanel();
     }
 
     function renderNavTabs() {
