@@ -95,8 +95,7 @@
       background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--line);
-      position: sticky;
-      top: 0;
+      position: relative;
       z-index: 5;
     }
     .topbar-inner {
@@ -3631,6 +3630,7 @@
       padding:2px 0;
       object-fit:contain;
       object-position:left center;
+      transform:translateY(-3px);
     }
     html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
       animation:none;
@@ -5160,7 +5160,7 @@
             <div class="topbar-inner">
               <div class="topbar-main">
                 <div class="brand">
-                  <img class="brand-logo" src="logo/logo-site-mark.png?v=mark-20260718c" alt="钞·作业">
+                  <img class="brand-logo" src="logo/logo-site-mark-v2.png?v=mark-20260718d" alt="钞·作业">
                   <h1>钞·作业</h1>
                 </div>
                 ${renderMainNavTabs()}
