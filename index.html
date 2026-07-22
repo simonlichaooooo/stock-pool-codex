@@ -1922,6 +1922,9 @@
     .input-with-suffix { position: relative; width: 100%; }
     .input-with-suffix input { padding-right: 38px; text-align: right; }
     .input-with-suffix .input-suffix { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); padding-left: 3px; background: #fff; color: var(--muted); font-size: 10px; line-height: 18px; pointer-events: none; }
+    /* Keep native number steppers usable without letting the unit label cover them. */
+    .input-with-suffix input[type="number"] { padding-right: 58px; }
+    .input-with-suffix input[type="number"] + .input-suffix { right: 24px; padding-left: 5px; }
     .position-edit-modal .input-suffix,
     .position-trade-modal .input-suffix { padding-left: 0; background: transparent; }
     .position-plan-row .input-with-suffix input { padding-right: 42px; font-size: 11px; }
@@ -6565,7 +6568,7 @@
                 ? `<div class="portfolio-initialize-selected"><div><strong>${escapeHtml(row.stock.name)}</strong><small>${escapeHtml(row.stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`
                 : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off"><div data-initialization-results="${row.id}">${initializationResultsMarkup(row)}</div>`}</div>
               <label class="field"><span>持股数</span><input data-init-row-field="shares" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.shares || "")}" placeholder="0"></label>
-              <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
+              <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" ${priceInputAttrs(row.stock?.market, row.averageCost)} value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
               <button type="button" class="portfolio-initialize-remove" data-action="removeInitializationRow" data-row-id="${row.id}" aria-label="删除第 ${index + 1} 行">×</button>
             </div>`).join("")}</div>
           </section>
@@ -6666,6 +6669,28 @@
       ].map(([label, ratio]) => `<button type="button" data-rebalance-ratio-side="${side}" data-rebalance-ratio="${ratio}">${label}</button>`).join("")}</div>`;
     }
 
+    function portfolioPriceTick(market, price = 0) {
+      const value = Number(price) || 0;
+      if (market === "CN") return 0.01;
+      if (market === "US") return value > 0 && value < 1 ? 0.0001 : 0.01;
+      if (market !== "HK") return 0.01;
+      if (value < 0.25) return 0.001;
+      if (value < 0.5) return 0.005;
+      if (value < 20) return 0.01;
+      if (value < 50) return 0.02;
+      if (value < 100) return 0.05;
+      if (value < 200) return 0.1;
+      if (value < 500) return 0.2;
+      if (value < 1000) return 0.5;
+      if (value < 2000) return 1;
+      if (value < 5000) return 2;
+      return 5;
+    }
+
+    function priceInputAttrs(market, price) {
+      return `step="${portfolioPriceTick(market, price)}" data-price-market="${escapeHtml(market || "")}"`;
+    }
+
     function renderRebalanceModal(modal) {
       const portfolio = activePortfolio();
       const metrics = portfolioMetrics(portfolio);
@@ -6678,7 +6703,7 @@
           <h3>${label}</h3>
           ${renderRebalanceStockSearch(modal, key)}
           <div class="rebalance-fields">
-            <label class="field"><span>${key === "sell" ? "卖出价格" : "买入价格"}</span><div class="input-with-suffix"><input name="${key}Price" data-rebalance-price="${key}" type="number" min="0.000001" step="any" value="${Number(price) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label>
+            <label class="field"><span>${key === "sell" ? "卖出价格" : "买入价格"}</span><div class="input-with-suffix"><input name="${key}Price" data-rebalance-price="${key}" type="number" min="0.000001" ${priceInputAttrs(stock?.market || position?.market, price)} value="${Number(price) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label>
             <label class="field"><span class="rebalance-field-title"><span>${key === "sell" ? "卖出数量" : "买入数量"}</span>${key === "sell" && position ? `<span class="rebalance-holding-note">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</span>` : ""}</span><div class="input-with-suffix"><input name="${key}Shares" data-rebalance-shares="${key}" type="number" min="1" step="1" value="${Number(modal[`${key}Shares`] || 0) || ""}" ${key === "sell" && position ? `max="${Number(position.shares)}"` : ""}><span class="input-suffix">股</span></div>${renderRebalanceQuick(key)}</label>
           </div>
           ${renderRebalancePreview(modal, key, portfolio, metrics)}
@@ -6703,7 +6728,7 @@
       const currency = modal.stock?.currency || position?.currency || "";
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
-          <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
+          <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" ${priceInputAttrs(position.market, position.averageCost)} value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
           <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${renderPortfolioValuationPreview(position)}</div></label>
           <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
           <div class="position-tag-editor"><div class="position-tag-title">标签</div><div class="position-tag-input"><input name="newTag" maxlength="20" placeholder="自定义标签，如：AI / 高股息"><button type="button" data-action="addPositionTag">添加</button></div>${modal.tags.length ? `<div class="position-tags-selected">${modal.tags.map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)} ×</button>`).join("")}</div>` : `<div class="muted">暂未添加标签</div>`}${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).length ? `<div class="position-tag-existing"><span>快速选择已有标签</span><div>${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">+ ${escapeHtml(tag)}</button>`).join("")}</div></div>` : ""}</div>
@@ -6718,7 +6743,8 @@
       const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
       const defaultTradeShares = modal.type === "add" ? "" : (suggestedShares || "");
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
-      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" step="any" value="${Number(position?.latestPrice) || ""}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>`;
+      const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
+      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0.000001" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>`;
       const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
       const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
       return modalShell(title, body, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
@@ -6771,7 +6797,7 @@
         const weight = positionWeightPercent(position, row.shares, row.price);
         return `<div class="position-plan-row plan-${side}" data-plan-row data-plan-side="${side}" data-plan-index="${index}">
         <span>${label}${index + 1}</span>
-        <div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="any" value="${row.price}" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${currency}</span></div>
+        <div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" ${priceInputAttrs(position?.market, row.price)} value="${row.price}" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${currency}</span></div>
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="upside" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.upside * 100) : ""}" placeholder="--" aria-label="${label}${index + 1} Upside" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="forwardPE" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.forwardPE) : ""}" placeholder="--" aria-label="${label}${index + 1} Forward PE" ${valuationStock ? "" : "disabled"}><span class="input-suffix">x</span></div>
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.shareholderReturnRate * 100) : ""}" placeholder="--" aria-label="${label}${index + 1}股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
@@ -7957,6 +7983,11 @@
       });
       document.querySelectorAll("[data-rebalance-price]").forEach((input) => {
         input.addEventListener("input", () => onRebalanceInput(input.dataset.rebalancePrice, "price"));
+      });
+      document.querySelectorAll("input[data-price-market]").forEach((input) => {
+        input.addEventListener("input", () => {
+          input.step = String(portfolioPriceTick(input.dataset.priceMarket, input.value));
+        });
       });
       document.querySelectorAll("[data-rebalance-ratio-side]").forEach((button) => {
         button.addEventListener("click", () => applyRebalanceRatio(button.dataset.rebalanceRatioSide, Number(button.dataset.rebalanceRatio)));
@@ -9189,7 +9220,8 @@
       const portfolio = activePortfolio();
       if (portfolioQuoteRefreshInFlight || !portfolio) return;
       portfolioQuoteRefreshInFlight = true;
-      if (renderAfter) render();
+      const shouldRender = renderAfter && !state.portfolioModal;
+      if (shouldRender) render();
       try {
         const [updates] = await Promise.all([Promise.all(portfolio.positions.map(async (position) => {
           try { return await fetchQuote(position); }
@@ -9214,7 +9246,7 @@
         writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
       } finally {
         portfolioQuoteRefreshInFlight = false;
-        if (renderAfter) render();
+        if (shouldRender) render();
       }
     }
 
