@@ -1587,6 +1587,9 @@
     button.portfolio-action-open:hover { color: #075e54; border-color: #6fb2a8; background: #ddf5ee; }
     button.portfolio-action-rebalance { color: #245a8d; border-color: #b8cee4; background: #f0f7ff; }
     button.portfolio-action-rebalance:hover { color: #184975; border-color: #7da8d1; background: #e3f0fc; }
+    button.portfolio-action-advice { color: #6b4f12; border-color: #d9bd73; background: #fffaf0; }
+    button.portfolio-action-advice.active { color: #704b08; border-color: #c79a34; background: #fff0bd; }
+    button.portfolio-action-advice:hover { color: #704b08; border-color: #c79a34; background: #fff4cf; }
     button.portfolio-action-summary { color: #6941a5; border-color: #d5c5ea; background: #f8f5fc; }
     button.portfolio-action-summary:hover { color: #53308d; border-color: #ab8bd0; background: #f0e9f8; }
     button.portfolio-action-tags { color: #8a6116; border-color: #d6b45d; background: #fff9e8; }
@@ -1907,6 +1910,25 @@
     .portfolio-tag-allocation.over { color: #b42318; background: #fee4e2; }
     .portfolio-tag-allocation.under { color: #067647; background: #dcfae6; }
     .portfolio-tag-edit-note { margin-top: -3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .portfolio-rebalance-advice { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eadcae; }
+    .portfolio-rebalance-advice-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+    .portfolio-rebalance-advice-title { display: grid; gap: 3px; }
+    .portfolio-rebalance-advice-title strong { color: #243145; font-size: 13px; }
+    .portfolio-rebalance-advice-title span { color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+    .portfolio-rebalance-advice-close { min-width: 28px; min-height: 28px; padding: 0; color: var(--muted); border-color: #ddd5bd; background: rgba(255,255,255,.72); font-size: 16px; }
+    .portfolio-rebalance-advice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .portfolio-rebalance-advice-side { min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: rgba(248,250,252,.78); }
+    .portfolio-rebalance-advice-side > strong { display: block; margin-bottom: 7px; font-size: 11px; }
+    .portfolio-rebalance-advice-side.reduce > strong { color: #b42318; }
+    .portfolio-rebalance-advice-side.add > strong { color: #067647; }
+    .portfolio-rebalance-advice-list { display: grid; gap: 6px; }
+    .portfolio-rebalance-advice-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 7px 8px; border-radius: 4px; background: #fff; }
+    .portfolio-rebalance-advice-item strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #243145; font-size: 12px; }
+    .portfolio-rebalance-advice-item b { font-size: 12px; font-variant-numeric: tabular-nums; }
+    .portfolio-rebalance-advice-side.reduce .portfolio-rebalance-advice-item b { color: #b42318; }
+    .portfolio-rebalance-advice-side.add .portfolio-rebalance-advice-item b { color: #067647; }
+    .portfolio-rebalance-advice-item span { grid-column: 1 / -1; color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .portfolio-rebalance-advice-empty { padding: 10px; color: var(--muted); background: rgba(255,255,255,.66); border: 1px dashed #d8cfb2; border-radius: 4px; font-size: 11px; line-height: 1.5; }
     .simple-modal .field > span { font-size: 11px; font-weight: 750; }
     .position-edit-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 78px; width: 100%; }
     .position-current-weight { min-height: 38px; display: flex; align-items: center; justify-content: flex-end; padding: 7px 10px; border: 1px solid #c4ced9; border-radius: 4px; background: rgba(255,255,255,.62); color: #243145; font-size: 13px; font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -3300,12 +3322,15 @@
     }
     button.portfolio-action-open { color:#087473; border-color:rgba(63,151,148,.38); background:rgba(230,250,248,.54); }
     button.portfolio-action-rebalance { color:#245f96; border-color:rgba(82,139,197,.38); background:rgba(230,241,255,.54); }
+    button.portfolio-action-advice,
+    button.portfolio-action-advice.active { color:#6a531f; border-color:rgba(176,139,55,.42); background:rgba(255,248,222,.62); }
     button.portfolio-action-summary { color:#525ca8; border-color:rgba(112,122,199,.36); background:rgba(237,237,255,.52); }
     button.portfolio-action-tags,
     button.portfolio-action-tags.active { color:#4d6592; border-color:rgba(91,123,169,.38); background:rgba(232,240,251,.54); }
     button.portfolio-action-more { color:#405875; border-color:rgba(91,123,161,.38); background:rgba(239,244,251,.56); }
     button.portfolio-action-open:hover,
     button.portfolio-action-rebalance:hover,
+    button.portfolio-action-advice:hover,
     button.portfolio-action-summary:hover,
     button.portfolio-action-tags:hover,
     button.portfolio-action-more:hover {
@@ -4036,6 +4061,7 @@
       .drawer-foot .drawer-delete-link { flex: 0; }
       .card-grid { grid-template-columns: 1fr; }
       .portfolio-summary { grid-template-columns: 1fr 1fr; }
+      .portfolio-rebalance-advice-grid { grid-template-columns: 1fr; }
       .portfolio-head, .portfolio-switcher { align-items: stretch; flex-direction: column; }
       .portfolio-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
       .portfolio-actions .segmented { width: 100%; }
@@ -4197,6 +4223,7 @@
       portfolioPrivacyMode: false,
       portfolioSummaryExpanded: false,
       portfolioTagsExpanded: false,
+      portfolioAdviceExpanded: false,
       journals: [],
       journalModal: null,
       journalSearchResults: [],
@@ -6138,6 +6165,7 @@
           <div class="portfolio-actions">
             <button class="portfolio-action-btn portfolio-action-open" data-action="openPosition">${portfolioActionIcon("open")}<span>开仓</span></button>
             <button class="portfolio-action-btn portfolio-action-rebalance" data-action="rebalancePortfolio">${portfolioActionIcon("rebalance")}<span>调仓</span></button>
+            <button class="portfolio-action-btn portfolio-action-advice ${state.portfolioAdviceExpanded ? "active" : ""}" data-action="togglePortfolioAdvice">${portfolioActionIcon("rebalance")}<span>${state.portfolioAdviceExpanded ? "关闭建议" : "调仓建议"}</span></button>
             <button class="portfolio-action-btn portfolio-action-summary portfolio-summary-toggle" data-action="togglePortfolioSummary">
               ${summaryExpanded
                 ? `${portfolioActionIcon("collapse")}<span>收起组合卡片</span>`
@@ -6444,6 +6472,85 @@
       return Number.isFinite(value) && value > 0 ? Math.min(100, value) : 0;
     }
 
+    function portfolioRebalanceAdvice(portfolio, metrics) {
+      const positions = (portfolio?.positions || []).filter((position) => Number(position.shares || 0) > 0);
+      if (!positions.length || !(metrics?.netBase > 0)) return { reductions: [], additions: [], message: "当前没有可计算的持仓。" };
+      const tags = [...new Set(positions.flatMap((position) => position.tags || []))]
+        .map((tag) => ({ tag, target: portfolioTagTargetWeight(portfolio, tag) }))
+        .filter((item) => item.target > 0);
+      if (!tags.length) return { reductions: [], additions: [], message: "请先为至少一个标签设置目标仓位。" };
+      const tagIndex = new Map(tags.map((item, index) => [item.tag, index]));
+      const weights = positions.map((position) => positionBaseValue(position, portfolio) / metrics.netBase * 100);
+      const originalWeights = [...weights];
+      const caps = positions.map((position, index) => {
+        const configured = Number(position.targetWeight);
+        return configured > 0 ? Math.min(100, configured) : weights[index];
+      });
+      const memberships = positions.map((position) => (position.tags || []).map((tag) => tagIndex.get(tag)).filter(Number.isInteger));
+      const tagActual = tags.map((_, tagPosition) => weights.reduce((sum, weight, index) => memberships[index].includes(tagPosition) ? sum + weight : sum, 0));
+      const step = 0.1;
+      for (let iteration = 0; iteration < 600; iteration += 1) {
+        const errors = tags.map((item, index) => item.target - tagActual[index]);
+        const addScores = positions.map((_, index) => {
+          if (weights[index] + step > caps[index] + 0.0001) return -Infinity;
+          let score = memberships[index].reduce((sum, tagPosition) => sum + 2 * errors[tagPosition] * step - step * step, 0);
+          const oldCapError = Math.max(0, weights[index] - caps[index]);
+          const newCapError = Math.max(0, weights[index] + step - caps[index]);
+          score += 6 * (oldCapError * oldCapError - newCapError * newCapError);
+          return score;
+        });
+        const reduceScores = positions.map((_, index) => {
+          if (weights[index] < step - 0.0001) return -Infinity;
+          let score = memberships[index].reduce((sum, tagPosition) => sum - 2 * errors[tagPosition] * step - step * step, 0);
+          const oldCapError = Math.max(0, weights[index] - caps[index]);
+          const newCapError = Math.max(0, weights[index] - step - caps[index]);
+          score += 6 * (oldCapError * oldCapError - newCapError * newCapError);
+          return score;
+        });
+        let best = { score: 0, add: -1, reduce: -1 };
+        for (let add = 0; add < positions.length; add += 1) {
+          if (!Number.isFinite(addScores[add])) continue;
+          for (let reduce = 0; reduce < positions.length; reduce += 1) {
+            if (add === reduce || !Number.isFinite(reduceScores[reduce])) continue;
+            const score = addScores[add] + reduceScores[reduce];
+            if (score > best.score + 0.000001) best = { score, add, reduce };
+          }
+        }
+        if (best.add < 0 || best.reduce < 0) break;
+        weights[best.add] += step;
+        weights[best.reduce] -= step;
+        memberships[best.add].forEach((tagPosition) => { tagActual[tagPosition] += step; });
+        memberships[best.reduce].forEach((tagPosition) => { tagActual[tagPosition] -= step; });
+      }
+      const initialGaps = tags.map((item, index) => ({ tag: item.tag, gap: item.target - originalWeights.reduce((sum, weight, positionIndex) => memberships[positionIndex].includes(index) ? sum + weight : sum, 0) }));
+      const recommendation = (position, index, direction) => {
+        const deltaWeight = weights[index] - originalWeights[index];
+        const basePerShare = (Number(position.latestPrice) || Number(position.averageCost) || 0) * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+        const rawShares = basePerShare > 0 ? metrics.netBase * Math.abs(deltaWeight) / 100 / basePerShare : 0;
+        const lot = direction === "add" && position.market === "CN" ? 100 : 1;
+        const shares = Math.floor(rawShares / lot) * lot;
+        const relevant = initialGaps.filter((item) => (position.tags || []).includes(item.tag) && (direction === "add" ? item.gap > 0.05 : item.gap < -0.05))
+          .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap)).slice(0, 2);
+        const overCap = originalWeights[index] > caps[index] + 0.05;
+        const reason = [overCap && direction === "reduce" ? `个股超过上限 ${(originalWeights[index] - caps[index]).toFixed(2)}%` : "", ...relevant.map((item) => `${item.tag}${item.gap > 0 ? "低配" : "超配"} ${Math.abs(item.gap).toFixed(2)}%`)].filter(Boolean).join(" · ") || "改善多标签整体偏差";
+        return { position, deltaWeight: Math.abs(deltaWeight), shares, reason };
+      };
+      const reductions = [], additions = [];
+      positions.forEach((position, index) => {
+        const delta = weights[index] - originalWeights[index];
+        if (delta <= -0.15) reductions.push(recommendation(position, index, "reduce"));
+        if (delta >= 0.15) additions.push(recommendation(position, index, "add"));
+      });
+      const clean = (rows) => rows.filter((item) => item.shares > 0).sort((a, b) => b.deltaWeight - a.deltaWeight).slice(0, 8);
+      return { reductions: clean(reductions), additions: clean(additions), message: "" };
+    }
+
+    function renderPortfolioRebalanceAdvice(portfolio, metrics) {
+      const advice = portfolioRebalanceAdvice(portfolio, metrics);
+      const renderSide = (type, title, rows) => `<section class="portfolio-rebalance-advice-side ${type}"><strong>${title}</strong>${rows.length ? `<div class="portfolio-rebalance-advice-list">${rows.map((item) => `<div class="portfolio-rebalance-advice-item"><strong>${escapeHtml(item.position.name)}</strong><b>${type === "reduce" ? "−" : "+"}${item.deltaWeight.toFixed(2)}% · ${portfolioPrivate(`${item.shares.toLocaleString("zh-CN")} 股`)}</b><span>${escapeHtml(item.reason)}</span></div>`).join("")}</div>` : `<div class="portfolio-rebalance-advice-empty">暂无符合约束的${type === "reduce" ? "减配" : "增配"}标的</div>`}</section>`;
+      return `<div class="portfolio-rebalance-advice"><div class="portfolio-rebalance-advice-head"><div class="portfolio-rebalance-advice-title"><strong>调仓建议</strong><span>以标签目标、个股目标上限和当前仓位为约束，等额匹配减配与增配；仅作组合整理参考。</span></div><button type="button" class="portfolio-rebalance-advice-close" data-action="closePortfolioAdvice" aria-label="关闭调仓建议">×</button></div>${advice.message ? `<div class="portfolio-rebalance-advice-empty">${escapeHtml(advice.message)}</div>` : `<div class="portfolio-rebalance-advice-grid">${renderSide("reduce", "建议减少", advice.reductions)}${renderSide("add", "建议增配", advice.additions)}</div>`}</div>`;
+    }
+
     function renderPortfolioTagAllocationIcon(actualWeight, targetWeight) {
       if (!(targetWeight > 0) || Math.abs(actualWeight - targetWeight) < 0.005) return "";
       const over = actualWeight > targetWeight;
@@ -6479,7 +6586,7 @@
         const targetWeight = portfolioTagTargetWeight(portfolio, tag);
         const stat = `<button type="button" class="portfolio-tag-stat ${active ? "active" : ""}" data-action="togglePortfolioTag" data-tag="${escapeHtml(tag)}"><strong>${escapeHtml(tag)}</strong><span>${actualWeight.toFixed(2)}%</span>${renderPortfolioTagAllocationIcon(actualWeight, targetWeight)}<span class="${className}">${Number.isFinite(dailyPercent) ? `${dailyPercent > 0 ? "+" : ""}${dailyPercent.toFixed(2)}%` : "--"}</span></button>`;
         return active ? `<span class="portfolio-tag-filter-item">${stat}<button type="button" class="portfolio-tag-rename-trigger" data-action="editPortfolioTag" data-tag="${escapeHtml(tag)}" title="编辑标签" aria-label="编辑标签 ${escapeHtml(tag)}">✎</button></span>` : stat;
-      }).join("")}</div></section>`;
+      }).join("")}</div>${state.portfolioAdviceExpanded ? renderPortfolioRebalanceAdvice(portfolio, metrics) : ""}</section>`;
     }
 
     function renderPortfolioModal() {
@@ -8156,6 +8263,18 @@
         if (!state.portfolioTagsExpanded) {
           state.portfolioTagFilter = "";
         }
+        render();
+      }
+      if (action === "togglePortfolioAdvice") {
+        state.portfolioAdviceExpanded = !state.portfolioAdviceExpanded;
+        if (state.portfolioAdviceExpanded) {
+          state.portfolioTagsExpanded = true;
+          state.portfolioPage = "positions";
+        }
+        render();
+      }
+      if (action === "closePortfolioAdvice") {
+        state.portfolioAdviceExpanded = false;
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
