@@ -1868,6 +1868,11 @@
     .position-history-table .history-shares-edit input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
     .position-history-table .history-shares-edit input[type="number"]::-webkit-inner-spin-button,
     .position-history-table .history-shares-edit input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .position-history-table .history-full-edit { display: grid; gap: 5px; min-width: 150px; }
+    .position-history-table .history-full-edit input { width: 100%; min-height: 32px; padding: 5px 7px; font-size: 12px; }
+    .portfolio-backfill { margin-top: 8px; display: flex; align-items: center; justify-content: flex-end; gap: 7px; color: var(--muted); font-size: 12px; cursor: pointer; }
+    .portfolio-backfill input { width: 16px; height: 16px; margin: 0; }
+    .portfolio-backfill-time { margin-top: 10px; }
     .position-history-table .history-save { color: #067647; border-color: #a9d8c2; background: #f0faf5; }
     .position-history-table .history-cancel { color: var(--muted); background: #fff; }
     .position-history-note { padding: 9px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: #f8fafc; font-size: 11px; line-height: 1.55; }
@@ -6863,20 +6868,23 @@
         <tbody>${rows.map((item) => {
           const canRollback = !item.positionId || item.positionId === position?.id;
           const editing = canRollback && modal.editTradeId === item.id;
+          const sign = portfolioTradeSign(item.type) > 0 ? "+" : "-";
           const sharesCell = editing
-            ? `<div class="history-shares-edit"><span>${item.type === "add" ? "+" : "-"}</span><input type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(String(modal.editShares || item.shares || ""))}" data-history-shares="${escapeHtml(item.id)}" aria-label="修订交易股数"><span>股</span></div>`
-            : `${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}`;
+            ? `<div class="history-full-edit"><input type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(String(modal.editShares || item.shares || ""))}" data-history-shares="${escapeHtml(item.id)}" aria-label="修订交易股数"></div>`
+            : `${Number(item.shares).toLocaleString("zh-CN")}`;
           const actions = !canRollback
             ? `<span class="muted">历史周期</span>`
             : editing
               ? `<div class="history-actions"><button class="history-save" data-action="saveTradeShares" data-trade-id="${item.id}">保存</button><button class="history-cancel" data-action="cancelTradeShares">取消</button></div>`
-              : `<div class="history-actions"><button class="history-edit" data-action="editTradeShares" data-trade-id="${item.id}">修改股数</button><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></div>`;
-          return `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${sharesCell}</td><td>${actions}</td></tr>`;
+              : `<div class="history-actions"><button class="history-edit" data-action="editTradeShares" data-trade-id="${item.id}">编辑交易</button><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></div>`;
+          const timeCell = editing ? `<div class="history-full-edit"><input type="datetime-local" step="60" value="${escapeHtml(modal.editOccurredAt || localDateTimeMinuteValue(item.occurredAt))}" data-history-time="${escapeHtml(item.id)}" aria-label="修订交易时间"></div>` : new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const priceCell = editing ? `<div class="history-full-edit"><input type="number" min="0" ${priceInputAttrs(item.market || position.market, modal.editPrice || item.price)} value="${escapeHtml(String(modal.editPrice || item.price || ""))}" data-history-price="${escapeHtml(item.id)}" aria-label="修订成交价"></div>` : formatPortfolioMoney(item.price, item.currency || position.currency);
+          return `<tr><td>${timeCell}</td><td>${portfolioTradeTypeText(item.type)}</td><td>${priceCell}</td><td>${sign}${sharesCell}</td><td>${actions}</td></tr>`;
         }).join("")}</tbody>
-      </table></div>` : `<div class="empty" style="padding:28px 12px">暂无加仓或减持记录。</div>`;
+      </table></div>` : `<div class="empty" style="padding:28px 12px">暂无交易记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
         <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
-        <div class="simple-modal-body">${body}<div class="position-history-note">修改股数会按原成交价修订差额，并同步更新当前持股、摊薄成本、现金余额和盘中估算净值；已经生成的历史日终净值快照不会回溯重算。</div>${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
+        <div class="simple-modal-body">${body}<div class="position-history-note">可修改交易时间、成交价和股数。保存后会同步修订当前持仓与现金，并从交易发生日开始重新回溯历史净值。</div>${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
         <div class="simple-modal-foot"><button data-action="closePortfolioModal">关闭</button></div>
       </section></div>`;
     }
@@ -7106,7 +7114,7 @@
       const defaultTradeShares = modal.type === "add" ? "" : (suggestedShares || "");
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
-      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></label></div>`;
+      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
       const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
       const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
       return modalShell(title, body, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
@@ -8335,7 +8343,14 @@
       const cashFlowForm = document.querySelector("[data-form='portfolioCashFlow']");
       if (cashFlowForm) cashFlowForm.addEventListener("submit", submitPortfolioCashFlow);
       const tradeForm = document.querySelector("[data-form='positionTrade']");
-      if (tradeForm) tradeForm.addEventListener("submit", submitPositionTrade);
+      if (tradeForm) {
+        tradeForm.addEventListener("submit", submitPositionTrade);
+        tradeForm.querySelector("[data-input='portfolioBackfill']")?.addEventListener("change", (event) => {
+          if (!state.portfolioModal) return;
+          state.portfolioModal = { ...state.portfolioModal, backfillTrade: event.target.checked, occurredAt: state.portfolioModal.occurredAt || localDateTimeMinuteValue() };
+          render();
+        });
+      }
       const rebalanceForm = document.querySelector("[data-form='rebalanceTrade']");
       if (rebalanceForm) rebalanceForm.addEventListener("submit", submitRebalanceTrade);
       const portfolioTagForm = document.querySelector("[data-form='portfolioTag']");
@@ -8561,7 +8576,7 @@
       if (action === "positionHistory") openPortfolioModal("history", stockId, positionKey);
       if (action === "editTradeShares") beginPortfolioTradeSharesEdit(event.currentTarget.dataset.tradeId);
       if (action === "cancelTradeShares") cancelPortfolioTradeSharesEdit();
-      if (action === "saveTradeShares") savePortfolioTradeShares(event.currentTarget.dataset.tradeId);
+      if (action === "saveTradeShares") await savePortfolioTradeShares(event.currentTarget.dataset.tradeId);
       if (action === "rollbackTrade") rollbackPortfolioTrade(event.currentTarget.dataset.tradeId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
@@ -8631,11 +8646,11 @@
       const requestedPortfolioId = portfolio.id;
       try {
         const [navRows, benchmarkRows] = await Promise.all([
-          supabaseRequest(`/rest/v1/portfolio_daily_nav?portfolio_id=eq.${encodeURIComponent(portfolio.id)}&select=nav_date,unit_nav,total_assets,total_units&order=nav_date.asc`),
+          supabaseRequest(`/rest/v1/portfolio_daily_nav?portfolio_id=eq.${encodeURIComponent(portfolio.id)}&select=nav_date,unit_nav,total_assets,total_units,cash_value,position_value,base_currency,fx_rates,price_status&order=nav_date.asc`),
           supabaseRequest(`/rest/v1/benchmark_daily_close?select=benchmark_code,trade_date,close_value&order=trade_date.asc`)
         ]);
         if (state.activePortfolioId !== requestedPortfolioId) return;
-        state.navHistory = navRows || [];
+        state.navHistory = (navRows || []).map((row) => ({ ...row, ...(portfolio.navHistoryCorrections?.[row.nav_date] || {}) }));
         state.navHistoryPortfolioId = requestedPortfolioId;
         state.benchmarkHistory = benchmarkRows || [];
       } catch (error) {
@@ -9355,7 +9370,87 @@
       closePortfolioModal();
     }
 
-    function submitPositionTrade(event) {
+    function localDateTimeMinuteValue(value = new Date()) {
+      const date = value instanceof Date ? value : new Date(value);
+      if (!Number.isFinite(date.getTime())) return "";
+      const pad = (number) => String(number).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function portfolioTradeSign(type) { return type === "reduce" ? -1 : 1; }
+    function portfolioTradeTypeText(type) { return type === "open" ? "开仓" : type === "add" ? "加仓" : "减持"; }
+    function portfolioTradeDate(trade) { return localDateTimeMinuteValue(trade?.occurredAt).slice(0, 10); }
+
+    function historicalFx(currency, baseCurrency, rates = {}) {
+      if (currency === baseCurrency) return 1;
+      const hkdCny = Number(rates.HKD_CNY);
+      const usdCny = Number(rates.USD_CNY);
+      if (baseCurrency === "CNY" && currency === "HKD" && hkdCny > 0) return hkdCny;
+      if (baseCurrency === "CNY" && currency === "USD" && usdCny > 0) return usdCny;
+      if (baseCurrency === "USD" && currency === "CNY" && usdCny > 0) return 1 / usdCny;
+      if (baseCurrency === "USD" && currency === "HKD" && hkdCny > 0 && usdCny > 0) return hkdCny / usdCny;
+      return portfolioFx(currency, baseCurrency);
+    }
+
+    async function fetchHistoricalCloses(stock, firstDate, lastDate) {
+      let quoteId = stockQuoteId(stock);
+      if (!quoteId && stock.market === "US") quoteId = `105.${String(stock.rawCode || stock.code || "").toUpperCase()}`;
+      if (!quoteId) throw new Error("暂时无法识别这只股票的历史行情代码。");
+      const compact = (value) => String(value).replaceAll("-", "");
+      const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${encodeURIComponent(quoteId)}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=0&beg=${compact(firstDate)}&end=${compact(lastDate)}`;
+      const response = await fetchWithTimeout(url, 10000);
+      if (!response.ok) throw new Error("历史行情请求失败。");
+      const json = await response.json();
+      const closes = (json?.data?.klines || []).map((line) => String(line).split(",")).map((parts) => [parts[0], Number(parts[2])]).filter((item) => item[0] && item[1] > 0);
+      if (!closes.length) throw new Error("没有取得该股票的历史收盘价。");
+      return closes;
+    }
+
+    async function revisedNavForTrades(portfolio, stock, changes) {
+      if (state.navHistoryPortfolioId !== portfolio.id && state.session?.access_token !== "local-demo") await loadPortfolioPerformance();
+      const rows = (state.navHistory || []).map((row) => ({ ...row }));
+      if (!rows.length) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
+      const applicableDates = changes.map(({ trade }) => portfolioTradeDate(trade)).filter(Boolean);
+      const firstDate = [...applicableDates, rows[0].nav_date].sort()[0];
+      const lastDate = rows[rows.length - 1].nav_date;
+      if (firstDate > lastDate) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
+      const priceStart = new Date(`${firstDate}T00:00:00`);
+      priceStart.setDate(priceStart.getDate() - 10);
+      const closes = await fetchHistoricalCloses(stock, localDateTimeMinuteValue(priceStart).slice(0, 10), lastDate);
+      let closeIndex = 0;
+      let latestClose = 0;
+      const corrections = { ...(portfolio.navHistoryCorrections || {}) };
+      rows.forEach((row) => {
+        while (closeIndex < closes.length && closes[closeIndex][0] <= row.nav_date) { latestClose = closes[closeIndex][1]; closeIndex += 1; }
+        let totalDelta = 0;
+        let positionDelta = 0;
+        let cashDelta = 0;
+        changes.forEach(({ trade, multiplier }) => {
+          if (row.nav_date < portfolioTradeDate(trade)) return;
+          const currency = trade.currency || stock.currency || marketCurrency(stock.market);
+          const baseCurrency = row.base_currency || (portfolio.accountType === "CNY" ? "CNY" : "USD");
+          const fx = historicalFx(currency, baseCurrency, row.fx_rates || {});
+          const signedShares = portfolioTradeSign(trade.type) * Number(trade.shares) * multiplier;
+          positionDelta += signedShares * latestClose * fx;
+          cashDelta -= signedShares * Number(trade.price) * fx;
+        });
+        totalDelta = positionDelta + cashDelta;
+        if (Math.abs(totalDelta) < 0.0000001) return;
+        if (!(latestClose > 0) || !Number.isFinite(Number(row.total_assets)) || !(Number(row.total_units) > 0)) throw new Error(`无法安全重算 ${row.nav_date} 的净值。`);
+        const corrected = {
+          total_assets: Number(row.total_assets) + totalDelta,
+          position_value: Number(row.position_value || 0) + positionDelta,
+          cash_value: Number(row.cash_value || 0) + cashDelta,
+          unit_nav: (Number(row.total_assets) + totalDelta) / Number(row.total_units),
+          revised_at: new Date().toISOString()
+        };
+        Object.assign(row, corrected);
+        corrections[row.nav_date] = corrected;
+      });
+      return { rows, corrections };
+    }
+
+    async function submitPositionTrade(event) {
       event.preventDefault();
       const portfolio = activePortfolio();
       const modal = state.portfolioModal;
@@ -9395,16 +9490,27 @@
       if (portfolio.accountType === "HKUS" && !["HK", "US"].includes(stock.market)) return showPortfolioError("港美账户只能开仓港股或美股。");
       if (modal.type === "open" && portfolio.positions.some((item) => item.code === stock.code && item.market === stock.market)) return showPortfolioError("该股票已在组合中，请使用加仓。");
       if (modal.type === "reduce" && shares > Number(stock.shares)) return showPortfolioError("减持数量不能超过当前股数。");
+      const occurredAt = form.has("backfillTrade") ? new Date(String(form.get("occurredAt") || "")) : new Date();
+      if (!Number.isFinite(occurredAt.getTime())) return showPortfolioError("请输入有效的补录交易时间。");
+      if (occurredAt.getTime() > Date.now() + 60000) return showPortfolioError("补录交易时间不能晚于现在。");
       const amount = price * shares;
       const currency = stock.currency || marketCurrency(stock.market);
       const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : currency;
       const cashAmount = amount * portfolioFx(currency, cashCurrency);
       if (modal.type === "open" && Number(portfolio.cash?.[cashCurrency] || 0) < cashAmount) return showPortfolioError(`${currencies[cashCurrency]?.label || cashCurrency}现金余额不足。`);
+      const now = new Date().toISOString();
+      const newPositionId = modal.type === "open" ? id("position") : stock.id;
+      const trade = { id: id("trade"), positionId: newPositionId, code: stock.code, market: stock.market, type: modal.type, currency, price, shares, occurredAt: occurredAt.toISOString() };
+      let navRevision;
+      if (form.has("backfillTrade")) {
+        try { navRevision = await revisedNavForTrades(portfolio, stock, [{ trade, multiplier: 1 }]); }
+        catch (error) { return showPortfolioError(error.message || "历史净值回溯失败，请稍后重试。"); }
+      }
       updateActivePortfolio((item) => {
         const positions = [...item.positions];
         if (modal.type === "open") {
           positions.push({
-            id: id("position"), name: stock.name, code: stock.code, rawCode: stock.rawCode || "", market: stock.market,
+            id: newPositionId, name: stock.name, code: stock.code, rawCode: stock.rawCode || "", market: stock.market,
             exchange: stock.exchange || "", quoteId: stock.quoteId || "", currency, shares, averageCost: price,
             latestPrice: Number(stock.latestPrice) || price, priceUpdatedAt: stock.marketCapUpdatedAt || todayString()
           });
@@ -9427,11 +9533,10 @@
           }
         }
         const cashDelta = modal.type === "reduce" ? cashAmount : -cashAmount;
-        const tradeHistory = modal.type === "add" || modal.type === "reduce"
-          ? [...(item.tradeHistory || []), { id: id("trade"), positionId: stock.id, code: stock.code, market: stock.market, type: modal.type, currency, price, shares, occurredAt: new Date().toISOString() }]
-          : [...(item.tradeHistory || [])];
-        return { ...item, positions, tradeHistory, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
+        const tradeHistory = [...(item.tradeHistory || []), trade];
+        return { ...item, positions, tradeHistory, navHistoryCorrections: navRevision?.corrections || item.navHistoryCorrections, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: now };
       });
+      if (navRevision) { state.navHistory = navRevision.rows; state.navHistoryPortfolioId = portfolio.id; }
       closePortfolioModal();
     }
 
@@ -9442,7 +9547,7 @@
       const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
       if (!trade) return showPortfolioError("没有找到这条交易记录。");
       state.portfolioError = "";
-      state.portfolioModal = { ...modal, editTradeId: tradeId, editShares: String(trade.shares || "") };
+      state.portfolioModal = { ...modal, editTradeId: tradeId, editShares: String(trade.shares || ""), editPrice: String(trade.price || ""), editOccurredAt: localDateTimeMinuteValue(trade.occurredAt) };
       render();
       const input = document.querySelector(`[data-history-shares='${CSS.escape(tradeId)}']`);
       input?.focus();
@@ -9453,39 +9558,54 @@
       const modal = state.portfolioModal;
       if (modal?.type !== "history") return;
       state.portfolioError = "";
-      state.portfolioModal = { ...modal, editTradeId: "", editShares: "" };
+      state.portfolioModal = { ...modal, editTradeId: "", editShares: "", editPrice: "", editOccurredAt: "" };
       render();
     }
 
-    function savePortfolioTradeShares(tradeId) {
+    async function savePortfolioTradeShares(tradeId) {
       const portfolio = activePortfolio();
       const modal = state.portfolioModal;
       if (!portfolio || modal?.type !== "history" || !tradeId) return;
       const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
-      if (!trade || !["add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可修改的交易记录。");
-      const input = document.querySelector(`[data-history-shares='${CSS.escape(tradeId)}']`);
-      const nextTradeShares = Number(input?.value);
+      if (!trade || !["open", "add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可修改的交易记录。");
+      const sharesInput = document.querySelector(`[data-history-shares='${CSS.escape(tradeId)}']`);
+      const priceInput = document.querySelector(`[data-history-price='${CSS.escape(tradeId)}']`);
+      const timeInput = document.querySelector(`[data-history-time='${CSS.escape(tradeId)}']`);
+      const nextTradeShares = Number(sharesInput?.value);
+      const nextTradePrice = Number(priceInput?.value);
+      const nextOccurredAt = new Date(String(timeInput?.value || ""));
       const oldTradeShares = Number(trade.shares);
       if (!Number.isInteger(nextTradeShares) || nextTradeShares <= 0) return showPortfolioError("交易股数必须为正整数。");
+      if (!(nextTradePrice > 0)) return showPortfolioError("请输入有效成交价。");
+      if (!Number.isFinite(nextOccurredAt.getTime()) || nextOccurredAt.getTime() > Date.now() + 60000) return showPortfolioError("请输入不晚于现在的有效交易时间。");
       if (!Number.isInteger(oldTradeShares) || oldTradeShares <= 0) return showPortfolioError("原交易股数无效，无法安全修改。");
-      if (nextTradeShares === oldTradeShares) return cancelPortfolioTradeSharesEdit();
+      const nextTrade = { ...trade, shares: nextTradeShares, price: nextTradePrice, occurredAt: nextOccurredAt.toISOString() };
+      if (nextTradeShares === oldTradeShares && nextTradePrice === Number(trade.price) && nextTrade.occurredAt === trade.occurredAt) return cancelPortfolioTradeSharesEdit();
       const position = (portfolio.positions || []).find((item) => item.id === trade.positionId || (!trade.positionId && item.code === trade.code && (!trade.market || item.market === trade.market)));
       if (!position) return showPortfolioError("当前持仓中已找不到这只股票，无法安全修改。");
       const price = Number(trade.price);
       const currentShares = Number(position.shares);
       const currentCost = Number(position.averageCost);
       if (!(price > 0) || !Number.isFinite(currentShares) || currentShares < 0 || !Number.isFinite(currentCost)) return showPortfolioError("持仓或交易数据不完整，无法安全修改。");
+      const sign = portfolioTradeSign(trade.type);
       const tradeDifference = nextTradeShares - oldTradeShares;
-      const positionSharesDelta = trade.type === "add" ? tradeDifference : -tradeDifference;
+      const positionSharesDelta = sign * tradeDifference;
       const nextPositionShares = currentShares + positionSharesDelta;
       if (nextPositionShares < 0) return showPortfolioError("修订后的减持数量超过当前可用股数。");
-      const nextCostBasis = currentShares * currentCost + positionSharesDelta * price;
+      const basisDelta = sign * (nextTradeShares * nextTradePrice - oldTradeShares * price);
+      const nextCostBasis = currentShares * currentCost + basisDelta;
       const nextAverageCost = nextPositionShares > 0 ? nextCostBasis / nextPositionShares : 0;
       if (nextPositionShares > 0 && !Number.isFinite(nextAverageCost)) return showPortfolioError("修订后的摊薄成本无效，请检查股数。");
       const tradeCurrency = trade.currency || position.currency || marketCurrency(position.market);
       const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : tradeCurrency;
-      const cashDelta = -positionSharesDelta * price * portfolioFx(tradeCurrency, cashCurrency);
+      const cashDelta = -sign * (nextTradeShares * nextTradePrice - oldTradeShares * price) * portfolioFx(tradeCurrency, cashCurrency);
       const now = new Date().toISOString();
+      let navRevision;
+      try { navRevision = await revisedNavForTrades(portfolio, position, [{ trade, multiplier: -1 }, { trade: nextTrade, multiplier: 1 }]); }
+      catch (error) {
+        state.portfolioModal = { ...modal, editShares: String(nextTradeShares), editPrice: String(nextTradePrice), editOccurredAt: localDateTimeMinuteValue(nextOccurredAt) };
+        return showPortfolioError(error.message || "历史净值回溯失败，请稍后重试。");
+      }
       let nextPosition = null;
       updateActivePortfolio((item) => {
         const positions = [...(item.positions || [])];
@@ -9501,15 +9621,18 @@
           ...item,
           positions,
           cash: { ...(item.cash || {}), [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta },
-          tradeHistory: (item.tradeHistory || []).map((entry) => entry.id === tradeId ? { ...entry, shares: nextTradeShares, revisedAt: now } : entry),
+          tradeHistory: (item.tradeHistory || []).map((entry) => entry.id === tradeId ? { ...nextTrade, revisedAt: now } : entry),
+          navHistoryCorrections: navRevision.corrections,
           updatedAt: now
         };
       });
+      state.navHistory = navRevision.rows;
+      state.navHistoryPortfolioId = portfolio.id;
       state.portfolioError = "";
       if (!nextPosition) {
         state.portfolioModal = null;
       } else {
-        state.portfolioModal = { ...modal, position: nextPosition, editTradeId: "", editShares: "" };
+        state.portfolioModal = { ...modal, position: nextPosition, editTradeId: "", editShares: "", editPrice: "", editOccurredAt: "" };
       }
       render();
     }
@@ -9518,7 +9641,7 @@
       const portfolio = activePortfolio();
       if (!portfolio || !tradeId) return;
       const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
-      if (!trade || !["add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可回滚的交易记录。");
+      if (!trade || !["open", "add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可回滚的交易记录。");
       const position = (portfolio.positions || []).find((item) => item.id === trade.positionId || (!trade.positionId && item.code === trade.code));
       if (!position) return showPortfolioError("当前持仓中已找不到这只股票，无法安全回滚。");
       const price = Number(trade.price);
@@ -9526,13 +9649,13 @@
       const currentShares = Number(position.shares);
       const currentCost = Number(position.averageCost);
       if (!(price > 0) || !Number.isInteger(shares) || shares <= 0 || !Number.isFinite(currentShares) || currentShares < 0) return showPortfolioError("这条交易记录数据不完整，无法回滚。");
-      if (trade.type === "add" && currentShares < shares) return showPortfolioError("当前股数少于这笔加仓数量，无法安全回滚。");
-      const tradeTypeText = trade.type === "add" ? "加仓" : "减持";
+      if (portfolioTradeSign(trade.type) > 0 && currentShares < shares) return showPortfolioError("当前股数少于这笔买入数量，无法安全回滚。");
+      const tradeTypeText = portfolioTradeTypeText(trade.type);
       const occurredAt = trade.occurredAt ? new Date(trade.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "--";
       const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : (trade.currency || position.currency || marketCurrency(position.market));
       const cashAmount = price * shares * portfolioFx(trade.currency || position.currency, cashCurrency);
       const cashText = formatPortfolioMoney(cashAmount, cashCurrency);
-      const message = trade.type === "add"
+      const message = portfolioTradeSign(trade.type) > 0
         ? `确定回滚这笔${tradeTypeText}吗？\n\n${position.name} ${position.code}\n时间：${occurredAt}\n数量：${shares.toLocaleString("zh-CN")} 股\n成交价：${formatPortfolioMoney(price, trade.currency || position.currency)}\n\n回滚后会减少对应股数、恢复现金 ${cashText}，并删除这条交易历史。`
         : `确定回滚这笔${tradeTypeText}吗？\n\n${position.name} ${position.code}\n时间：${occurredAt}\n数量：${shares.toLocaleString("zh-CN")} 股\n成交价：${formatPortfolioMoney(price, trade.currency || position.currency)}\n\n回滚后会补回对应股数、扣回现金 ${cashText}，并删除这条交易历史。`;
       if (!confirm(message)) return;
@@ -9543,7 +9666,7 @@
         const index = positions.findIndex((entry) => entry.id === position.id);
         if (index < 0) return item;
         const old = positions[index];
-        if (trade.type === "add") {
+        if (portfolioTradeSign(trade.type) > 0) {
           const remaining = Number(old.shares) - shares;
           if (remaining <= 0) {
             positions.splice(index, 1);
@@ -9559,7 +9682,7 @@
           nextPosition = { ...old, shares: restoredShares, averageCost: restoredCost, latestPrice: Number(old.latestPrice) || price };
           positions[index] = nextPosition;
         }
-        const cashDelta = trade.type === "add" ? cashAmount : -cashAmount;
+        const cashDelta = portfolioTradeSign(trade.type) > 0 ? cashAmount : -cashAmount;
         const nextCash = { ...(item.cash || {}), [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta };
         return {
           ...item,
