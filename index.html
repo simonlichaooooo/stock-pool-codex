@@ -3945,6 +3945,103 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 2px 7px color-mix(in srgb,var(--brand) 22%,transparent);
     }
 
+    /* Airy capsule navigation: more breathing room, less shadow, and a restrained moving highlight. */
+    .topbar .topbar-nav {
+      gap:4px;
+      padding:5px;
+      overflow:visible;
+      border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.76));
+      border-radius:999px;
+      background:color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.48));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+      backdrop-filter:blur(11px) saturate(118%);
+      -webkit-backdrop-filter:blur(11px) saturate(118%);
+    }
+    .topbar .topbar-nav button,
+    .topbar .topbar-nav button:hover,
+    .topbar .topbar-nav button.active {
+      min-height:34px;
+      padding:0 16px;
+      border:1px solid transparent;
+      border-radius:999px;
+      box-shadow:none;
+    }
+    .topbar .topbar-nav button { color:var(--muted); background:transparent; }
+    .topbar .topbar-nav button:hover {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 13%,transparent);
+      background:rgba(255,255,255,.46);
+    }
+    .topbar .topbar-nav button.active,
+    html[data-theme]:not([data-theme="glacier"]) .topbar .topbar-nav button.active {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 29%,rgba(255,255,255,.62));
+      background:linear-gradient(112deg,
+        color-mix(in srgb,var(--brand-soft) 82%,white) 0%,
+        rgba(255,255,255,.96) 34%,
+        color-mix(in srgb,var(--brand) 17%,white) 58%,
+        color-mix(in srgb,var(--brand-soft) 78%,white) 100%);
+      background-size:230% 100%;
+      animation:navCapsuleLight 5.2s ease-in-out infinite;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 0 0 1px color-mix(in srgb,var(--brand) 8%,transparent);
+      text-shadow:0 1px 0 rgba(255,255,255,.72);
+    }
+
+    .toolbar-filters > .segmented,
+    .portfolio-switcher > .portfolio-tabs {
+      gap:4px;
+      padding:5px;
+      overflow:visible;
+      border:1px solid color-mix(in srgb,var(--brand) 20%,rgba(255,255,255,.76));
+      border-radius:999px;
+      background:color-mix(in srgb,var(--brand-soft) 27%,rgba(255,255,255,.50));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+    }
+    .portfolio-switcher > .portfolio-tabs { flex-wrap:wrap; }
+    .toolbar-filters > .segmented button,
+    .portfolio-switcher > .portfolio-tabs button {
+      min-height:30px;
+      padding:0 13px;
+      border:1px solid transparent !important;
+      border-radius:999px;
+      box-shadow:none;
+    }
+    .toolbar-filters > .segmented button.active,
+    .portfolio-switcher > .portfolio-tabs button.active,
+    :is(.nav-tabs:not(.topbar-nav),.portfolio-tabs,.segmented) button.active {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 26%,rgba(255,255,255,.64)) !important;
+      background:linear-gradient(120deg,rgba(255,255,255,.96),color-mix(in srgb,var(--brand-soft) 70%,rgba(255,255,255,.70)));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 0 0 1px color-mix(in srgb,var(--brand) 7%,transparent);
+      text-shadow:none;
+    }
+
+    button.portfolio-action-advice,
+    button.portfolio-action-advice.active,
+    html[data-theme] .portfolio-actions > button.portfolio-action-advice,
+    html[data-theme] .portfolio-actions > button.portfolio-action-advice.active {
+      color:color-mix(in srgb,var(--brand-strong) 88%,#195f70);
+      border-color:color-mix(in srgb,var(--brand) 28%,rgba(255,255,255,.60));
+      background:color-mix(in srgb,var(--brand-soft) 46%,rgba(255,255,255,.66));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.90);
+    }
+    button.portfolio-action-advice:hover,
+    html[data-theme] .portfolio-actions > button.portfolio-action-advice:hover {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 40%,rgba(255,255,255,.55));
+      background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.72));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.96);
+    }
+    button.portfolio-action-advice.active,
+    html[data-theme] .portfolio-actions > button.portfolio-action-advice.active {
+      background:linear-gradient(120deg,rgba(255,255,255,.86),color-mix(in srgb,var(--brand-soft) 78%,rgba(255,255,255,.62)));
+    }
+
+    @keyframes navCapsuleLight {
+      0%,100% { background-position:0% 50%; }
+      50% { background-position:100% 50%; }
+    }
+
     .portfolio-trade-alerts {
       margin-bottom:10px;
       padding:12px 14px;
@@ -3985,7 +4082,7 @@
     @keyframes trade-alert-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.38; transform:scale(.72); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .theme-orb, .theme-orb::before, .trade-alert-dot { animation:none; }
+      .theme-orb, .theme-orb::before, .trade-alert-dot, .topbar .topbar-nav button.active { animation:none; }
     }
 
     @media (max-width: 860px) {
