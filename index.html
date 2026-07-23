@@ -1854,6 +1854,23 @@
       border-color: #e4877b;
       background: #fee4e2;
     }
+    .position-history-table .history-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .position-history-table .history-edit { color: var(--brand-strong); border-color: #b8cee4; background: #f0f7ff; }
+    .position-history-table .history-edit:hover { border-color: #7da8d1; background: #e3f0fc; }
+    .position-history-table .history-shares-edit { display: inline-flex; align-items: center; gap: 6px; min-width: 132px; }
+    .position-history-table .history-shares-edit input {
+      width: 88px;
+      min-height: 32px;
+      padding: 5px 8px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .position-history-table .history-shares-edit input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    .position-history-table .history-shares-edit input[type="number"]::-webkit-inner-spin-button,
+    .position-history-table .history-shares-edit input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .position-history-table .history-save { color: #067647; border-color: #a9d8c2; background: #f0faf5; }
+    .position-history-table .history-cancel { color: var(--muted); background: #fff; }
+    .position-history-note { padding: 9px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: #f8fafc; font-size: 11px; line-height: 1.55; }
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
@@ -6845,12 +6862,21 @@
         <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th><th>操作</th></tr></thead>
         <tbody>${rows.map((item) => {
           const canRollback = !item.positionId || item.positionId === position?.id;
-          return `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}</td><td>${canRollback ? `<button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button>` : `<span class="muted">历史周期</span>`}</td></tr>`;
+          const editing = canRollback && modal.editTradeId === item.id;
+          const sharesCell = editing
+            ? `<div class="history-shares-edit"><span>${item.type === "add" ? "+" : "-"}</span><input type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(String(modal.editShares || item.shares || ""))}" data-history-shares="${escapeHtml(item.id)}" aria-label="修订交易股数"><span>股</span></div>`
+            : `${item.type === "add" ? "+" : "-"}${Number(item.shares).toLocaleString("zh-CN")}`;
+          const actions = !canRollback
+            ? `<span class="muted">历史周期</span>`
+            : editing
+              ? `<div class="history-actions"><button class="history-save" data-action="saveTradeShares" data-trade-id="${item.id}">保存</button><button class="history-cancel" data-action="cancelTradeShares">取消</button></div>`
+              : `<div class="history-actions"><button class="history-edit" data-action="editTradeShares" data-trade-id="${item.id}">修改股数</button><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></div>`;
+          return `<tr><td>${new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${item.type === "add" ? "加仓" : "减持"}</td><td>${formatPortfolioMoney(item.price, item.currency || position.currency)}</td><td>${sharesCell}</td><td>${actions}</td></tr>`;
         }).join("")}</tbody>
       </table></div>` : `<div class="empty" style="padding:28px 12px">暂无加仓或减持记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
         <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
-        <div class="simple-modal-body">${body}${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
+        <div class="simple-modal-body">${body}<div class="position-history-note">修改股数会按原成交价修订差额，并同步更新当前持股、摊薄成本、现金余额和盘中估算净值；已经生成的历史日终净值快照不会回溯重算。</div>${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
         <div class="simple-modal-foot"><button data-action="closePortfolioModal">关闭</button></div>
       </section></div>`;
     }
@@ -8533,6 +8559,9 @@
         render();
       }
       if (action === "positionHistory") openPortfolioModal("history", stockId, positionKey);
+      if (action === "editTradeShares") beginPortfolioTradeSharesEdit(event.currentTarget.dataset.tradeId);
+      if (action === "cancelTradeShares") cancelPortfolioTradeSharesEdit();
+      if (action === "saveTradeShares") savePortfolioTradeShares(event.currentTarget.dataset.tradeId);
       if (action === "rollbackTrade") rollbackPortfolioTrade(event.currentTarget.dataset.tradeId);
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
@@ -9404,6 +9433,85 @@
         return { ...item, positions, tradeHistory, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: new Date().toISOString() };
       });
       closePortfolioModal();
+    }
+
+    function beginPortfolioTradeSharesEdit(tradeId) {
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || modal?.type !== "history") return;
+      const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
+      if (!trade) return showPortfolioError("没有找到这条交易记录。");
+      state.portfolioError = "";
+      state.portfolioModal = { ...modal, editTradeId: tradeId, editShares: String(trade.shares || "") };
+      render();
+      const input = document.querySelector(`[data-history-shares='${CSS.escape(tradeId)}']`);
+      input?.focus();
+      input?.select();
+    }
+
+    function cancelPortfolioTradeSharesEdit() {
+      const modal = state.portfolioModal;
+      if (modal?.type !== "history") return;
+      state.portfolioError = "";
+      state.portfolioModal = { ...modal, editTradeId: "", editShares: "" };
+      render();
+    }
+
+    function savePortfolioTradeShares(tradeId) {
+      const portfolio = activePortfolio();
+      const modal = state.portfolioModal;
+      if (!portfolio || modal?.type !== "history" || !tradeId) return;
+      const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
+      if (!trade || !["add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可修改的交易记录。");
+      const input = document.querySelector(`[data-history-shares='${CSS.escape(tradeId)}']`);
+      const nextTradeShares = Number(input?.value);
+      const oldTradeShares = Number(trade.shares);
+      if (!Number.isInteger(nextTradeShares) || nextTradeShares <= 0) return showPortfolioError("交易股数必须为正整数。");
+      if (!Number.isInteger(oldTradeShares) || oldTradeShares <= 0) return showPortfolioError("原交易股数无效，无法安全修改。");
+      if (nextTradeShares === oldTradeShares) return cancelPortfolioTradeSharesEdit();
+      const position = (portfolio.positions || []).find((item) => item.id === trade.positionId || (!trade.positionId && item.code === trade.code && (!trade.market || item.market === trade.market)));
+      if (!position) return showPortfolioError("当前持仓中已找不到这只股票，无法安全修改。");
+      const price = Number(trade.price);
+      const currentShares = Number(position.shares);
+      const currentCost = Number(position.averageCost);
+      if (!(price > 0) || !Number.isFinite(currentShares) || currentShares < 0 || !Number.isFinite(currentCost)) return showPortfolioError("持仓或交易数据不完整，无法安全修改。");
+      const tradeDifference = nextTradeShares - oldTradeShares;
+      const positionSharesDelta = trade.type === "add" ? tradeDifference : -tradeDifference;
+      const nextPositionShares = currentShares + positionSharesDelta;
+      if (nextPositionShares < 0) return showPortfolioError("修订后的减持数量超过当前可用股数。");
+      const nextCostBasis = currentShares * currentCost + positionSharesDelta * price;
+      const nextAverageCost = nextPositionShares > 0 ? nextCostBasis / nextPositionShares : 0;
+      if (nextPositionShares > 0 && !Number.isFinite(nextAverageCost)) return showPortfolioError("修订后的摊薄成本无效，请检查股数。");
+      const tradeCurrency = trade.currency || position.currency || marketCurrency(position.market);
+      const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : tradeCurrency;
+      const cashDelta = -positionSharesDelta * price * portfolioFx(tradeCurrency, cashCurrency);
+      const now = new Date().toISOString();
+      let nextPosition = null;
+      updateActivePortfolio((item) => {
+        const positions = [...(item.positions || [])];
+        const index = positions.findIndex((entry) => entry.id === position.id);
+        if (index < 0) return item;
+        if (nextPositionShares === 0) {
+          positions.splice(index, 1);
+        } else {
+          nextPosition = { ...positions[index], shares: nextPositionShares, averageCost: nextAverageCost, updatedAt: now };
+          positions[index] = nextPosition;
+        }
+        return {
+          ...item,
+          positions,
+          cash: { ...(item.cash || {}), [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta },
+          tradeHistory: (item.tradeHistory || []).map((entry) => entry.id === tradeId ? { ...entry, shares: nextTradeShares, revisedAt: now } : entry),
+          updatedAt: now
+        };
+      });
+      state.portfolioError = "";
+      if (!nextPosition) {
+        state.portfolioModal = null;
+      } else {
+        state.portfolioModal = { ...modal, position: nextPosition, editTradeId: "", editShares: "" };
+      }
+      render();
     }
 
     function rollbackPortfolioTrade(tradeId) {
