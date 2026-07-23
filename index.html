@@ -6185,6 +6185,15 @@
       return Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function roundPortfolioCost(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? Number(number.toFixed(4)) : 0;
+    }
+
+    function formatPortfolioCost(value) {
+      return Number(value || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    }
+
     function portfolioPrivate(value) {
       return state.portfolioPrivacyMode ? "****" : value;
     }
@@ -6505,7 +6514,7 @@
             return `<tr>
               <td data-label="股票" class="sticky-col"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div>${(position.tags || []).length ? `<div class="position-row-tags">${position.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}</td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
-              <td data-label="摊薄成本" class="num">${portfolioPrivate(formatPortfolioNumber(position.averageCost))}</td>
+              <td data-label="摊薄成本" class="num">${portfolioPrivate(formatPortfolioCost(position.averageCost))}</td>
               <td data-label="实时股价" class="num">${position.latestPrice ? formatPortfolioNumber(position.latestPrice) : "--"}</td>
               <td data-label="当日涨跌幅" class="${changeClass}">${Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "--"}</td>
               <td data-label="当日盈亏" class="num ${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
@@ -6938,7 +6947,7 @@
                 ? `<div class="portfolio-initialize-selected"><div><strong>${escapeHtml(row.stock.name)}</strong><small>${escapeHtml(row.stock.code)}</small></div><button type="button" data-action="clearInitializationStock" data-row-id="${row.id}">更换</button></div>`
                 : `<input data-input="initializationStockSearch" data-row-id="${row.id}" value="${escapeHtml(row.query || "")}" placeholder="搜索股票名称或代码" autocomplete="off"><div data-initialization-results="${row.id}">${initializationResultsMarkup(row)}</div>`}</div>
               <label class="field"><span>持股数</span><input data-init-row-field="shares" data-row-id="${row.id}" type="number" min="0" step="any" value="${escapeHtml(row.shares || "")}" placeholder="0"></label>
-              <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" ${priceInputAttrs(row.stock?.market, row.averageCost)} value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
+              <label class="field"><span>摊薄成本</span><input data-init-row-field="averageCost" data-row-id="${row.id}" type="number" min="0" ${costInputAttrs()} value="${escapeHtml(row.averageCost || "")}" placeholder="原币价格"></label>
               <button type="button" class="portfolio-initialize-remove" data-action="removeInitializationRow" data-row-id="${row.id}" aria-label="删除第 ${index + 1} 行">×</button>
             </div>`).join("")}</div>
           </section>
@@ -7061,6 +7070,10 @@
       return `step="${portfolioPriceTick(market, price)}" data-price-market="${escapeHtml(market || "")}"`;
     }
 
+    function costInputAttrs() {
+      return `step="any" inputmode="decimal" data-portfolio-cost`;
+    }
+
     function renderRebalanceModal(modal) {
       const portfolio = activePortfolio();
       const metrics = portfolioMetrics(portfolio);
@@ -7098,7 +7111,7 @@
       const currency = modal.stock?.currency || position?.currency || "";
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
-          <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(position.market, position.averageCost)} value="${Number(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
+          <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${costInputAttrs()} value="${roundPortfolioCost(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
           <label class="field"><span>关联股池估值版本</span><select name="valuationStockId" data-input="portfolioValuationVersion"><option value="">不关联</option>${portfolioValuationVersions(position).map((stock) => `<option value="${escapeHtml(stock.id)}"${stock.id === position.valuationStockId ? " selected" : ""}>${escapeHtml(normalizeStockVersion(stock.version))} · ${escapeHtml(formatDate(stock.updatedAt || stock.marketCapUpdatedAt))}</option>`).join("")}</select><div class="position-valuation-preview" data-portfolio-valuation-preview>${renderPortfolioValuationPreview(position)}</div></label>
           <label class="field"><span>目标仓位</span><div class="position-target-control"><button type="button" data-target-weight-step="-1" aria-label="降低目标仓位">−</button><input name="targetWeight" type="text" inputmode="decimal" value="${formatPositionTargetWeight(position.targetWeight)}" required><button type="button" data-target-weight-step="1" aria-label="提高目标仓位">+</button></div><div class="position-target-quick">${[2,3,5,8,15,25,35].map((value) => `<button type="button" data-target-weight-value="${value}">${value}%</button>`).join("")}</div></label>
           <div class="position-tag-editor"><div class="position-tag-title">标签</div><div class="position-tag-input"><input name="newTag" maxlength="20" placeholder="自定义标签，如：AI / 高股息"><button type="button" data-action="addPositionTag">添加</button></div>${modal.tags.length ? `<div class="position-tags-selected">${modal.tags.map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)} ×</button>`).join("")}</div>` : `<div class="muted">暂未添加标签</div>`}${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).length ? `<div class="position-tag-existing"><span>快速选择已有标签</span><div>${allPortfolioTags().filter((tag) => !modal.tags.includes(tag)).map((tag) => `<button type="button" data-action="toggleEditPositionTag" data-tag="${escapeHtml(tag)}">+ ${escapeHtml(tag)}</button>`).join("")}</div></div>` : ""}</div>
@@ -8366,6 +8379,11 @@
           input.step = String(portfolioPriceTick(input.dataset.priceMarket, input.value));
         });
       });
+      document.querySelectorAll("input[data-portfolio-cost]").forEach((input) => {
+        input.addEventListener("blur", () => {
+          if (input.value !== "" && Number.isFinite(Number(input.value))) input.value = String(roundPortfolioCost(input.value));
+        });
+      });
       document.querySelectorAll("[data-rebalance-ratio-side]").forEach((button) => {
         button.addEventListener("click", () => applyRebalanceRatio(button.dataset.rebalanceRatioSide, Number(button.dataset.rebalanceRatio)));
       });
@@ -9104,7 +9122,7 @@
         return {
           ...(existingPosition || {}), id: existingPosition?.id || id("position"), name: row.stock.name, code: row.stock.code, rawCode: row.stock.rawCode || row.stock.code,
           market: row.stock.market, exchange: row.stock.exchange, quoteId: row.stock.quoteId,
-          currency: row.stock.currency || marketCurrency(row.stock.market), shares: Number(row.shares), averageCost: Number(row.averageCost),
+          currency: row.stock.currency || marketCurrency(row.stock.market), shares: Number(row.shares), averageCost: roundPortfolioCost(row.averageCost),
           latestPrice: Number(quote.latestPrice) || Number(row.averageCost), previousClose: Number(quote.previousClose) || 0,
           changePercent: Number.isFinite(Number(quote.changePercent)) ? Number(quote.changePercent) : null,
           targetWeight: Number(existingPosition?.targetWeight || 0), priceUpdatedAt: now, createdAt: existingPosition?.createdAt || now, updatedAt: now
@@ -9334,7 +9352,7 @@
           else positions[sellIndex] = {
             ...old,
             shares: remaining,
-            averageCost: (Number(old.shares) * Number(old.averageCost) - sellPrice * sellShares) / remaining,
+            averageCost: roundPortfolioCost((Number(old.shares) * Number(old.averageCost) - sellPrice * sellShares) / remaining),
             latestPrice: Number(old.latestPrice) || sellPrice
           };
         }
@@ -9346,7 +9364,7 @@
           positions[buyIndex] = {
             ...old,
             shares: newShares,
-            averageCost: (Number(old.shares) * Number(old.averageCost) + buyPrice * buyShares) / newShares,
+            averageCost: roundPortfolioCost((Number(old.shares) * Number(old.averageCost) + buyPrice * buyShares) / newShares),
             latestPrice: Number(buyStock.latestPrice) || Number(old.latestPrice) || buyPrice
           };
           boughtPositionId = old.id;
@@ -9354,7 +9372,7 @@
           boughtPositionId = id("position");
           positions.push({
             id: boughtPositionId, name: buyStock.name, code: buyStock.code, rawCode: buyStock.rawCode || "", market: buyStock.market,
-            exchange: buyStock.exchange || "", quoteId: buyStock.quoteId || "", currency: buyCurrency, shares: buyShares, averageCost: buyPrice,
+            exchange: buyStock.exchange || "", quoteId: buyStock.quoteId || "", currency: buyCurrency, shares: buyShares, averageCost: roundPortfolioCost(buyPrice),
             latestPrice: Number(buyStock.latestPrice) || buyPrice, priceUpdatedAt: buyStock.marketCapUpdatedAt || todayString()
           });
         }
@@ -9480,7 +9498,7 @@
         }
         updateActivePortfolio((item) => ({
           ...item,
-          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: price, targetWeight, valuationStockId, tradePlan, tags: [...new Set((modal.tags || []).map((tag) => String(tag).trim()).filter(Boolean))] } : position),
+          positions: item.positions.map((position) => position.id === stock.id ? { ...position, shares, averageCost: roundPortfolioCost(price), targetWeight, valuationStockId, tradePlan, tags: [...new Set((modal.tags || []).map((tag) => String(tag).trim()).filter(Boolean))] } : position),
           updatedAt: new Date().toISOString()
         }));
         closePortfolioModal();
@@ -9511,7 +9529,7 @@
         if (modal.type === "open") {
           positions.push({
             id: newPositionId, name: stock.name, code: stock.code, rawCode: stock.rawCode || "", market: stock.market,
-            exchange: stock.exchange || "", quoteId: stock.quoteId || "", currency, shares, averageCost: price,
+            exchange: stock.exchange || "", quoteId: stock.quoteId || "", currency, shares, averageCost: roundPortfolioCost(price),
             latestPrice: Number(stock.latestPrice) || price, priceUpdatedAt: stock.marketCapUpdatedAt || todayString()
           });
         } else {
@@ -9519,7 +9537,7 @@
           if (index >= 0 && modal.type === "add") {
             const old = positions[index];
             const newShares = Number(old.shares) + shares;
-            positions[index] = { ...old, shares: newShares, averageCost: (Number(old.shares) * Number(old.averageCost) + amount) / newShares, latestPrice: Number(old.latestPrice) || price };
+            positions[index] = { ...old, shares: newShares, averageCost: roundPortfolioCost((Number(old.shares) * Number(old.averageCost) + amount) / newShares), latestPrice: Number(old.latestPrice) || price };
           }
           if (index >= 0 && modal.type === "reduce") {
             const oldPosition = positions[index];
@@ -9528,7 +9546,7 @@
             else positions[index] = {
               ...oldPosition,
               shares: remaining,
-              averageCost: (Number(oldPosition.shares) * Number(oldPosition.averageCost) - amount) / remaining
+              averageCost: roundPortfolioCost((Number(oldPosition.shares) * Number(oldPosition.averageCost) - amount) / remaining)
             };
           }
         }
@@ -9614,7 +9632,7 @@
         if (nextPositionShares === 0) {
           positions.splice(index, 1);
         } else {
-          nextPosition = { ...positions[index], shares: nextPositionShares, averageCost: nextAverageCost, updatedAt: now };
+          nextPosition = { ...positions[index], shares: nextPositionShares, averageCost: roundPortfolioCost(nextAverageCost), updatedAt: now };
           positions[index] = nextPosition;
         }
         return {
@@ -9673,13 +9691,13 @@
             nextPosition = null;
           } else {
             const restoredCost = (Number(old.shares) * Number(old.averageCost) - price * shares) / remaining;
-            nextPosition = { ...old, shares: remaining, averageCost: restoredCost };
+            nextPosition = { ...old, shares: remaining, averageCost: roundPortfolioCost(restoredCost) };
             positions[index] = nextPosition;
           }
         } else {
           const restoredShares = Number(old.shares) + shares;
           const restoredCost = (Number(old.shares) * (Number.isFinite(currentCost) ? currentCost : 0) + price * shares) / restoredShares;
-          nextPosition = { ...old, shares: restoredShares, averageCost: restoredCost, latestPrice: Number(old.latestPrice) || price };
+          nextPosition = { ...old, shares: restoredShares, averageCost: roundPortfolioCost(restoredCost), latestPrice: Number(old.latestPrice) || price };
           positions[index] = nextPosition;
         }
         const cashDelta = portfolioTradeSign(trade.type) > 0 ? cashAmount : -cashAmount;
