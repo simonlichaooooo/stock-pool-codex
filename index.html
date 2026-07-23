@@ -9273,7 +9273,7 @@
       const currency = stock.currency || marketCurrency(stock.market);
       const cashCurrency = portfolio.accountType === "CNY" ? "CNY" : currency;
       const cashAmount = amount * portfolioFx(currency, cashCurrency);
-      if (modal.type !== "reduce" && Number(portfolio.cash?.[cashCurrency] || 0) < cashAmount) return showPortfolioError(`${currencies[cashCurrency]?.label || cashCurrency}现金余额不足。`);
+      if (modal.type === "open" && Number(portfolio.cash?.[cashCurrency] || 0) < cashAmount) return showPortfolioError(`${currencies[cashCurrency]?.label || cashCurrency}现金余额不足。`);
       updateActivePortfolio((item) => {
         const positions = [...item.positions];
         if (modal.type === "open") {
