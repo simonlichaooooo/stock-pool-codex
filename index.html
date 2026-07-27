@@ -6496,7 +6496,7 @@
         const cells=[...Array(start)].map(()=>`<div class="portfolio-calendar-day empty"></div>`);
         for(let day=1;day<=days;day+=1){
           const date=`${month}-${String(day).padStart(2,"0")}`, item=byDate.get(date), className=item&&Number.isFinite(item.rate)?(item.rate>0?"gain":item.rate<0?"loss":""):"";
-          cells.push(`<div class="portfolio-calendar-day ${className}" title="${escapeHtml(date)}"><div class="portfolio-calendar-day-date">${day}</div><div class="portfolio-calendar-day-value">${item&&Number.isFinite(item.amount)?portfolioPrivate(formatPortfolioSummary(item.amount,portfolio,{signed:true})):""}</div><div class="portfolio-calendar-day-rate">${item&&Number.isFinite(item.rate)?`${item.rate>0?"+":""}${(item.rate*100).toFixed(2)}%`:""}</div></div>`);
+          cells.push(`<div class="portfolio-calendar-day ${className}" title="${escapeHtml(date)}"><div class="portfolio-calendar-day-date">${day}</div><div class="portfolio-calendar-day-value">${item&&Number.isFinite(item.amount)?portfolioPrivate(formatPortfolioWan(item.amount,{signed:true})):""}</div><div class="portfolio-calendar-day-rate">${item&&Number.isFinite(item.rate)?`${item.rate>0?"+":""}${(item.rate*100).toFixed(2)}%`:""}</div></div>`);
         }
         content=`<div class="portfolio-calendar-weekdays">${["一","二","三","四","五","六","日"].map((day)=>`<div>${day}</div>`).join("")}</div><div class="portfolio-calendar-grid">${cells.join("")}</div>`;
       }else{
@@ -6505,7 +6505,7 @@
         content=`<div class="portfolio-calendar-periods">${[...groups.entries()].reverse().map(([key,periodItems])=>{
           const first=periodItems[0],last=periodItems.at(-1),amount=periodItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=Number(last.unit_nav)/Number(first.unit_nav)-1;
           const className=amount>0?"gain":amount<0?"loss":"muted",label=view==="week"?`${key.slice(5).replace("-","/")} 当周`:`${key.replace("-","年")}月`;
-          return `<div class="portfolio-calendar-period"><div><strong>${label}</strong><small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioSummary(amount,portfolio,{signed:true}))}<span>${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</span></div></div>`;
+          return `<div class="portfolio-calendar-period"><div><strong>${label}</strong><small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioWan(amount,{signed:true}))}<span>${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</span></div></div>`;
         }).join("")||`<div class="empty">暂无期间数据。</div>`}</div>`;
       }
       return `<section class="table-panel portfolio-calendar"><div class="portfolio-calendar-head"><strong>${view==="day"?(items.at(-1)?.nav_date.slice(0,7)||"每日")+" 盈亏":view==="week"?"每周盈亏":"每月盈亏"}</strong><div class="segmented"><button class="${view==="day"?"active":""}" data-action="navCalendarView" data-view="day">日</button><button class="${view==="week"?"active":""}" data-action="navCalendarView" data-view="week">周</button><button class="${view==="month"?"active":""}" data-action="navCalendarView" data-view="month">月</button></div></div><div class="portfolio-calendar-body">${content}</div></section>`;
