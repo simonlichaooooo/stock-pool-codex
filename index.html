@@ -1810,6 +1810,65 @@
     .portfolio-nav-history-title { padding: 12px 14px 4px; font-size: 14px; font-weight: 700; color: #243145; }
     .portfolio-nav-history td.num.gain { color: var(--gain); }
     .portfolio-nav-history td.num.loss { color: var(--loss); }
+    .portfolio-performance-toolbar { margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: var(--shadow-soft); }
+    .portfolio-performance-toolbar .segmented button.active,
+    .portfolio-calendar-head .segmented button.active { color: #fff; border-color: var(--brand); background: var(--brand); }
+    .portfolio-performance-chart { padding: 0; overflow: hidden; }
+    .portfolio-chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 5px; }
+    .portfolio-chart-title { color: #243145; font-size: 14px; font-weight: 750; }
+    .portfolio-chart-legend { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 11px; }
+    .portfolio-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .portfolio-chart-legend i { width: 16px; height: 3px; border-radius: 999px; background: var(--brand); }
+    .portfolio-chart-legend i.benchmark { height: 2px; background: #4f7fb5; }
+    .portfolio-nav-chart-wrap { position: relative; height: 300px; margin: 0 8px 8px; overflow: hidden; border-radius: 4px; background: linear-gradient(180deg, #fbfdfc, #f6faf9); }
+    .portfolio-nav-chart-wrap svg { display: block; width: 100%; height: 100%; }
+    .portfolio-nav-grid { stroke: #dfe8e6; stroke-width: 1; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+    .portfolio-nav-axis-label { fill: #7b8794; font-size: 11px; font-family: inherit; }
+    .portfolio-nav-hover-target { fill: transparent; cursor: crosshair; }
+    .portfolio-nav-hover-target:focus { outline: none; }
+    .portfolio-nav-hover-target:hover + .portfolio-nav-hover-line,
+    .portfolio-nav-hover-target:focus + .portfolio-nav-hover-line { opacity: 1; }
+    .portfolio-nav-hover-line { opacity: 0; stroke: #98aaa6; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; vector-effect: non-scaling-stroke; }
+    .portfolio-nav-point { opacity: 0; fill: #fff; stroke: var(--brand); stroke-width: 2.5; pointer-events: none; vector-effect: non-scaling-stroke; }
+    .portfolio-nav-hover-target:hover + .portfolio-nav-hover-line + .portfolio-nav-point,
+    .portfolio-nav-hover-target:focus + .portfolio-nav-hover-line + .portfolio-nav-point { opacity: 1; }
+    .portfolio-nav-tooltip { position: absolute; z-index: 3; display: none; min-width: 168px; padding: 9px 10px; border: 1px solid #b9ceca; border-radius: 5px; background: rgba(255,255,255,.97); box-shadow: 0 8px 22px rgba(16,24,40,.14); color: #344054; font-size: 11px; line-height: 1.65; pointer-events: none; }
+    .portfolio-nav-tooltip.visible { display: block; }
+    .portfolio-nav-tooltip strong { display: block; margin-bottom: 2px; color: #243145; font-size: 12px; }
+    .portfolio-nav-tooltip-row { display: flex; justify-content: space-between; gap: 16px; }
+    .portfolio-nav-tooltip-row b { font-variant-numeric: tabular-nums; }
+    .portfolio-nav-details { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(340px, .65fr); gap: 12px; align-items: start; }
+    .portfolio-nav-details .portfolio-nav-history { margin-top: 0; min-width: 0; }
+    .portfolio-calendar { min-width: 0; overflow: hidden; }
+    .portfolio-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    .portfolio-calendar-head strong { color: #243145; font-size: 13px; }
+    .portfolio-calendar-head .segmented button { min-height: 25px; padding: 0 8px; font-size: 11px; }
+    .portfolio-calendar-body { padding: 8px; }
+    .portfolio-calendar-weekdays, .portfolio-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .portfolio-calendar-weekdays div { padding: 2px 0 5px; color: #98a2b3; font-size: 10px; text-align: center; }
+    .portfolio-calendar-day { min-height: 60px; padding: 5px; border: 1px solid #e5ebe9; border-radius: 4px; background: #fbfdfc; }
+    .portfolio-calendar-day.empty { border-color: transparent; background: transparent; }
+    .portfolio-calendar-day-date { color: #667085; font-size: 10px; }
+    .portfolio-calendar-day-value { margin-top: 6px; font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .portfolio-calendar-day-rate { margin-top: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .portfolio-calendar-day.gain { border-color: #f2c7c1; background: #fff6f4; color: var(--gain); }
+    .portfolio-calendar-day.loss { border-color: #bfe1d0; background: #f2fbf6; color: var(--loss); }
+    .portfolio-calendar-periods { display: grid; gap: 6px; }
+    .portfolio-calendar-period { display: grid; grid-template-columns: minmax(90px, 1fr) auto; gap: 10px; align-items: center; min-height: 48px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: #fbfdfc; }
+    .portfolio-calendar-period small { display: block; margin-top: 2px; color: var(--muted); }
+    .portfolio-calendar-period-value { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .portfolio-calendar-period-value span { display: block; margin-top: 2px; font-size: 10px; }
+    @media (max-width: 960px) {
+      .portfolio-nav-details { grid-template-columns: 1fr; }
+      .portfolio-calendar-day { min-height: 56px; }
+    }
+    @media (max-width: 620px) {
+      .portfolio-chart-head, .portfolio-calendar-head { align-items: flex-start; flex-direction: column; }
+      .portfolio-nav-chart-wrap { height: 250px; }
+      .portfolio-calendar-day { min-height: 48px; padding: 3px; }
+      .portfolio-calendar-day-value { margin-top: 4px; font-size: 9px; }
+      .portfolio-calendar-day-rate { font-size: 9px; }
+    }
     .portfolio-sort-indicator { margin-left: 4px; color: var(--brand); font-size: 11px; }
     .portfolio-empty {
       padding: 56px 20px;
@@ -4394,6 +4453,7 @@
       navRange: "3M",
       navYear: "",
       benchmarkCode: "",
+      navCalendarView: "day",
       navHistory: [],
       navHistoryPortfolioId: "",
       benchmarkHistory: [],
@@ -6388,9 +6448,67 @@
     function renderNavSvg(rows) {
       if (rows.length < 2) return `<div class="empty">暂无足够的日终净值数据。</div>`;
       const values = rows.map((row) => Number(row.unit_nav) / Number(rows[0].unit_nav));
-      const bm = new Map(state.benchmarkHistory.filter((row)=>row.benchmark_code===state.benchmarkCode).map((row)=>[row.trade_date,Number(row.close_value)])); const firstBm = rows.map((row)=>bm.get(row.nav_date)).find(Boolean); const bmValues = rows.map((row)=>firstBm && bm.get(row.nav_date) ? bm.get(row.nav_date)/firstBm : null);
-      const all=[...values,...bmValues.filter(Boolean)], min = Math.min(...all), max = Math.max(...all), span=max-min||.01; const makePath=(series)=>series.map((value,index)=>value==null?"":`${index ? "L" : "M"}${(index/(series.length-1)*960+20).toFixed(1)},${(280-(value-min)/span*240).toFixed(1)}`).join(" ");
-      return `<div class="muted" style="margin-bottom:8px">绿色：组合${firstBm ? `　蓝色：${state.benchmarkCode}` : ""}</div><svg class="nav-chart" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="${makePath(values)}" fill="none" stroke="#0f5f55" stroke-width="3" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#2f5f98" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}</svg>`;
+      const bm = new Map(state.benchmarkHistory.filter((row)=>row.benchmark_code===state.benchmarkCode).map((row)=>[row.trade_date,Number(row.close_value)]));
+      const firstBm = rows.map((row)=>bm.get(row.nav_date)).find(Boolean);
+      const bmValues = rows.map((row)=>firstBm && bm.get(row.nav_date) ? bm.get(row.nav_date)/firstBm : null);
+      const all=[...values,...bmValues.filter(Number.isFinite)], rawMin = Math.min(...all), rawMax = Math.max(...all), padding = Math.max((rawMax-rawMin)*.12,.005);
+      const min=rawMin-padding, max=rawMax+padding, span=max-min||.01, left=64, right=976, top=20, bottom=260;
+      const x=(index)=>left+index/Math.max(1,rows.length-1)*(right-left);
+      const y=(value)=>bottom-(value-min)/span*(bottom-top);
+      const makePath=(series)=>series.map((value,index)=>value==null?"":`${index ? "L" : "M"}${x(index).toFixed(1)},${y(value).toFixed(1)}`).join(" ");
+      const areaPath=`${makePath(values)} L${x(values.length-1).toFixed(1)},${bottom} L${left},${bottom} Z`;
+      const yTicks=Array.from({length:5},(_,index)=>max-index*span/4);
+      const xTickIndexes=[0,Math.floor((rows.length-1)/2),rows.length-1].filter((value,index,array)=>array.indexOf(value)===index);
+      const grid=yTicks.map((value)=>`<line class="portfolio-nav-grid" x1="${left}" y1="${y(value)}" x2="${right}" y2="${y(value)}"/><text class="portfolio-nav-axis-label" x="${left-10}" y="${y(value)+4}" text-anchor="end">${value.toFixed(3)}</text>`).join("");
+      const dates=xTickIndexes.map((index)=>`<text class="portfolio-nav-axis-label" x="${x(index)}" y="286" text-anchor="${index===0?"start":index===rows.length-1?"end":"middle"}">${escapeHtml(rows[index].nav_date.slice(5))}</text>`).join("");
+      const targets=rows.map((row,index)=>{
+        const width=(right-left)/Math.max(1,rows.length-1), start=Math.max(left,index ? x(index)-width/2:left), end=Math.min(right,index===rows.length-1?right:x(index)+width/2);
+        const tooltip={date:row.nav_date,nav:Number(row.unit_nav).toFixed(4),portfolio:`${((values[index]-1)*100)>=0?"+":""}${((values[index]-1)*100).toFixed(2)}%`,benchmark:bmValues[index]==null?"":`${((bmValues[index]-1)*100)>=0?"+":""}${((bmValues[index]-1)*100).toFixed(2)}%`};
+        return `<rect class="portfolio-nav-hover-target" tabindex="0" role="button" aria-label="${escapeHtml(`${row.nav_date}，单位净值 ${tooltip.nav}，组合收益 ${tooltip.portfolio}`)}" data-nav-point='${escapeHtml(JSON.stringify(tooltip))}' x="${start}" y="${top}" width="${Math.max(4,end-start)}" height="${bottom-top}"/><line class="portfolio-nav-hover-line" x1="${x(index)}" y1="${top}" x2="${x(index)}" y2="${bottom}"/><circle class="portfolio-nav-point" cx="${x(index)}" cy="${y(values[index])}" r="4"/>`;
+      }).join("");
+      return `<div class="portfolio-chart-head"><div class="portfolio-chart-title">净值走势</div><div class="portfolio-chart-legend"><span><i></i>组合</span>${firstBm?`<span><i class="benchmark"></i>${escapeHtml(state.benchmarkCode)}</span>`:""}</div></div><div class="portfolio-nav-chart-wrap" data-nav-chart><svg viewBox="0 0 1000 300" preserveAspectRatio="none"><defs><linearGradient id="portfolioNavArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#168576" stop-opacity=".20"/><stop offset="1" stop-color="#168576" stop-opacity=".02"/></linearGradient></defs>${grid}${dates}<path d="${areaPath}" fill="url(#portfolioNavArea)"/><path d="${makePath(values)}" fill="none" stroke="#0f7668" stroke-width="2.5" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#4f7fb5" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}${targets}</svg><div class="portfolio-nav-tooltip" data-nav-tooltip></div></div>`;
+    }
+
+    function portfolioDailyPerformance(rows) {
+      const allRows=[...state.navHistory].sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
+      const previousByDate=new Map(allRows.map((row,index)=>[row.nav_date,index?allRows[index-1]:null]));
+      return rows.map((row)=>{
+        const nav=Number(row.unit_nav), previous=Number(previousByDate.get(row.nav_date)?.unit_nav), units=Number(row.total_units)||(nav>0?Number(row.total_assets)/nav:0);
+        const rate=nav>0&&previous>0?nav/previous-1:NaN, amount=Number.isFinite(rate)&&units>0?(nav-previous)*units:NaN;
+        return {...row,rate,amount};
+      });
+    }
+
+    function portfolioPeriodKey(dateString, view) {
+      const date=new Date(`${dateString}T00:00:00`);
+      if(view==="month") return dateString.slice(0,7);
+      const day=(date.getDay()+6)%7; date.setDate(date.getDate()-day);
+      return date.toISOString().slice(0,10);
+    }
+
+    function renderPortfolioCalendar(rows, portfolio) {
+      const items=portfolioDailyPerformance(rows), view=state.navCalendarView||"day";
+      let content="";
+      if(view==="day"){
+        const latest=items.at(-1), month=latest?.nav_date.slice(0,7), monthItems=items.filter((item)=>item.nav_date.startsWith(month||""));
+        const byDate=new Map(monthItems.map((item)=>[item.nav_date,item]));
+        const first=month?new Date(`${month}-01T00:00:00`):new Date(), start=(first.getDay()+6)%7, days=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
+        const cells=[...Array(start)].map(()=>`<div class="portfolio-calendar-day empty"></div>`);
+        for(let day=1;day<=days;day+=1){
+          const date=`${month}-${String(day).padStart(2,"0")}`, item=byDate.get(date), className=item&&Number.isFinite(item.rate)?(item.rate>0?"gain":item.rate<0?"loss":""):"";
+          cells.push(`<div class="portfolio-calendar-day ${className}" title="${escapeHtml(date)}"><div class="portfolio-calendar-day-date">${day}</div><div class="portfolio-calendar-day-value">${item&&Number.isFinite(item.amount)?portfolioPrivate(formatPortfolioSummary(item.amount,portfolio,{signed:true})):""}</div><div class="portfolio-calendar-day-rate">${item&&Number.isFinite(item.rate)?`${item.rate>0?"+":""}${(item.rate*100).toFixed(2)}%`:""}</div></div>`);
+        }
+        content=`<div class="portfolio-calendar-weekdays">${["一","二","三","四","五","六","日"].map((day)=>`<div>${day}</div>`).join("")}</div><div class="portfolio-calendar-grid">${cells.join("")}</div>`;
+      }else{
+        const groups=new Map();
+        items.forEach((item)=>{const key=portfolioPeriodKey(item.nav_date,view);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});
+        content=`<div class="portfolio-calendar-periods">${[...groups.entries()].reverse().map(([key,periodItems])=>{
+          const first=periodItems[0],last=periodItems.at(-1),amount=periodItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=Number(last.unit_nav)/Number(first.unit_nav)-1;
+          const className=amount>0?"gain":amount<0?"loss":"muted",label=view==="week"?`${key.slice(5).replace("-","/")} 当周`:`${key.replace("-","年")}月`;
+          return `<div class="portfolio-calendar-period"><div><strong>${label}</strong><small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioSummary(amount,portfolio,{signed:true}))}<span>${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</span></div></div>`;
+        }).join("")||`<div class="empty">暂无期间数据。</div>`}</div>`;
+      }
+      return `<section class="table-panel portfolio-calendar"><div class="portfolio-calendar-head"><strong>${view==="day"?(items.at(-1)?.nav_date.slice(0,7)||"每日")+" 盈亏":view==="week"?"每周盈亏":"每月盈亏"}</strong><div class="segmented"><button class="${view==="day"?"active":""}" data-action="navCalendarView" data-view="day">日</button><button class="${view==="week"?"active":""}" data-action="navCalendarView" data-view="week">周</button><button class="${view==="month"?"active":""}" data-action="navCalendarView" data-view="month">月</button></div></div><div class="portfolio-calendar-body">${content}</div></section>`;
     }
 
     function renderPortfolioNavHistory(rows, portfolio) {
@@ -6416,7 +6534,7 @@
       const rows = filteredNavHistory(), stats = performanceStats(rows); const years = [...new Set(state.navHistory.map((row)=>row.nav_date.slice(0,4)))].sort().reverse();
       const benchmarks = portfolio.accountType === "HKUS" ? [["HSI","恒生指数"],["HSTECH","恒生科技"],["SP500","标普500"],["NDX100","纳斯达克100"]] : [["CSI300","沪深300"]];
       if (!state.benchmarkCode || !benchmarks.some(([code])=>code===state.benchmarkCode)) state.benchmarkCode = benchmarks[0][0];
-      return `<div class="toolbar"><div class="segmented"><button data-action="navRange" data-range="3M">近三个月</button><button data-action="navRange" data-range="YTD">年初至今</button><button data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}">${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel" style="padding:14px">${renderNavSvg(rows)}</section>${renderPortfolioNavHistory(rows, portfolio)}`;
+      return `<div class="toolbar portfolio-performance-toolbar"><div class="segmented"><button class="${state.navRange==="3M"?"active":""}" data-action="navRange" data-range="3M">近三个月</button><button class="${state.navRange==="YTD"?"active":""}" data-action="navRange" data-range="YTD">年初至今</button><button class="${state.navRange==="ALL"?"active":""}" data-action="navRange" data-range="ALL">全部</button></div><select data-input="navYear"><option value="">选择年份</option>${years.map((year)=>`<option ${state.navYear===year?"selected":""}>${year}</option>`).join("")}</select><select data-input="benchmark">${benchmarks.map(([code,label])=>`<option value="${code}" ${state.benchmarkCode===code?"selected":""}>${label}</option>`).join("")}</select></div><div class="performance-grid"><div class="portfolio-metric"><div class="portfolio-metric-label">区间收益</div><div class="portfolio-metric-value">${percent(stats.total)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">最大回撤</div><div class="portfolio-metric-value">${percent(stats.drawdown)}</div></div><div class="portfolio-metric"><div class="portfolio-metric-label">年化夏普比率</div><div class="portfolio-metric-value">${stats.sharpe == null ? "--" : stats.sharpe.toFixed(2)}</div><div class="portfolio-metric-sub">无风险利率暂按 0</div></div></div><section class="table-panel portfolio-performance-chart">${renderNavSvg(rows)}</section><div class="portfolio-nav-details">${renderPortfolioNavHistory(rows, portfolio)}${renderPortfolioCalendar(rows, portfolio)}</div>`;
     }
 
     function triggeredPositionTradePlans(position, portfolio) {
@@ -8218,6 +8336,27 @@
         const actionEl = event.target.closest("[data-action]");
         if (actionEl) onAction({ currentTarget: actionEl });
       };
+      document.querySelectorAll("[data-nav-point]").forEach((target) => {
+        const showTooltip = () => {
+          const chart = target.closest("[data-nav-chart]");
+          const tooltip = chart?.querySelector("[data-nav-tooltip]");
+          if (!chart || !tooltip) return;
+          const data = JSON.parse(target.dataset.navPoint || "{}");
+          tooltip.innerHTML = `<strong>${escapeHtml(data.date || "")}</strong><div class="portfolio-nav-tooltip-row"><span>单位净值</span><b>${escapeHtml(data.nav || "--")}</b></div><div class="portfolio-nav-tooltip-row"><span>组合收益</span><b>${escapeHtml(data.portfolio || "--")}</b></div>${data.benchmark ? `<div class="portfolio-nav-tooltip-row"><span>${escapeHtml(state.benchmarkCode)}</span><b>${escapeHtml(data.benchmark)}</b></div>` : ""}`;
+          const chartRect = chart.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const left = Math.min(chart.clientWidth - 178, Math.max(8, targetRect.left - chartRect.left + targetRect.width / 2 + 10));
+          const top = Math.max(8, targetRect.top - chartRect.top + 18);
+          tooltip.style.left = `${left}px`;
+          tooltip.style.top = `${top}px`;
+          tooltip.classList.add("visible");
+        };
+        const hideTooltip = () => target.closest("[data-nav-chart]")?.querySelector("[data-nav-tooltip]")?.classList.remove("visible");
+        target.addEventListener("mouseenter", showTooltip);
+        target.addEventListener("mouseleave", hideTooltip);
+        target.addEventListener("focus", showTooltip);
+        target.addEventListener("blur", hideTooltip);
+      });
       document.querySelectorAll("[data-filter]").forEach((el) => {
         el.addEventListener("click", () => { state.filter = el.dataset.filter; render(); });
       });
@@ -8581,6 +8720,7 @@
         render();
       }
       if (action === "navRange") { state.navRange = event.currentTarget.dataset.range; state.navYear = ""; render(); }
+      if (action === "navCalendarView") { state.navCalendarView = event.currentTarget.dataset.view; render(); }
       if (action === "createPortfolio") openPortfolioModal("create");
       if (action === "initializePortfolio") openPortfolioModal("initialize");
       if (action === "importPortfolio") openPortfolioModal("initialize", state.activePortfolioId);
@@ -11175,9 +11315,24 @@
         ensureLocalPortfolioDemo();
         ensureLocalPortfolioValuationDemo();
         await fetchExchangeRates();
-        const demoPreviousDate = new Date();
-        demoPreviousDate.setDate(demoPreviousDate.getDate() - 1);
-        state.navHistory = [{ nav_date: demoPreviousDate.toISOString().slice(0, 10), unit_nav: 0.98 }];
+        const demoToday = new Date();
+        state.navHistory = Array.from({ length: 100 }, (_, index) => {
+          const date = new Date(demoToday);
+          date.setDate(date.getDate() - (99 - index));
+          const trend = index * .00115;
+          const wave = Math.sin(index / 6) * .016 + Math.cos(index / 15) * .009;
+          const unitNav = .94 + trend + wave;
+          const totalUnits = 1000000;
+          return {
+            nav_date: date.toISOString().slice(0, 10),
+            unit_nav: unitNav,
+            total_units: totalUnits,
+            total_assets: unitNav * totalUnits,
+            cash_value: unitNav * totalUnits * .18,
+            position_value: unitNav * totalUnits * .82,
+            base_currency: "CNY"
+          };
+        });
         state.navHistoryPortfolioId = state.activePortfolioId;
         state.loading = false;
         state.mainView = "portfolio";
