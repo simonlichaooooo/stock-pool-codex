@@ -1853,17 +1853,23 @@
     .portfolio-calendar-body { padding: 10px; }
     .portfolio-calendar-weekdays, .portfolio-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
     .portfolio-calendar-weekdays div { padding: 2px 0 5px; color: #98a2b3; font-size: 10px; text-align: center; }
-    .portfolio-calendar-day { min-height: 60px; padding: 5px; border: 1px solid #e5ebe9; border-radius: 4px; background: #fbfdfc; }
+    .portfolio-calendar-day { min-height: 68px; padding: 5px; border: 1px solid #e5ebe9; border-radius: 4px; background: #fbfdfc; }
     .portfolio-calendar-day.empty { border-color: transparent; background: transparent; }
     .portfolio-calendar-day-date { color: #667085; font-size: 10px; }
     .portfolio-calendar-day-value { margin-top: 6px; font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .portfolio-calendar-day-rate { margin-top: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-day.gain { border-color: #f2c7c1; background: #fff6f4; color: var(--gain); }
     .portfolio-calendar-day.loss { border-color: #bfe1d0; background: #f2fbf6; color: var(--loss); }
+    .portfolio-calendar-day.estimate,
+    .portfolio-calendar-period.estimate,
+    .portfolio-calendar-month.estimate { border-color: #ead08a; background: #fff9df; }
+    .portfolio-calendar-estimate-badge { display: inline-flex; align-items: center; min-height: 16px; margin-left: 3px; padding: 0 4px; border: 1px solid #dfbd5b; border-radius: 999px; background: #fff4bf; color: #805d12; font-size: 9px; font-weight: 750; vertical-align: middle; }
+    .portfolio-calendar-estimate-nav { margin-top: 3px; color: #8a6a20; font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .portfolio-calendar-periods { display: grid; gap: 7px; }
     .portfolio-calendar-period { display: grid; grid-template-columns: 72px minmax(120px, 1fr) auto auto; gap: 12px; align-items: center; min-height: 54px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 5px; background: #fbfdfc; }
     .portfolio-calendar-period.gain { border-color: #f0c6c0; background: #fff7f5; }
     .portfolio-calendar-period.loss { border-color: #bfe0cf; background: #f3fbf7; }
+    .portfolio-calendar-period.estimate { border-color: #ead08a; background: #fff9df; }
     .portfolio-calendar-period-index { color: #475467; font-size: 12px; font-weight: 750; }
     .portfolio-calendar-period-range { color: #667085; font-size: 11px; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-period small { display: block; margin-top: 2px; color: var(--muted); }
@@ -1876,6 +1882,7 @@
     .portfolio-calendar-month-rate { margin-top: 3px; font-size: 11px; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-month.gain { border-color: #f2c7c1; background: #fff6f4; color: var(--gain); }
     .portfolio-calendar-month.loss { border-color: #bfe1d0; background: #f2fbf6; color: var(--loss); }
+    .portfolio-calendar-month.estimate { border-color: #ead08a; background: #fff9df; }
     @media (max-width: 960px) {
       .portfolio-nav-details { grid-template-columns: 1fr; }
       .portfolio-calendar-day { min-height: 56px; }
@@ -6493,9 +6500,9 @@
     }
 
     function portfolioDailyPerformance(rows) {
-      const allRows=[...state.navHistory].sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
+      const allRows=[...rows].sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
       const previousByDate=new Map(allRows.map((row,index)=>[row.nav_date,index?allRows[index-1]:null]));
-      return rows.map((row)=>{
+      return allRows.map((row)=>{
         const nav=Number(row.unit_nav), previous=Number(previousByDate.get(row.nav_date)?.unit_nav), units=Number(row.total_units)||(nav>0?Number(row.total_assets)/nav:0);
         const rate=nav>0&&previous>0?nav/previous-1:NaN, amount=Number.isFinite(rate)&&units>0?(nav-previous)*units:NaN;
         return {...row,rate,amount};
@@ -6516,6 +6523,11 @@
 
     function renderPortfolioCalendar(rows, portfolio) {
       const allRows=[...state.navHistory].sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
+      const today=portfolioCalendarDateString(new Date()),metrics=portfolioMetrics(portfolio),totalUnits=Number(portfolio.totalUnits||portfolio.startBase||0);
+      if(!allRows.some((row)=>row.nav_date===today)&&metrics.nav>0&&totalUnits>0){
+        allRows.push({nav_date:today,unit_nav:metrics.nav,total_units:totalUnits,total_assets:metrics.netBase,base_currency:portfolioBaseCurrency(portfolio),is_estimate:true});
+      }
+      allRows.sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
       const items=portfolioDailyPerformance(allRows), view=state.navCalendarView||"day";
       const latestDate=items.at(-1)?.nav_date||todayString();
       const selectedMonth=state.navCalendarMonth||latestDate.slice(0,7);
@@ -6527,8 +6539,8 @@
         const first=month?new Date(`${month}-01T00:00:00`):new Date(), start=(first.getDay()+6)%7, days=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
         const cells=[...Array(start)].map(()=>`<div class="portfolio-calendar-day empty"></div>`);
         for(let day=1;day<=days;day+=1){
-          const date=`${month}-${String(day).padStart(2,"0")}`, item=byDate.get(date), className=item&&Number.isFinite(item.rate)?(item.rate>0?"gain":item.rate<0?"loss":""):"";
-          cells.push(`<div class="portfolio-calendar-day ${className}" title="${escapeHtml(date)}"><div class="portfolio-calendar-day-date">${day}</div><div class="portfolio-calendar-day-value">${item&&Number.isFinite(item.amount)?portfolioPrivate(formatPortfolioWan(item.amount,{signed:true})):""}</div><div class="portfolio-calendar-day-rate">${item&&Number.isFinite(item.rate)?`${item.rate>0?"+":""}${(item.rate*100).toFixed(2)}%`:""}</div></div>`);
+          const date=`${month}-${String(day).padStart(2,"0")}`, item=byDate.get(date), direction=item&&Number.isFinite(item.rate)?(item.rate>0?"gain":item.rate<0?"loss":""):"",className=`${direction} ${item?.is_estimate?"estimate":""}`;
+          cells.push(`<div class="portfolio-calendar-day ${className}" title="${escapeHtml(`${date}${item?.is_estimate?" 盘中估算":""}`)}"><div class="portfolio-calendar-day-date">${day}${item?.is_estimate?`<span class="portfolio-calendar-estimate-badge">估</span>`:""}</div><div class="portfolio-calendar-day-value ${direction}">${item&&Number.isFinite(item.amount)?portfolioPrivate(formatPortfolioWan(item.amount,{signed:true})):""}</div><div class="portfolio-calendar-day-rate ${direction}">${item&&Number.isFinite(item.rate)?`${item.rate>0?"+":""}${(item.rate*100).toFixed(2)}%`:""}</div>${item?.is_estimate?`<div class="portfolio-calendar-estimate-nav">净值 ${Number(item.unit_nav).toFixed(4)}</div>`:""}</div>`);
         }
         content=`<div class="portfolio-calendar-weekdays">${["一","二","三","四","五","六","日"].map((day)=>`<div>${day}</div>`).join("")}</div><div class="portfolio-calendar-grid">${cells.join("")}</div>`;
       }else if(view==="week"){
@@ -6538,8 +6550,8 @@
         content=`<div class="portfolio-calendar-periods">${[...groups.entries()].map(([key,periodItems],weekIndex)=>{
           const amount=periodItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=periodItems.reduce((result,item)=>Number.isFinite(item.rate)?result*(1+item.rate):result,1)-1;
           const weekEnd=new Date(`${key}T00:00:00`);weekEnd.setDate(weekEnd.getDate()+6);
-          const endDate=portfolioCalendarDateString(weekEnd).slice(5).replace("-","/"),className=amount>0?"gain":amount<0?"loss":"muted",label=`${key.slice(5).replace("-","/")}–${endDate}`;
-          return `<div class="portfolio-calendar-period ${className}"><div class="portfolio-calendar-period-index">第 ${weekIndex+1} 周</div><div class="portfolio-calendar-period-range">${label}<small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioWan(amount,{signed:true}))}</div><div class="portfolio-calendar-period-rate ${className}">${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</div></div>`;
+          const hasEstimate=periodItems.some((item)=>item.is_estimate),endDate=portfolioCalendarDateString(weekEnd).slice(5).replace("-","/"),className=amount>0?"gain":amount<0?"loss":"muted",label=`${key.slice(5).replace("-","/")}–${endDate}`;
+          return `<div class="portfolio-calendar-period ${className} ${hasEstimate?"estimate":""}"><div class="portfolio-calendar-period-index">第 ${weekIndex+1} 周${hasEstimate?`<span class="portfolio-calendar-estimate-badge">含估算</span>`:""}</div><div class="portfolio-calendar-period-range">${label}<small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioWan(amount,{signed:true}))}</div><div class="portfolio-calendar-period-rate ${className}">${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</div></div>`;
         }).join("")||`<div class="empty">暂无期间数据。</div>`}</div>`;
       }else{
         const yearItems=items.filter((item)=>item.nav_date.startsWith(selectedYear));
@@ -6548,8 +6560,8 @@
         content=`<div class="portfolio-calendar-months">${Array.from({length:12},(_,index)=>{
           const key=`${selectedYear}-${String(index+1).padStart(2,"0")}`,monthItems=groups.get(key)||[];
           const amount=monthItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=monthItems.length?monthItems.reduce((result,item)=>Number.isFinite(item.rate)?result*(1+item.rate):result,1)-1:NaN;
-          const className=monthItems.length?(amount>0?"gain":amount<0?"loss":""):"";
-          return `<div class="portfolio-calendar-month ${className}"><strong>${index+1} 月</strong><div class="portfolio-calendar-month-value">${monthItems.length?portfolioPrivate(formatPortfolioWan(amount,{signed:true})):"--"}</div><div class="portfolio-calendar-month-rate">${Number.isFinite(rate)?`${rate>0?"+":""}${(rate*100).toFixed(2)}%`:"--"}</div></div>`;
+          const hasEstimate=monthItems.some((item)=>item.is_estimate),className=monthItems.length?(amount>0?"gain":amount<0?"loss":""):"";
+          return `<div class="portfolio-calendar-month ${className} ${hasEstimate?"estimate":""}"><strong>${index+1} 月${hasEstimate?`<span class="portfolio-calendar-estimate-badge">含估算</span>`:""}</strong><div class="portfolio-calendar-month-value">${monthItems.length?portfolioPrivate(formatPortfolioWan(amount,{signed:true})):"--"}</div><div class="portfolio-calendar-month-rate">${Number.isFinite(rate)?`${rate>0?"+":""}${(rate*100).toFixed(2)}%`:"--"}</div></div>`;
         }).join("")}</div>`;
       }
       const periodLabel=view==="month"?`${selectedYear} 年`:`${selectedMonth.replace("-"," 年 ")} 月`;
@@ -11380,13 +11392,14 @@
         ensureLocalPortfolioValuationDemo();
         await fetchExchangeRates();
         const demoToday = new Date();
+        const demoPortfolio = activePortfolio();
+        const demoCurrentNav = portfolioMetrics(demoPortfolio).nav || 1;
+        const demoTotalUnits = Number(demoPortfolio?.totalUnits || demoPortfolio?.startBase || 1000000);
         state.navHistory = Array.from({ length: 100 }, (_, index) => {
           const date = new Date(demoToday);
-          date.setDate(date.getDate() - (99 - index));
-          const trend = index * .00115;
-          const wave = Math.sin(index / 6) * .016 + Math.cos(index / 15) * .009;
-          const unitNav = .94 + trend + wave;
-          const totalUnits = 1000000;
+          date.setDate(date.getDate() - (100 - index));
+          const unitNav = demoCurrentNav * (.92 + index * .0008 + Math.sin(index / 6) * .012 + Math.cos(index / 15) * .006);
+          const totalUnits = demoTotalUnits;
           return {
             nav_date: date.toISOString().slice(0, 10),
             unit_nav: unitNav,
