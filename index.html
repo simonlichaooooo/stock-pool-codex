@@ -1805,25 +1805,29 @@
       .stock-pool-table .pool-fold-hide { display: none; }
     }
 
-    .portfolio-nav-history { margin-top: 12px; }
+    .portfolio-nav-history { margin-top: 12px; overflow: hidden; }
     .portfolio-nav-history table { min-width: 640px; }
-    .portfolio-nav-history-title { padding: 12px 14px 4px; font-size: 14px; font-weight: 700; color: #243145; }
+    .portfolio-nav-history-title { min-height: 45px; padding: 13px 16px 10px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 750; color: #243145; }
+    .portfolio-nav-history th { height: 38px; padding-top: 8px; padding-bottom: 8px; color: #667085; font-size: 11px; font-weight: 700; }
+    .portfolio-nav-history td { height: 43px; padding-top: 9px; padding-bottom: 9px; font-size: 12px; }
     .portfolio-nav-history td.num.gain { color: var(--gain); }
     .portfolio-nav-history td.num.loss { color: var(--loss); }
-    .portfolio-performance-toolbar { margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: var(--shadow-soft); }
+    .portfolio-performance-toolbar { display: flex; grid-template-columns: none; align-items: center; gap: 8px; margin-bottom: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: var(--shadow-soft); }
+    .portfolio-performance-toolbar .segmented { margin-right: auto; }
+    .portfolio-performance-toolbar select { width: auto; min-width: 138px; }
     .portfolio-performance-toolbar .segmented button.active,
     .portfolio-calendar-head .segmented button.active { color: #fff; border-color: var(--brand); background: var(--brand); }
-    .portfolio-performance-chart { padding: 0; overflow: hidden; }
-    .portfolio-chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 5px; }
+    .portfolio-performance-chart { padding: 0; overflow: hidden; border-color: #d3dfdc; }
+    .portfolio-chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 12px 16px 8px; border-bottom: 1px solid #edf1f0; }
     .portfolio-chart-title { color: #243145; font-size: 14px; font-weight: 750; }
     .portfolio-chart-legend { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 11px; }
     .portfolio-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
-    .portfolio-chart-legend i { width: 16px; height: 3px; border-radius: 999px; background: var(--brand); }
-    .portfolio-chart-legend i.benchmark { height: 2px; background: #4f7fb5; }
-    .portfolio-nav-chart-wrap { position: relative; height: 300px; margin: 0 8px 8px; overflow: hidden; border-radius: 4px; background: linear-gradient(180deg, #fbfdfc, #f6faf9); }
+    .portfolio-chart-legend i { width: 18px; height: 3px; border-radius: 999px; background: var(--brand); }
+    .portfolio-chart-legend i.benchmark { height: 2px; background: #7c91aa; }
+    .portfolio-nav-chart-wrap { position: relative; height: 290px; margin: 0 10px 10px; overflow: hidden; border-radius: 4px; background: #fbfdfc; }
     .portfolio-nav-chart-wrap svg { display: block; width: 100%; height: 100%; }
-    .portfolio-nav-grid { stroke: #dfe8e6; stroke-width: 1; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
-    .portfolio-nav-axis-label { fill: #7b8794; font-size: 11px; font-family: inherit; }
+    .portfolio-nav-grid { stroke: #e2e9e7; stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .portfolio-nav-axis-label { fill: #7a8898; font-size: 10px; font-family: inherit; font-weight: 600; letter-spacing: .15px; }
     .portfolio-nav-hover-target { fill: transparent; cursor: crosshair; }
     .portfolio-nav-hover-target:focus { outline: none; }
     .portfolio-nav-hover-target:hover + .portfolio-nav-hover-line,
@@ -1837,16 +1841,16 @@
     .portfolio-nav-tooltip strong { display: block; margin-bottom: 2px; color: #243145; font-size: 12px; }
     .portfolio-nav-tooltip-row { display: flex; justify-content: space-between; gap: 16px; }
     .portfolio-nav-tooltip-row b { font-variant-numeric: tabular-nums; }
-    .portfolio-nav-details { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(520px, .95fr); gap: 12px; align-items: start; }
+    .portfolio-nav-details { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(520px, .95fr); gap: 10px; align-items: start; margin-top: 10px; }
     .portfolio-nav-details .portfolio-nav-history { margin-top: 0; min-width: 0; }
     .portfolio-calendar { min-width: 0; overflow: hidden; }
-    .portfolio-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    .portfolio-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 45px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
     .portfolio-calendar-head strong { color: #243145; font-size: 13px; }
     .portfolio-calendar-head .segmented button { min-height: 25px; padding: 0 8px; font-size: 11px; }
     .portfolio-calendar-heading { display: inline-flex; align-items: center; gap: 5px; }
     .portfolio-calendar-heading button { width: 25px; min-width: 25px; min-height: 25px; padding: 0; color: #667085; font-size: 16px; line-height: 1; }
     .portfolio-calendar-heading strong { min-width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
-    .portfolio-calendar-body { padding: 8px; }
+    .portfolio-calendar-body { padding: 10px; }
     .portfolio-calendar-weekdays, .portfolio-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
     .portfolio-calendar-weekdays div { padding: 2px 0 5px; color: #98a2b3; font-size: 10px; text-align: center; }
     .portfolio-calendar-day { min-height: 60px; padding: 5px; border: 1px solid #e5ebe9; border-radius: 4px; background: #fbfdfc; }
@@ -1856,11 +1860,15 @@
     .portfolio-calendar-day-rate { margin-top: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-day.gain { border-color: #f2c7c1; background: #fff6f4; color: var(--gain); }
     .portfolio-calendar-day.loss { border-color: #bfe1d0; background: #f2fbf6; color: var(--loss); }
-    .portfolio-calendar-periods { display: grid; gap: 6px; }
-    .portfolio-calendar-period { display: grid; grid-template-columns: minmax(90px, 1fr) auto; gap: 10px; align-items: center; min-height: 48px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: #fbfdfc; }
+    .portfolio-calendar-periods { display: grid; gap: 7px; }
+    .portfolio-calendar-period { display: grid; grid-template-columns: 72px minmax(120px, 1fr) auto auto; gap: 12px; align-items: center; min-height: 54px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 5px; background: #fbfdfc; }
+    .portfolio-calendar-period.gain { border-color: #f0c6c0; background: #fff7f5; }
+    .portfolio-calendar-period.loss { border-color: #bfe0cf; background: #f3fbf7; }
+    .portfolio-calendar-period-index { color: #475467; font-size: 12px; font-weight: 750; }
+    .portfolio-calendar-period-range { color: #667085; font-size: 11px; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-period small { display: block; margin-top: 2px; color: var(--muted); }
-    .portfolio-calendar-period-value { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; }
-    .portfolio-calendar-period-value span { display: block; margin-top: 2px; font-size: 10px; }
+    .portfolio-calendar-period-value { min-width: 70px; text-align: right; font-size: 13px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .portfolio-calendar-period-rate { min-width: 58px; text-align: right; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .portfolio-calendar-months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
     .portfolio-calendar-month { min-height: 78px; padding: 9px; border: 1px solid var(--line); border-radius: 5px; background: #fbfdfc; }
     .portfolio-calendar-month strong { color: #475467; font-size: 12px; }
@@ -1879,6 +1887,8 @@
       .portfolio-calendar-day-value { margin-top: 4px; font-size: 9px; }
       .portfolio-calendar-day-rate { font-size: 9px; }
       .portfolio-calendar-months { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .portfolio-calendar-period { grid-template-columns: 60px 1fr auto; gap: 7px; }
+      .portfolio-calendar-period-rate { grid-column: 3; }
     }
     .portfolio-sort-indicator { margin-left: 4px; color: var(--brand); font-size: 11px; }
     .portfolio-empty {
@@ -6465,21 +6475,21 @@
       const firstBm = rows.map((row)=>bm.get(row.nav_date)).find(Boolean);
       const bmValues = rows.map((row)=>firstBm && bm.get(row.nav_date) ? bm.get(row.nav_date)/firstBm : null);
       const all=[...values,...bmValues.filter(Number.isFinite)], rawMin = Math.min(...all), rawMax = Math.max(...all), padding = Math.max((rawMax-rawMin)*.12,.005);
-      const min=rawMin-padding, max=rawMax+padding, span=max-min||.01, left=64, right=976, top=20, bottom=260;
+      const min=rawMin-padding, max=rawMax+padding, span=max-min||.01, left=78, right=1572, top=18, bottom=248;
       const x=(index)=>left+index/Math.max(1,rows.length-1)*(right-left);
       const y=(value)=>bottom-(value-min)/span*(bottom-top);
       const makePath=(series)=>series.map((value,index)=>value==null?"":`${index ? "L" : "M"}${x(index).toFixed(1)},${y(value).toFixed(1)}`).join(" ");
       const areaPath=`${makePath(values)} L${x(values.length-1).toFixed(1)},${bottom} L${left},${bottom} Z`;
       const yTicks=Array.from({length:5},(_,index)=>max-index*span/4);
-      const xTickIndexes=[0,Math.floor((rows.length-1)/2),rows.length-1].filter((value,index,array)=>array.indexOf(value)===index);
+      const xTickIndexes=Array.from({length:5},(_,index)=>Math.round(index*(rows.length-1)/4)).filter((value,index,array)=>array.indexOf(value)===index);
       const grid=yTicks.map((value)=>`<line class="portfolio-nav-grid" x1="${left}" y1="${y(value)}" x2="${right}" y2="${y(value)}"/><text class="portfolio-nav-axis-label" x="${left-10}" y="${y(value)+4}" text-anchor="end">${value.toFixed(3)}</text>`).join("");
-      const dates=xTickIndexes.map((index)=>`<text class="portfolio-nav-axis-label" x="${x(index)}" y="286" text-anchor="${index===0?"start":index===rows.length-1?"end":"middle"}">${escapeHtml(rows[index].nav_date.slice(5))}</text>`).join("");
+      const dates=xTickIndexes.map((index)=>`<text class="portfolio-nav-axis-label" x="${x(index)}" y="276" text-anchor="${index===0?"start":index===rows.length-1?"end":"middle"}">${escapeHtml(rows[index].nav_date.slice(5))}</text>`).join("");
       const targets=rows.map((row,index)=>{
         const width=(right-left)/Math.max(1,rows.length-1), start=Math.max(left,index ? x(index)-width/2:left), end=Math.min(right,index===rows.length-1?right:x(index)+width/2);
         const tooltip={date:row.nav_date,nav:Number(row.unit_nav).toFixed(4),portfolio:`${((values[index]-1)*100)>=0?"+":""}${((values[index]-1)*100).toFixed(2)}%`,benchmark:bmValues[index]==null?"":`${((bmValues[index]-1)*100)>=0?"+":""}${((bmValues[index]-1)*100).toFixed(2)}%`};
         return `<rect class="portfolio-nav-hover-target" tabindex="0" role="button" aria-label="${escapeHtml(`${row.nav_date}，单位净值 ${tooltip.nav}，组合收益 ${tooltip.portfolio}`)}" data-nav-point='${escapeHtml(JSON.stringify(tooltip))}' x="${start}" y="${top}" width="${Math.max(4,end-start)}" height="${bottom-top}"/><line class="portfolio-nav-hover-line" x1="${x(index)}" y1="${top}" x2="${x(index)}" y2="${bottom}"/><circle class="portfolio-nav-point" cx="${x(index)}" cy="${y(values[index])}" r="4"/>`;
       }).join("");
-      return `<div class="portfolio-chart-head"><div class="portfolio-chart-title">净值走势</div><div class="portfolio-chart-legend"><span><i></i>组合</span>${firstBm?`<span><i class="benchmark"></i>${escapeHtml(state.benchmarkCode)}</span>`:""}</div></div><div class="portfolio-nav-chart-wrap" data-nav-chart><svg viewBox="0 0 1000 300" preserveAspectRatio="none"><defs><linearGradient id="portfolioNavArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#168576" stop-opacity=".20"/><stop offset="1" stop-color="#168576" stop-opacity=".02"/></linearGradient></defs>${grid}${dates}<path d="${areaPath}" fill="url(#portfolioNavArea)"/><path d="${makePath(values)}" fill="none" stroke="#0f7668" stroke-width="2.5" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#4f7fb5" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}${targets}</svg><div class="portfolio-nav-tooltip" data-nav-tooltip></div></div>`;
+      return `<div class="portfolio-chart-head"><div class="portfolio-chart-title">净值走势</div><div class="portfolio-chart-legend"><span><i></i>组合</span>${firstBm?`<span><i class="benchmark"></i>${escapeHtml(state.benchmarkCode)}</span>`:""}</div></div><div class="portfolio-nav-chart-wrap" data-nav-chart><svg viewBox="0 0 1600 290" preserveAspectRatio="none"><defs><linearGradient id="portfolioNavArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--brand)" stop-opacity=".16"/><stop offset="1" stop-color="var(--brand)" stop-opacity=".015"/></linearGradient></defs>${grid}${dates}<path d="${areaPath}" fill="url(#portfolioNavArea)"/><path d="${makePath(values)}" fill="none" stroke="var(--brand)" stroke-width="2.4" vector-effect="non-scaling-stroke"/>${firstBm?`<path d="${makePath(bmValues)}" fill="none" stroke="#7c91aa" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`:""}${targets}</svg><div class="portfolio-nav-tooltip" data-nav-tooltip></div></div>`;
     }
 
     function portfolioDailyPerformance(rows) {
@@ -6496,7 +6506,12 @@
       const date=new Date(`${dateString}T00:00:00`);
       if(view==="month") return dateString.slice(0,7);
       const day=(date.getDay()+6)%7; date.setDate(date.getDate()-day);
-      return date.toISOString().slice(0,10);
+      return portfolioCalendarDateString(date);
+    }
+
+    function portfolioCalendarDateString(date) {
+      const pad=(value)=>String(value).padStart(2,"0");
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
     }
 
     function renderPortfolioCalendar(rows, portfolio) {
@@ -6520,18 +6535,19 @@
         const monthItems=items.filter((item)=>item.nav_date.startsWith(selectedMonth));
         const groups=new Map();
         monthItems.forEach((item)=>{const key=portfolioPeriodKey(item.nav_date,"week");if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});
-        content=`<div class="portfolio-calendar-periods">${[...groups.entries()].reverse().map(([key,periodItems])=>{
-          const first=periodItems[0],last=periodItems.at(-1),amount=periodItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=Number(last.unit_nav)/Number(first.unit_nav)-1;
-          const endDate=last.nav_date.slice(5).replace("-","/"),className=amount>0?"gain":amount<0?"loss":"muted",label=`${key.slice(5).replace("-","/")}–${endDate}`;
-          return `<div class="portfolio-calendar-period"><div><strong>${label}</strong><small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioWan(amount,{signed:true}))}<span>${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</span></div></div>`;
+        content=`<div class="portfolio-calendar-periods">${[...groups.entries()].map(([key,periodItems],weekIndex)=>{
+          const amount=periodItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=periodItems.reduce((result,item)=>Number.isFinite(item.rate)?result*(1+item.rate):result,1)-1;
+          const weekEnd=new Date(`${key}T00:00:00`);weekEnd.setDate(weekEnd.getDate()+6);
+          const endDate=portfolioCalendarDateString(weekEnd).slice(5).replace("-","/"),className=amount>0?"gain":amount<0?"loss":"muted",label=`${key.slice(5).replace("-","/")}–${endDate}`;
+          return `<div class="portfolio-calendar-period ${className}"><div class="portfolio-calendar-period-index">第 ${weekIndex+1} 周</div><div class="portfolio-calendar-period-range">${label}<small>${periodItems.length} 个净值日</small></div><div class="portfolio-calendar-period-value ${className}">${portfolioPrivate(formatPortfolioWan(amount,{signed:true}))}</div><div class="portfolio-calendar-period-rate ${className}">${rate>0?"+":""}${Number.isFinite(rate)?(rate*100).toFixed(2):"--"}%</div></div>`;
         }).join("")||`<div class="empty">暂无期间数据。</div>`}</div>`;
       }else{
         const yearItems=items.filter((item)=>item.nav_date.startsWith(selectedYear));
         const groups=new Map();
         yearItems.forEach((item)=>{const key=item.nav_date.slice(0,7);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});
         content=`<div class="portfolio-calendar-months">${Array.from({length:12},(_,index)=>{
-          const key=`${selectedYear}-${String(index+1).padStart(2,"0")}`,monthItems=groups.get(key)||[],first=monthItems[0],last=monthItems.at(-1);
-          const amount=monthItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=first&&last?Number(last.unit_nav)/Number(first.unit_nav)-1:NaN;
+          const key=`${selectedYear}-${String(index+1).padStart(2,"0")}`,monthItems=groups.get(key)||[];
+          const amount=monthItems.reduce((sum,item)=>sum+(Number.isFinite(item.amount)?item.amount:0),0),rate=monthItems.length?monthItems.reduce((result,item)=>Number.isFinite(item.rate)?result*(1+item.rate):result,1)-1:NaN;
           const className=monthItems.length?(amount>0?"gain":amount<0?"loss":""):"";
           return `<div class="portfolio-calendar-month ${className}"><strong>${index+1} 月</strong><div class="portfolio-calendar-month-value">${monthItems.length?portfolioPrivate(formatPortfolioWan(amount,{signed:true})):"--"}</div><div class="portfolio-calendar-month-rate">${Number.isFinite(rate)?`${rate>0?"+":""}${(rate*100).toFixed(2)}%`:"--"}</div></div>`;
         }).join("")}</div>`;
@@ -8764,7 +8780,7 @@
         }else{
           const current=new Date(`${state.navCalendarMonth||state.navHistory.at(-1)?.nav_date.slice(0,7)||todayString().slice(0,7)}-01T00:00:00`);
           current.setMonth(current.getMonth()+step);
-          state.navCalendarMonth=current.toISOString().slice(0,7);
+          state.navCalendarMonth=portfolioCalendarDateString(current).slice(0,7);
           state.navCalendarYear=state.navCalendarMonth.slice(0,4);
         }
         render();
