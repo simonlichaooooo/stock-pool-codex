@@ -4269,6 +4269,29 @@
       background:linear-gradient(120deg,rgba(255,255,255,.86),color-mix(in srgb,var(--brand-soft) 82%,rgba(255,255,255,.60)));
       box-shadow:inset 0 -2px 0 var(--brand-strong),inset 0 1px 0 rgba(255,255,255,.96),0 5px 13px color-mix(in srgb,var(--brand) 14%,transparent);
     }
+    .portfolio-actions > button.portfolio-expand-toggle,
+    html[data-theme] .portfolio-actions > button.portfolio-expand-toggle {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 28%,rgba(255,255,255,.58));
+      background:color-mix(in srgb,var(--brand-soft) 34%,rgba(255,255,255,.68));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 11px color-mix(in srgb,var(--brand) 8%,transparent);
+    }
+    .portfolio-actions > button.portfolio-expand-toggle:hover,
+    html[data-theme] .portfolio-actions > button.portfolio-expand-toggle:hover {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 42%,rgba(255,255,255,.5));
+      background:color-mix(in srgb,var(--brand-soft) 58%,rgba(255,255,255,.7));
+    }
+    .portfolio-actions > button.portfolio-expand-toggle.active,
+    html[data-theme] .portfolio-actions > button.portfolio-expand-toggle.active {
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 62%,rgba(255,255,255,.36));
+      background:color-mix(in srgb,var(--brand-soft) 94%,rgba(255,255,255,.42));
+      box-shadow:inset 0 -2px 0 var(--brand-strong),inset 0 1px 0 rgba(255,255,255,.96),0 6px 15px color-mix(in srgb,var(--brand) 18%,transparent);
+      transform:translateY(-1px);
+    }
+    .portfolio-action-chevron { display:inline-flex; align-items:center; justify-content:center; margin-left:2px; opacity:.78; }
+    .portfolio-action-chevron svg { width:12px; height:12px; }
 
     @keyframes navCapsuleLight {
       0%,100% { background-position:0% 50%; }
@@ -6636,18 +6659,14 @@
           </div>
           <div class="portfolio-actions">
             <button class="portfolio-action-btn portfolio-action-open" data-action="openPosition">${portfolioActionIcon("open")}<span>开仓</span></button>
-            <button class="portfolio-action-btn portfolio-action-plan ${state.portfolioPlansExpanded?"active":""}" data-action="togglePortfolioPlans">${portfolioActionIcon("plan")}<span>计划</span></button>
             <button class="portfolio-action-btn portfolio-action-rebalance" data-action="rebalancePortfolio">${portfolioActionIcon("rebalance")}<span>换仓</span></button>
-            <button class="portfolio-action-btn portfolio-action-advice ${state.portfolioAdviceExpanded ? "active" : ""}" data-action="togglePortfolioAdvice">${portfolioActionIcon("advice")}<span>${state.portfolioAdviceExpanded ? "关闭建议" : "调仓建议"}</span></button>
-            <button class="portfolio-action-btn portfolio-action-summary portfolio-summary-toggle ${summaryExpanded ? "active" : ""}" data-action="togglePortfolioSummary">
-              ${summaryExpanded
-                ? `${portfolioActionIcon("collapse")}<span>收起组合卡片</span>`
-                : `${portfolioActionIcon("expand")}<span>展开组合卡片</span>`}
+            <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-advice ${state.portfolioAdviceExpanded ? "active" : ""}" data-action="togglePortfolioAdvice">${portfolioActionIcon("advice")}<span>${state.portfolioAdviceExpanded ? "收起调仓建议" : "展开调仓建议"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioAdviceExpanded ? "collapse" : "expand")}</span></button>
+            <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-plan ${state.portfolioPlansExpanded?"active":""}" data-action="togglePortfolioPlans">${portfolioActionIcon("plan")}<span>${state.portfolioPlansExpanded ? "收起计划" : "展开计划"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioPlansExpanded ? "collapse" : "expand")}</span></button>
+            <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-summary portfolio-summary-toggle ${summaryExpanded ? "active" : ""}" data-action="togglePortfolioSummary">
+              <span>${summaryExpanded ? "收起组合" : "展开组合"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(summaryExpanded ? "collapse" : "expand")}</span>
             </button>
-            <button class="portfolio-action-btn portfolio-action-tags ${state.portfolioTagsExpanded ? "active" : ""}" data-action="togglePortfolioTags">
-              ${state.portfolioTagsExpanded
-                ? `${portfolioActionIcon("collapse")}<span>收起标签组</span>`
-                : `${portfolioActionIcon("expand")}<span>展开标签组</span>`}
+            <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-tags ${state.portfolioTagsExpanded ? "active" : ""}" data-action="togglePortfolioTags">
+              <span>${state.portfolioTagsExpanded ? "收起标签组" : "展开标签组"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioTagsExpanded ? "collapse" : "expand")}</span>
             </button>
             <div class="portfolio-menu">
               <button type="button" class="portfolio-action-btn portfolio-action-more">${portfolioActionIcon("more")}<span>更多操作</span></button>
