@@ -2010,9 +2010,20 @@
       background-repeat: no-repeat;
       background-position: center;
     }
-    .portfolio-option-fields { margin-top: 10px; padding: 11px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
-    .portfolio-option-fields .grid-3 { margin-top: 8px; }
-    .portfolio-option-hint { margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .portfolio-option-fields { margin-top: 12px; padding: 14px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
+    .portfolio-option-fields .grid-2 { margin-top: 14px; gap: 14px; }
+    .portfolio-option-meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding-bottom: 13px; border-bottom: 1px solid #dfe7e5; }
+    .portfolio-option-meta-item { min-width: 0; display: grid; gap: 5px; }
+    .portfolio-option-meta-label { color: var(--muted); font-size: 10px; font-weight: 700; }
+    .portfolio-option-meta-value { display: flex; align-items: center; gap: 8px; min-height: 24px; color: var(--text); font-size: 14px; font-weight: 750; }
+    .portfolio-option-type { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .portfolio-option-type.call { color: #175cd3; border: 1px solid #b2ccff; background: #eff4ff; }
+    .portfolio-option-type.put { color: #93370d; border: 1px solid #fedf89; background: #fffaeb; }
+    .portfolio-option-expiry-note { color: var(--muted); font-size: 10px; font-weight: 600; }
+    .portfolio-option-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; padding-top: 11px; border-top: 1px solid #dfe7e5; }
+    .portfolio-option-hint { min-width: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .portfolio-option-footer .portfolio-backfill { flex: 0 0 auto; font-size: 11px; }
+    @media (max-width: 620px) { .portfolio-option-meta { grid-template-columns: 1fr; } .portfolio-option-footer { align-items: flex-start; flex-direction: column; } }
     .option-direction-action { min-width: 92px; color: #fff; font-weight: 750; }
     .option-direction-action.short { border-color: #087443; background: #087443; }
     .option-direction-action.short:hover { border-color: #05603a; background: #05603a; }
@@ -6720,6 +6731,21 @@
       return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
     }
 
+    function optionTradingDaysUntil(expiryDate) {
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(String(expiryDate||""))) return null;
+      const today=new Date(`${portfolioCalendarDateString(new Date())}T00:00:00`);
+      const expiry=new Date(`${expiryDate}T00:00:00`);
+      if(!Number.isFinite(expiry.getTime())) return null;
+      if(expiry<today) return 0;
+      let count=0;
+      for(const date=new Date(today);date<expiry;){
+        date.setDate(date.getDate()+1);
+        const day=date.getDay();
+        if(day!==0&&day!==6) count+=1;
+      }
+      return count;
+    }
+
     function renderPortfolioCalendar(rows, portfolio) {
       const allRows=[...state.navHistory].sort((a,b)=>a.nav_date.localeCompare(b.nav_date));
       const today=portfolioCalendarDateString(new Date()),metrics=portfolioMetrics(portfolio),totalUnits=Number(portfolio.totalUnits||portfolio.startBase||0);
@@ -7564,7 +7590,8 @@
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
       const option=modal.stock?.assetType==="option"?modal.stock:position?.assetType==="option"?position:null;
-      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-2"><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-2"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label></div><div class="grid-2"><div class="field"><span class="trade-quantity-heading"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade?"checked":""}>补录交易</label></span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></div><label class="field"><span>权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>${modal.backfillTrade?`<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt||localDateTimeMinuteValue())}" required></label>`:""}`:"";
+      const tradingDays=option?optionTradingDaysUntil(option.expiryDate):null;
+      const optionFields=option?`<div class="portfolio-option-fields"><div class="portfolio-option-meta"><div class="portfolio-option-meta-item"><span class="portfolio-option-meta-label">类型</span><div class="portfolio-option-meta-value"><span class="portfolio-option-type ${option.optionType==="put"?"put":"call"}">${option.optionType==="put"?"Put":"Call"}</span></div></div><div class="portfolio-option-meta-item"><span class="portfolio-option-meta-label">到期日</span><div class="portfolio-option-meta-value"><span>${escapeHtml(String(option.expiryDate||"").replaceAll("-","/"))}</span>${tradingDays!==null?`<span class="portfolio-option-expiry-note">${tradingDays===0?"今日到期":`还有 ${tradingDays} 个交易日到期`}</span>`:""}</div></div></div><div class="grid-2"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label></div><div class="grid-2"><div class="field"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></div><label class="field"><span>权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label></div><div class="portfolio-option-footer"><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade?"checked":""}>补录交易</label></div></div>${modal.backfillTrade?`<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt||localDateTimeMinuteValue())}" required></label>`:""}`:"";
       const tradeFields = option
         ? optionFields
         : `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
