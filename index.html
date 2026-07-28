@@ -2031,47 +2031,27 @@
     .option-direction-action.long:hover { border-color: #b42318; background: #b42318; }
     .option-direction-editor { display: grid; gap: 10px; padding: 12px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
     .option-direction-current { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .portfolio-plan-board { margin: 10px 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.78); box-shadow: var(--shadow); }
-    .portfolio-plan-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .portfolio-plan-board { margin: 10px 0 18px; padding: 15px 16px 16px; border: 0; border-radius: 9px; background: rgba(255,255,255,.56); box-shadow: 0 3px 14px rgba(35,67,105,.07); }
+    .portfolio-plan-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
     .portfolio-plan-board-head h3 { margin: 0; font-size: 15px; }
     .portfolio-plan-board-actions { display: flex; align-items: center; gap: 7px; }
     .portfolio-plan-board-actions button { color: #fff; border-color: var(--brand); background: var(--brand); font-weight: 700; }
-    .portfolio-plan-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-    .portfolio-plan-column { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 7px; background: rgba(248,250,252,.82); }
-    .portfolio-plan-column-title { display: flex; justify-content: space-between; margin-bottom: 9px; font-size: 12px; font-weight: 800; }
+    .portfolio-plan-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+    .portfolio-plan-column { min-width: 0; padding: 12px; border: 0; border-radius: 8px; background: rgba(246,249,252,.72); }
+    .portfolio-plan-column.buy { background: rgba(255,247,246,.64); }
+    .portfolio-plan-column.sell { background: rgba(242,250,246,.72); }
+    .portfolio-plan-column-title { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; font-size: 12px; font-weight: 800; }
     .portfolio-plan-column.buy .portfolio-plan-column-title { color: #b42318; }
     .portfolio-plan-column.sell .portfolio-plan-column-title { color: #067647; }
-    .portfolio-plan-stock { display: grid; gap: 5px; }
-    .portfolio-plan-stock + .portfolio-plan-stock { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-    .portfolio-plan-stock-name { display: flex; align-items: baseline; gap: 5px; min-width: 0; font-size: 11px; font-weight: 750; }
-    .portfolio-plan-stock-weight { margin-left: auto; color: var(--muted); font-size: 9.5px; font-weight: 600; white-space: nowrap; }
-    .portfolio-plan-stock-items { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
-    .portfolio-plan-item { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; align-items: center; min-width: 0; padding: 5px 7px; border: 1px solid rgba(146,165,187,.34); border-radius: 5px; background: rgba(255,255,255,.86); }
+    .portfolio-plan-stock { display: grid; gap: 6px; }
+    .portfolio-plan-stock + .portfolio-plan-stock { margin-top: 12px; padding-top: 1px; }
+    .portfolio-plan-stock-name { display: flex; align-items: baseline; gap: 5px; min-width: 0; padding: 0 2px; font-size: 11px; font-weight: 750; }
+    .portfolio-plan-stock-weight { margin-left: 3px; padding-left: 8px; border-left: 1px solid rgba(112,133,158,.28); color: var(--muted); font-size: 9.5px; font-weight: 600; white-space: nowrap; }
+    .portfolio-plan-stock-items { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+    .portfolio-plan-item { min-width: 0; padding: 7px 9px; border: 0; border-radius: 6px; background: rgba(255,255,255,.82); box-shadow: 0 1px 3px rgba(32,56,85,.06); }
     .portfolio-plan-item-main { min-width: 0; display: grid; gap: 1px; }
     .portfolio-plan-item-value { overflow: hidden; color: var(--text); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
     .portfolio-plan-remark { overflow: hidden; color: var(--muted); font-size: 9.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; cursor: help; }
-    .portfolio-plan-item input {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      min-height: 14px;
-      margin: 0;
-      padding: 0;
-      border: 1px solid color-mix(in srgb,var(--brand) 48%,#8090a3);
-      border-radius: 4px;
-      background: rgba(255,255,255,.78);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
-      cursor: pointer;
-    }
-    .portfolio-plan-item input:checked {
-      border-color: var(--brand);
-      background-color: var(--brand);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Cpath d='m2.2 5.7 1.9 1.9 4.5-4.3' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: center;
-      box-shadow: 0 2px 7px color-mix(in srgb,var(--brand) 24%,transparent);
-    }
     .portfolio-plan-empty { padding: 18px 8px; color: var(--muted); text-align: center; font-size: 11px; }
     .portfolio-plan-weight-preview { min-height: 38px; display: flex; align-items: center; justify-content: flex-end; padding: 7px 10px; border: 1px solid #c4ced9; border-radius: 4px; background: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
     .portfolio-plan-submit { min-width: 112px; color: #fff; font-weight: 750; }
@@ -2111,7 +2091,7 @@
     .portfolio-initialize-result { min-height: 40px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-color: transparent; }
     .portfolio-initialize-result small { color: var(--muted); }
     .portfolio-initialize-remove { width: 36px; min-width: 36px; min-height: 38px; margin-top: 17px; padding: 0; color: #b42318; }
-    .position-edit-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: stretch; }
+    .position-edit-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: stretch; }
     .position-trade-layout { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 18px; align-items: start; }
     .position-trade-main { display: grid; gap: 14px; min-width: 0; }
     .position-edit-main { display: grid; gap: 14px; min-width: 0; }
@@ -6603,7 +6583,7 @@
           const first=items[0];
           const stockPosition=(portfolio.positions||[]).find((position)=>position.assetType!=="option"&&position.code===first.code&&(!first.market||position.market===first.market));
           const stockWeight=stockPosition&&metrics.netBase>0?positionBaseValue(stockPosition,portfolio)/metrics.netBase*100:0;
-          return `<div class="portfolio-plan-stock"><div class="portfolio-plan-stock-name">${escapeHtml(first.name)} <span class="stock-code">${escapeHtml(first.code)}</span><span class="portfolio-plan-stock-weight">当前股票仓位 ${stockWeight.toFixed(2)}%</span></div><div class="portfolio-plan-stock-items">${items.map((item)=>`<div class="portfolio-plan-item"><div class="portfolio-plan-item-main"><span class="portfolio-plan-item-value">${formatPortfolioMoney(item.price,item.currency)} · ${item.shares.toLocaleString("zh-CN")} 股 · ${item.targetWeight.toFixed(2)}%</span>${item.remark?`<span class="portfolio-plan-remark" title="${escapeHtml(item.remark)}">${escapeHtml(item.remark)}</span>`:""}</div><input type="checkbox" data-plan-card-done data-plan-source="${item.source}" data-plan-id="${escapeHtml(item.planId||"")}" data-position-id="${escapeHtml(item.positionId||"")}" data-plan-side="${item.side}" data-plan-index="${item.index??""}" aria-label="完成 ${escapeHtml(item.name)} ${label}计划"></div>`).join("")}</div></div>`;
+          return `<div class="portfolio-plan-stock"><div class="portfolio-plan-stock-name">${escapeHtml(first.name)} <span class="stock-code">${escapeHtml(first.code)}</span><span class="portfolio-plan-stock-weight">当前仓位 ${stockWeight.toFixed(2)}%</span></div><div class="portfolio-plan-stock-items">${items.map((item)=>`<div class="portfolio-plan-item"><div class="portfolio-plan-item-main"><span class="portfolio-plan-item-value">${formatPortfolioMoney(item.price,item.currency)} · ${item.shares.toLocaleString("zh-CN")} 股 · ${item.targetWeight.toFixed(2)}%</span>${item.remark?`<span class="portfolio-plan-remark" title="${escapeHtml(item.remark)}">${escapeHtml(item.remark)}</span>`:""}</div></div>`).join("")}</div></div>`;
         }).join("");
         return `<section class="portfolio-plan-column ${side}"><div class="portfolio-plan-column-title"><span>${label}</span><span>${sideEntries.length} 条</span></div>${body||`<div class="portfolio-plan-empty">暂无${label}计划</div>`}</section>`;
       };
