@@ -6202,6 +6202,14 @@
         const [,root,date,type,strikeRaw]=match;
         return {contractCode:compact,underlyingQuery:root,underlyingCode:root,market:"US",currency:"USD",expiryDate:`20${date.slice(0,2)}-${date.slice(2,4)}-${date.slice(4,6)}`,optionType:type==="P"?"put":"call",strikePrice:Number(strikeRaw)/1000,contractMultiplier:100};
       }
+      match=source.match(/^([A-Z0-9]{1,10})(?:\.(HK|US))?\s+(\d{6}|\d{8})\s+(\d+(?:\.\d+)?)\s*([CP])$/);
+      if(match){
+        const [,rawRoot,marketHint,dateRaw,strikeRaw,type]=match;
+        const market=marketHint||(/^\d+$/.test(rawRoot)?"HK":"US");
+        const date=dateRaw.length===6?`20${dateRaw}`:dateRaw;
+        const underlyingCode=market==="HK"?`${rawRoot.padStart(5,"0")}.HK`:rawRoot;
+        return {contractCode:source,underlyingQuery:rawRoot,underlyingCode,market,currency:market==="HK"?"HKD":"USD",expiryDate:`${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`,optionType:type==="P"?"put":"call",strikePrice:Number(strikeRaw),contractMultiplier:market==="US"?100:0};
+      }
       match=source.match(/^([A-Z0-9]{1,10})(?:\.(HK|US))?[-_\s]+(\d{8}|\d{6})[-_\s]+([CP])[-_\s]+(\d+(?:\.\d+)?)$/);
       if(!match) return null;
       const [,rawRoot,marketHint,dateRaw,type,strikeRaw]=match,market=marketHint||(/^\d+$/.test(rawRoot)?"HK":"US"),date=dateRaw.length===6?`20${dateRaw}`:dateRaw;
@@ -7403,7 +7411,7 @@
       const title = isOpen ? "开仓" : modal.type === "add" ? "加仓" : "减持";
       const stockBlock = isOpen ? `
         <div class="field"><span class="portfolio-search-heading"><span>${modal.searchOptions?"期权通用代码搜索":"股票名称/代码搜索"}</span><label class="portfolio-option-search-toggle"><input type="checkbox" data-input="portfolioOptionSearch" ${modal.searchOptions?"checked":""}>搜索期权</label></span><div class="search-combobox">
-          <input data-input="portfolioStockSearch" autocomplete="off" placeholder="${modal.searchOptions?"美股：FUTU260731P00097000；港股：00700.HK-20260731-C-500":"输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL"}" value="${escapeHtml(modal.searchQuery || "")}">
+          <input data-input="portfolioStockSearch" autocomplete="off" placeholder="${modal.searchOptions?"富途格式：FUTU 260731 101.00C；OCC：FUTU260731C00101000":"输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL"}" value="${escapeHtml(modal.searchQuery || "")}">
           ${(state.portfolioSearchLoading || state.portfolioSearchResults.length || (modal.searchQuery && !modal.stock)) ? `<div class="search-results show">
             ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配${modal.searchOptions?"期权":"股票"}...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.assetType==="option"?`${item.underlyingName} ${item.optionType==="put"?"Put":"Call"}`:item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}${item.assetType==="option"?` · ${item.expiryDate} · ${formatPortfolioNumber(item.strikePrice)}`:""}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">${modal.searchOptions?"请输入有效的美股 OCC 代码或“标的.市场-到期日-C/P-行权价”通用代码。":"没有匹配结果，请尝试其他名称或代码。"}</div>`}
           </div>` : ""}
