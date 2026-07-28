@@ -1988,7 +1988,28 @@
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .portfolio-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .portfolio-option-search-toggle { display: inline-flex; align-items: center; gap: 6px; color: #475467; font-size: 11px; font-weight: 650; white-space: nowrap; cursor: pointer; }
-    .portfolio-option-search-toggle input { width: 15px; height: 15px; margin: 0; accent-color: var(--brand); }
+    .portfolio-option-search-toggle input {
+      appearance: none;
+      -webkit-appearance: none;
+      flex: 0 0 16px;
+      width: 16px;
+      height: 16px;
+      min-height: 16px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid #7890aa;
+      border-radius: 3px;
+      background: rgba(255,255,255,.82);
+      box-shadow: none;
+      cursor: pointer;
+    }
+    .portfolio-option-search-toggle input:checked {
+      border-color: var(--brand);
+      background-color: var(--brand);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m2.5 6.1 2.1 2.1 4.8-4.6' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+    }
     .portfolio-option-fields { margin-top: 10px; padding: 11px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
     .portfolio-option-fields .grid-3 { margin-top: 8px; }
     .portfolio-option-hint { margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.5; }
@@ -7437,7 +7458,7 @@
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
       const option=modal.stock?.assetType==="option"?modal.stock:position?.assetType==="option"?position:null;
-      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-3"><label class="field"><span>方向</span><select name="direction" ${!isOpen?"disabled":""}><option value="long" ${option.direction!=="short"?"selected":""}>做多</option><option value="short" ${option.direction==="short"?"selected":""}>做空</option></select></label><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-3"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label><label class="field"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></label></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>`:"";
+      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-3"><label class="field"><span>方向</span><select name="direction" ${!isOpen?"disabled":""}><option value="long" ${option.direction!=="short"?"selected":""}>做多</option><option value="short" ${option.direction==="short"?"selected":""}>做空</option></select></label><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-3"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade?"checked":""}>补录交易</label></span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></div></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>${modal.backfillTrade?`<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt||localDateTimeMinuteValue())}" required></label>`:""}`:"";
       const tradeFields = option
         ? `${optionFields}<div class="grid-2"><label class="field"><span>${modal.type==="reduce"?"平仓":"开仓"}权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label><div class="field"><span>标的现价</span><div class="position-current-weight">${formatPortfolioNumber(option.underlyingLatestPrice||option.latestUnderlyingPrice||0)||"--"}</div></div></div>`
         : `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
@@ -9990,12 +10011,15 @@
       if(portfolio.accountType==="CNY"&&option.market!=="HK") return showPortfolioError("人民币账户第一期仅支持港股期权。");
       if(modal.type==="reduce"&&contracts>Number(option.contracts||0)) return showPortfolioError("平仓张数不能超过当前持仓。");
       if(modal.type==="open"&&(portfolio.positions||[]).some((item)=>item.assetType==="option"&&item.code===option.code&&item.direction===direction)) return showPortfolioError("该方向的期权合约已在组合中，请使用加仓。");
+      const occurredAt=form.has("backfillTrade")?new Date(String(form.get("occurredAt")||"")):new Date();
+      if(!Number.isFinite(occurredAt.getTime())) return showPortfolioError("请输入有效的补录交易时间。");
+      if(occurredAt.getTime()>Date.now()+60000) return showPortfolioError("补录交易时间不能晚于现在。");
       const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
       const premiumAmount=price*contracts*multiplier,baseCashAmount=premiumAmount*portfolioFx(currency,cashCurrency);
       const opening=modal.type!=="reduce",cashDelta=(direction==="long"?(opening?-1:1):(opening?1:-1))*baseCashAmount;
       if(Number(portfolio.cash?.[cashCurrency]||0)+cashDelta<-.000001) return showPortfolioError(`${currencies[cashCurrency]?.label||cashCurrency}现金余额不足。`);
       const now=new Date().toISOString(),newPositionId=modal.type==="open"?id("option"):option.id;
-      const trade={id:id("trade"),positionId:newPositionId,code:option.code,market:option.market,assetType:"option",type:modal.type,direction,currency,price,contracts,multiplier,occurredAt:now};
+      const trade={id:id("trade"),positionId:newPositionId,code:option.code,market:option.market,assetType:"option",type:modal.type,direction,currency,price,contracts,multiplier,occurredAt:occurredAt.toISOString()};
       updateActivePortfolio((item)=>{
         const positions=[...(item.positions||[])];
         if(modal.type==="open"){
