@@ -2040,26 +2040,26 @@
     .portfolio-plan-column { position: relative; min-width: 0; padding: 13px 12px 14px; border: 0; border-radius: 8px; background: rgba(246,249,252,.72); }
     .portfolio-plan-column.buy { background: rgba(255,247,246,.64); }
     .portfolio-plan-column.sell { background: rgba(242,250,246,.72); }
-    .portfolio-plan-column-title { display: flex; justify-content: flex-end; min-height: 27px; margin-bottom: 2px; padding: 0 3px; font-family: "Kaiti SC","STKaiti","KaiTi",serif; font-size: 20px; font-style: italic; font-weight: 700; letter-spacing: .18em; line-height: 1; }
+    .portfolio-plan-column-title { position: absolute; z-index: 1; top: 10px; right: 14px; margin: 0; color: currentColor; font-family: "STHupo","STCaiyun","FZYaoti","Arial Rounded MT Bold",sans-serif; font-size: 23px; font-style: normal; font-weight: 400; letter-spacing: 0; line-height: 1; opacity: .5; pointer-events: none; transform: rotate(45deg); transform-origin: center; }
     .portfolio-plan-column.buy .portfolio-plan-column-title { color: #b42318; }
     .portfolio-plan-column.sell .portfolio-plan-column-title { color: #067647; }
     .portfolio-plan-stock { display: grid; gap: 8px; }
     .portfolio-plan-stock + .portfolio-plan-stock { margin-top: 15px; padding-top: 1px; }
     .portfolio-plan-stock-name { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 3px; color: #21334a; font-size: 14px; font-weight: 800; line-height: 1.3; }
     .portfolio-plan-stock-weight { padding: 3px 7px; border: 0; border-radius: 999px; color: #5d6f86; background: rgba(226,233,241,.72); font-size: 10px; font-weight: 650; white-space: nowrap; }
-    .portfolio-plan-stock-items { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(220px,100%),1fr)); gap: 7px; }
+    .portfolio-plan-stock-items { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
     .portfolio-plan-item { display: grid; grid-template-columns: minmax(76px,1.25fr) minmax(68px,1fr) minmax(64px,.9fr); gap: 8px; align-items: center; min-width: 0; padding: 9px 11px; border: 0; border-radius: 7px; background: rgba(255,255,255,.9); box-shadow: 0 2px 6px rgba(32,56,85,.07); }
     .portfolio-plan-metric { min-width: 0; display: grid; gap: 2px; }
     .portfolio-plan-metric span { color: #7a899c; font-size: 8.5px; font-weight: 600; letter-spacing: .08em; }
-    .portfolio-plan-metric strong { overflow: hidden; color: #1f3045; font-size: 13px; font-weight: 750; line-height: 1.2; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
-    .portfolio-plan-column.buy .portfolio-plan-metric.price strong { color: #b42318; font-size: 15px; }
-    .portfolio-plan-column.sell .portfolio-plan-metric.price strong { color: #067647; font-size: 15px; }
-    .portfolio-plan-remark { grid-column: 1 / -1; overflow: hidden; margin-top: 1px; padding-top: 5px; color: #64748b; border-top: 1px solid rgba(194,207,221,.45); font-size: 9.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; cursor: help; }
+    .portfolio-plan-metric strong { overflow: hidden; color: #1f2937; font-size: 13px; font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+    .portfolio-plan-column .portfolio-plan-metric.price strong { color: #1f2937; font-size: 14px; font-weight: 400; }
+    .portfolio-plan-remark { grid-column: 1 / -1; overflow: hidden; margin-top: 1px; padding-top: 2px; color: #1f2937; border: 0; font-size: 9.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; cursor: help; }
     .portfolio-plan-empty { padding: 18px 8px; color: var(--muted); text-align: center; font-size: 11px; }
     .portfolio-plan-weight-preview { min-height: 38px; display: flex; align-items: center; justify-content: flex-end; padding: 7px 10px; border: 1px solid #c4ced9; border-radius: 4px; background: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
     .portfolio-plan-submit { min-width: 112px; color: #fff; font-weight: 750; }
     .portfolio-plan-submit.buy { border-color: #d92d20; background: #d92d20; }
     .portfolio-plan-submit.sell { border-color: #087443; background: #087443; }
+    @media (max-width: 980px) { .portfolio-plan-stock-items { grid-template-columns: repeat(2,minmax(0,1fr)); } }
     @media (max-width: 760px) { .portfolio-plan-columns,.portfolio-plan-stock-items { grid-template-columns: 1fr; } }
     .portfolio-group-row td { border-top: 2px solid #c8d6d3; border-bottom-color: #cbd8d5; background: #eef5f3; font-weight: 720; }
     .portfolio-group-row .stock-name { color: #163f3a; }
@@ -6591,7 +6591,7 @@
         }).join("");
         return `<section class="portfolio-plan-column ${side}"><div class="portfolio-plan-column-title"><span>${label}</span></div>${body||`<div class="portfolio-plan-empty">暂无${label}计划</div>`}</section>`;
       };
-      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合计划</h3><div class="portfolio-plan-board-actions"><button type="button" data-action="addPortfolioPlan">+ 添加计划</button></div></div><div class="portfolio-plan-columns">${column("buy","买入")}${column("sell","卖出")}</div></section>`;
+      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合计划</h3><div class="portfolio-plan-board-actions"><button type="button" data-action="addPortfolioPlan">+ 添加计划</button></div></div><div class="portfolio-plan-columns">${column("buy","买")}${column("sell","卖")}</div></section>`;
     }
 
     function renderPortfolioView() {
