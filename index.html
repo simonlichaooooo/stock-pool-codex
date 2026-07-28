@@ -2013,6 +2013,13 @@
     .portfolio-option-fields { margin-top: 10px; padding: 11px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
     .portfolio-option-fields .grid-3 { margin-top: 8px; }
     .portfolio-option-hint { margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .option-direction-action { min-width: 92px; color: #fff; font-weight: 750; }
+    .option-direction-action.short { border-color: #087443; background: #087443; }
+    .option-direction-action.short:hover { border-color: #05603a; background: #05603a; }
+    .option-direction-action.long { border-color: #d92d20; background: #d92d20; }
+    .option-direction-action.long:hover { border-color: #b42318; background: #b42318; }
+    .option-direction-editor { display: grid; gap: 10px; padding: 12px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
+    .option-direction-current { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .portfolio-group-row td { border-top: 2px solid #c8d6d3; border-bottom-color: #cbd8d5; background: #eef5f3; font-weight: 720; }
     .portfolio-group-row .stock-name { color: #163f3a; }
     .portfolio-group-summary { color: #52625f; font-size: 11px; font-weight: 600; }
@@ -6812,7 +6819,7 @@
               const dailyProfit=previous>0?directionSign*(latest-previous)*contracts*multiplier*portfolioFx(position.currency,base):NaN;
               const holdingProfit=directionSign*(latest-cost)*contracts*multiplier*portfolioFx(position.currency,base);
               const profitClass=holdingProfit>0?"gain":holdingProfit<0?"loss":"muted",dailyClass=Number.isFinite(dailyProfit)?dailyProfit>0?"gain":dailyProfit<0?"loss":"muted":"muted";
-              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
+              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
             }
             const pendingPlans = pendingByPositionId.get(position.id) || [];
             const pendingBuys = pendingPlans.filter((item) => item.side === "buy");
@@ -7230,11 +7237,11 @@
       </section></div>`;
     }
 
-    function modalShell(title, body, formName, submitText, modalClass = "") {
+    function modalShell(title, body, formName, submitText, modalClass = "", footerHtml = "") {
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal ${escapeHtml(modalClass)}">
         <div class="simple-modal-head"><h2>${escapeHtml(title)}</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
         <form data-form="${formName}"><div class="simple-modal-body">${body}${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
-        <div class="simple-modal-foot"><button type="button" data-action="closePortfolioModal">取消</button><button class="primary" type="submit">${escapeHtml(submitText)}</button></div></form>
+        <div class="simple-modal-foot">${footerHtml || `<button type="button" data-action="closePortfolioModal">取消</button><button class="primary" type="submit">${escapeHtml(submitText)}</button>`}</div></form>
       </section></div>`;
     }
 
@@ -7441,6 +7448,10 @@
         </div></div>
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
+      if (modal.type === "edit" && position?.assetType === "option") {
+        const direction=position.direction==="short"?"short":"long";
+        return modalShell("编辑期权方向", `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.optionType==="put"?"Put":"Call")} · ${escapeHtml(position.code)}</strong><span class="stock-code">${escapeHtml(position.underlyingName||position.name)} · ${escapeHtml(position.expiryDate||"")} · 行权 ${formatPortfolioNumber(position.strikePrice)}</span></div><div class="option-direction-editor"><div class="option-direction-current"><span>当前方向</span><span class="portfolio-option-badge ${direction==="short"?"short":""}">${direction==="short"?"做空":"做多"}</span></div><div class="muted">用于纠正录入时选错的方向；保存后会同步修正该仓位对应的现金方向。</div></div>`, "positionTrade", "保存", "position-trade-modal", `<button type="button" data-action="closePortfolioModal">取消</button><button class="option-direction-action short" type="submit" name="direction" value="short">改为做空</button><button class="option-direction-action long" type="submit" name="direction" value="long">改为做多</button>`);
+      }
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
         <div class="position-edit-main">${stockBlock}
           <div class="grid-3 position-edit-fields"><label class="field"><span>摊薄成本</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${costInputAttrs()} value="${roundPortfolioCost(position.averageCost)}" required><span class="input-suffix">${escapeHtml(currency || "原币")}</span></div></label><label class="field"><span>持股数</span><div class="input-with-suffix"><input name="shares" data-position-edit-shares type="number" min="1" step="1" value="${Number(position.shares)}" required><span class="input-suffix">股</span></div></label><label class="field"><span>仓位</span><div class="position-current-weight" data-position-current-weight>${formatPositionWeight(positionWeightPercent(position))}</div></label></div>
@@ -7460,13 +7471,14 @@
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
       const option=modal.stock?.assetType==="option"?modal.stock:position?.assetType==="option"?position:null;
-      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-3"><label class="field"><span>方向</span><select name="direction" ${!isOpen?"disabled":""}><option value="long" ${option.direction!=="short"?"selected":""}>做多</option><option value="short" ${option.direction==="short"?"selected":""}>做空</option></select></label><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-3"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade?"checked":""}>补录交易</label></span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></div></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>${modal.backfillTrade?`<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt||localDateTimeMinuteValue())}" required></label>`:""}`:"";
+      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-2"><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-2"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label></div><div class="grid-2"><div class="field"><span class="trade-quantity-heading"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade?"checked":""}>补录交易</label></span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></div><label class="field"><span>权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>${modal.backfillTrade?`<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt||localDateTimeMinuteValue())}" required></label>`:""}`:"";
       const tradeFields = option
-        ? `${optionFields}<div class="grid-2"><label class="field"><span>${modal.type==="reduce"?"平仓":"开仓"}权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label><div class="field"><span>标的现价</span><div class="position-current-weight">${formatPortfolioNumber(option.underlyingLatestPrice||option.latestUnderlyingPrice||0)||"--"}</div></div></div>`
+        ? optionFields
         : `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
       const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
       const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
-      return modalShell(title, body, "positionTrade", option?(modal.type==="reduce"?"确认平仓":"确认开仓"):modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
+      const optionOpenFooter=option&&isOpen?`<button type="button" data-action="closePortfolioModal">取消</button><button class="option-direction-action short" type="submit" name="direction" value="short">做空开仓</button><button class="option-direction-action long" type="submit" name="direction" value="long">做多开仓</button>`:"";
+      return modalShell(title, body, "positionTrade", option?(modal.type==="reduce"?"确认平仓":"确认开仓"):modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal", optionOpenFooter);
     }
 
     function normalizedPositionTradePlan(position) {
@@ -9915,9 +9927,10 @@
       const portfolio = activePortfolio();
       const modal = state.portfolioModal;
       if (!portfolio || !modal) return;
-      const form = new FormData(event.currentTarget);
-      const price = Number(form.get("price"));
+      const form = new FormData(event.currentTarget, event.submitter);
       const selectedAsset = modal.type === "open" ? modal.stock : modal.position;
+      if(selectedAsset?.assetType==="option"&&modal.type==="edit") return submitOptionDirectionEdit(form,portfolio,selectedAsset);
+      const price = Number(form.get("price"));
       const shares = Number(form.get("shares"));
       if (!Number.isFinite(price) || price <= 0) return showPortfolioError("请输入有效价格。");
       if(selectedAsset?.assetType==="option") return submitOptionTrade(form,portfolio,modal,selectedAsset,price);
@@ -9999,6 +10012,28 @@
         return { ...item, positions, tradeHistory, navHistoryCorrections: navRevision?.corrections || item.navHistoryCorrections, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: now };
       });
       if (navRevision) { state.navHistory = navRevision.rows; state.navHistoryPortfolioId = portfolio.id; }
+      closePortfolioModal();
+    }
+
+    function submitOptionDirectionEdit(form,portfolio,option){
+      const nextDirection=String(form.get("direction")||"")==="short"?"short":"long";
+      const previousDirection=option.direction==="short"?"short":"long";
+      if(nextDirection===previousDirection){
+        closePortfolioModal();
+        return;
+      }
+      const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
+      const premiumAmount=Number(option.averageCost||0)*Number(option.contracts||0)*Number(option.contractMultiplier||0);
+      const baseCashAmount=premiumAmount*portfolioFx(currency,cashCurrency);
+      const cashCorrection=previousDirection==="long"?baseCashAmount*2:-baseCashAmount*2;
+      if(Number(portfolio.cash?.[cashCurrency]||0)+cashCorrection<-.000001) return showPortfolioError(`${currencies[cashCurrency]?.label||cashCurrency}现金余额不足，无法改为做多。`);
+      updateActivePortfolio((item)=>({
+        ...item,
+        positions:(item.positions||[]).map((position)=>position.id===option.id?{...position,direction:nextDirection}:position),
+        tradeHistory:(item.tradeHistory||[]).map((trade)=>trade.positionId===option.id?{...trade,direction:nextDirection}:trade),
+        cash:{...item.cash,[cashCurrency]:Number(item.cash?.[cashCurrency]||0)+cashCorrection},
+        updatedAt:new Date().toISOString()
+      }));
       closePortfolioModal();
     }
 
