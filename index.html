@@ -1986,6 +1986,20 @@
     .position-history-note { padding: 9px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: #f8fafc; font-size: 11px; line-height: 1.55; }
     .portfolio-search-results { display: grid; gap: 4px; }
     .portfolio-search-result { text-align: left; min-height: 42px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .portfolio-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .portfolio-option-search-toggle { display: inline-flex; align-items: center; gap: 6px; color: #475467; font-size: 11px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+    .portfolio-option-search-toggle input { width: 15px; height: 15px; margin: 0; accent-color: var(--brand); }
+    .portfolio-option-fields { margin-top: 10px; padding: 11px; border: 1px solid #d8e2df; border-radius: 6px; background: #f8fbfa; }
+    .portfolio-option-fields .grid-3 { margin-top: 8px; }
+    .portfolio-option-hint { margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .portfolio-group-row td { border-top: 2px solid #c8d6d3; border-bottom-color: #cbd8d5; background: #eef5f3; font-weight: 720; }
+    .portfolio-group-row .stock-name { color: #163f3a; }
+    .portfolio-group-summary { color: #52625f; font-size: 11px; font-weight: 600; }
+    .portfolio-child-row td:first-child { padding-left: 28px; }
+    .portfolio-child-row td { background: rgba(255,255,255,.72); }
+    .portfolio-option-row td { background: #fbfaf6; }
+    .portfolio-option-badge { display: inline-flex; align-items: center; min-height: 17px; margin-left: 5px; padding: 0 5px; border: 1px solid #d8c58e; border-radius: 999px; background: #fff9e8; color: #795b17; font-size: 9px; font-weight: 750; vertical-align: middle; }
+    .portfolio-option-badge.short { border-color: #e6aaa2; background: #fff3f0; color: #9a2d22; }
     .portfolio-selected-stock { padding: 10px; background: var(--brand-soft); border: 1px solid #c5ddd8; border-radius: 4px; }
     .trade-suggestion { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; line-height: 1.55; }
     .trade-suggestion strong { color: var(--brand-strong); }
@@ -6152,8 +6166,70 @@
     }
 
     function positionBaseValue(position, portfolio) {
+      if (position?.assetType === "option") {
+        const direction = position.direction === "short" ? -1 : 1;
+        return direction * Number(position.contracts || 0) * Number(position.contractMultiplier || 0) * (Number(position.latestPrice) || Number(position.averageCost) || 0) * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+      }
       const price = Number(position.latestPrice) || Number(position.averageCost) || 0;
       return Number(position.shares || 0) * price * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+    }
+
+    function optionUnderlyingKey(position) {
+      const market=String(position?.market||"").toUpperCase();
+      const code=String(position?.assetType==="option"?position.underlyingCode:position?.code||"").toUpperCase();
+      return market&&code?`${market}:${code}`:"";
+    }
+
+    function positionExposureBaseValue(position, portfolio) {
+      if(position?.assetType!=="option") return positionBaseValue(position,portfolio);
+      const contracts=Number(position.contracts||0),multiplier=Number(position.contractMultiplier||0),strike=Number(position.strikePrice||0),premium=Number(position.averageCost||0);
+      const direction=position.direction==="short"?-1:1;
+      const exposure=position.optionType==="put"
+        ? -direction*contracts*multiplier*Math.max(0,strike-premium)
+        : direction*contracts*multiplier*(strike+premium);
+      return exposure*portfolioFx(position.currency,portfolioBaseCurrency(portfolio));
+    }
+
+    function optionContractLabel(position) {
+      return `${position.optionType==="put"?"Put":"Call"} · ${position.expiryDate||"--"} · 行权 ${formatPortfolioNumber(position.strikePrice)} · ${Number(position.contractMultiplier||0).toLocaleString("zh-CN")}股/张`;
+    }
+
+    function parseUniversalOptionCode(value) {
+      const source=String(value||"").trim().toUpperCase();
+      const compact=source.replace(/\s+/g,"");
+      let match=compact.match(/^([A-Z]{1,6})(\d{6})([CP])(\d{8})$/);
+      if(match){
+        const [,root,date,type,strikeRaw]=match;
+        return {contractCode:compact,underlyingQuery:root,underlyingCode:root,market:"US",currency:"USD",expiryDate:`20${date.slice(0,2)}-${date.slice(2,4)}-${date.slice(4,6)}`,optionType:type==="P"?"put":"call",strikePrice:Number(strikeRaw)/1000,contractMultiplier:100};
+      }
+      match=source.match(/^([A-Z0-9]{1,10})(?:\.(HK|US))?[-_\s]+(\d{8}|\d{6})[-_\s]+([CP])[-_\s]+(\d+(?:\.\d+)?)$/);
+      if(!match) return null;
+      const [,rawRoot,marketHint,dateRaw,type,strikeRaw]=match,market=marketHint||(/^\d+$/.test(rawRoot)?"HK":"US"),date=dateRaw.length===6?`20${dateRaw}`:dateRaw;
+      const underlyingCode=market==="HK"?`${rawRoot.padStart(5,"0")}.HK`:rawRoot;
+      return {contractCode:source,underlyingQuery:rawRoot,underlyingCode,market,currency:market==="HK"?"HKD":"USD",expiryDate:`${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`,optionType:type==="P"?"put":"call",strikePrice:Number(strikeRaw),contractMultiplier:market==="US"?100:0};
+    }
+
+    async function searchOptions(query) {
+      const parsed=parseUniversalOptionCode(query);
+      if(!parsed) return [];
+      let underlying=null;
+      try {
+        const stocks=await searchStocks(parsed.underlyingQuery);
+        underlying=stocks.find((item)=>item.market===parsed.market&&(item.code===parsed.underlyingCode||String(item.rawCode||"").toUpperCase()===String(parsed.underlyingQuery).toUpperCase()))||stocks.find((item)=>item.market===parsed.market)||null;
+      } catch {}
+      return [{
+        assetType:"option",
+        ...parsed,
+        name:underlying?.name||parsed.underlyingCode,
+        code:parsed.contractCode,
+        rawCode:underlying?.rawCode||parsed.underlyingQuery,
+        quoteId:underlying?.quoteId||"",
+        exchange:parsed.market==="HK"?"HKEX":"US",
+        underlyingCode:underlying?.code||parsed.underlyingCode,
+        underlyingName:underlying?.name||parsed.underlyingCode,
+        underlyingQuoteId:underlying?.quoteId||"",
+        underlyingLatestPrice:Number(underlying?.latestPrice)||0
+      }];
     }
 
     function portfolioPositionKey(position) {
@@ -6341,7 +6417,9 @@
       let dailyProfit = 0;
       let quotedPositions = 0;
       for (const position of portfolio.positions || []) {
-        const shares = Number(position.shares || 0);
+        const shares = position.assetType==="option"
+          ? (position.direction==="short"?-1:1)*Number(position.contracts||0)*Number(position.contractMultiplier||0)
+          : Number(position.shares||0);
         if (!shares) continue;
         const latestPrice = Number(position.latestPrice);
         const previousClose = Number(position.previousClose);
@@ -6356,7 +6434,7 @@
       if (state.portfolioPrivacyMode) return `<span class="muted">当日盈亏 **** · 较昨日 ****</span>`;
       const totalUnits = Number(portfolio.totalUnits || portfolio.startBase || 0);
       const { amount: profitAmount, quotedPositions } = portfolioDailyProfit(portfolio);
-      const hasPositions = (portfolio.positions || []).some((position) => Number(position.shares || 0) > 0);
+      const hasPositions = (portfolio.positions || []).some((position) => position.assetType==="option"?Number(position.contracts||0)>0:Number(position.shares||0)!==0);
       if (!(totalUnits > 0) || (hasPositions && !quotedPositions)) return `<span class="muted">当日盈亏 -- · 较昨日 --</span>`;
       const delta = profitAmount / totalUnits;
       const previousNav = Number(currentNav) - delta;
@@ -6369,7 +6447,7 @@
     function portfolioDailyProfitSummary(portfolio, metrics) {
       const { amount, quotedPositions } = portfolioDailyProfit(portfolio);
       if (state.portfolioPrivacyMode) return { text: "当日盈亏 ****", className: "muted" };
-      const hasPositions = (portfolio.positions || []).some((position) => Number(position.shares || 0) > 0);
+      const hasPositions = (portfolio.positions || []).some((position) => position.assetType==="option"?Number(position.contracts||0)>0:Number(position.shares||0)!==0);
       if (hasPositions && !quotedPositions) return { text: "当日盈亏 --", className: "muted" };
       const previousNet = Number(metrics?.netBase || 0) - amount;
       const percent = previousNet > 0 ? amount / previousNet * 100 : 0;
@@ -6649,12 +6727,24 @@
       let pendingSequence = 1;
       pendingByPosition.forEach((row) => row.items.forEach((item) => { item.sequence = pendingSequence; pendingSequence += 1; }));
       const pendingByPositionId = new Map(pendingByPosition.map((row) => [row.position.id, row.items]));
-      const positions = allPositions.filter((position) => !state.portfolioTagFilter || (position.tags || []).includes(state.portfolioTagFilter)).sort((a, b) => {
+      const sortedPositions = allPositions.filter((position) => !state.portfolioTagFilter || (position.tags || []).includes(state.portfolioTagFilter)).sort((a, b) => {
         const aValue = sortValue(a), bValue = sortValue(b);
         const aMissing = !Number.isFinite(aValue), bMissing = !Number.isFinite(bValue);
         if (aMissing !== bMissing) return aMissing ? 1 : -1;
         return (aValue - bValue) * (sort.dir === "asc" ? 1 : -1);
       });
+      const groupMap=new Map();
+      sortedPositions.forEach((position)=>{
+        const key=optionUnderlyingKey(position);
+        if(!groupMap.has(key)) groupMap.set(key,[]);
+        groupMap.get(key).push(position);
+      });
+      const displayRows=[...groupMap.entries()].map(([key,items])=>{
+        const hasOptions=items.some((item)=>item.assetType==="option");
+        const exposure=items.reduce((sum,item)=>sum+positionExposureBaseValue(item,portfolio),0);
+        const sortedItems=[...items].sort((a,b)=>Math.abs(positionExposureBaseValue(b,portfolio))-Math.abs(positionExposureBaseValue(a,portfolio)));
+        return {key,items:sortedItems,hasOptions,exposure};
+      }).sort((a,b)=>Math.abs(b.exposure)-Math.abs(a.exposure)).flatMap((group)=>group.hasOptions?[{kind:"group",group},...group.items.map((position)=>({kind:"position",position,grouped:true}))]:group.items.map((position)=>({kind:"position",position,grouped:false})));
       if (!allPositions.length) return `<section class="portfolio-empty"><strong>暂无持仓</strong><p>点击“开仓”录入第一只股票。</p><button class="primary" data-action="openPosition">+ 开仓</button></section>`;
       const base = portfolioBaseCurrency(portfolio);
       const dailySummary = portfolioDailyProfitSummary(portfolio, metrics);
@@ -6677,8 +6767,22 @@
             </div>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th class="sticky-col">股票</th><th>股数</th><th class="num">摊薄成本</th><th class="num">实时股价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值信息</th><th>操作</th></tr></thead>
-          <tbody>${positions.map((position) => {
+          <thead><tr><th class="sticky-col">股票 / 合约</th><th>数量</th><th class="num">成本</th><th class="num">现价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值 / 仓位</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值 / 合约信息</th><th>操作</th></tr></thead>
+          <tbody>${displayRows.map((entry) => {
+            if(entry.kind==="group"){
+              const group=entry.group,stock=group.items.find((item)=>item.assetType!=="option")||group.items[0],weight=metrics.netBase?group.exposure/metrics.netBase:0;
+              return `<tr class="portfolio-group-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(stock.assetType==="option"?(stock.underlyingName||stock.name):stock.name)}</div><div class="stock-code">${escapeHtml(stock.assetType==="option"?stock.underlyingCode:stock.code)}</div></td><td><span class="portfolio-group-summary">${group.items.length} 个仓位</span></td><td class="num" colspan="5"><span class="portfolio-group-summary">正股与期权合并风险仓位</span></td><td class="num">${portfolioPrivate(base==="USD"?formatPortfolioMoney(group.exposure,"USD"):formatWan(group.exposure))}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td><span class="portfolio-group-summary">按绝对仓位排序</span></td><td>--</td></tr>`;
+            }
+            const position=entry.position;
+            if(position.assetType==="option"){
+              const directionSign=position.direction==="short"?-1:1,contracts=Number(position.contracts||0),multiplier=Number(position.contractMultiplier||0);
+              const value=positionBaseValue(position,portfolio),exposure=positionExposureBaseValue(position,portfolio),weight=metrics.netBase?exposure/metrics.netBase:0;
+              const latest=Number(position.latestPrice)||Number(position.averageCost)||0,previous=Number(position.previousClose),cost=Number(position.averageCost)||0;
+              const dailyProfit=previous>0?directionSign*(latest-previous)*contracts*multiplier*portfolioFx(position.currency,base):NaN;
+              const holdingProfit=directionSign*(latest-cost)*contracts*multiplier*portfolioFx(position.currency,base);
+              const profitClass=holdingProfit>0?"gain":holdingProfit<0?"loss":"muted",dailyClass=Number.isFinite(dailyProfit)?dailyProfit>0?"gain":dailyProfit<0?"loss":"muted":"muted";
+              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell">${escapeHtml(optionContractLabel(position))}</td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
+            }
             const pendingPlans = pendingByPositionId.get(position.id) || [];
             const pendingBuys = pendingPlans.filter((item) => item.side === "buy");
             const pendingSells = pendingPlans.filter((item) => item.side === "sell");
@@ -6707,7 +6811,7 @@
             const holdingProfitCell = state.portfolioPrivacyMode
               ? "****"
               : `${holdingProfitText}${Number.isFinite(holdingReturn) ? `<div class="portfolio-holding-profit-rate">${holdingReturn > 0 ? "+" : ""}${holdingReturn.toFixed(2)}%</div>` : ""}`;
-            return `<tr>
+            return `<tr class="${entry.grouped?"portfolio-child-row":""}">
               <td data-label="股票" class="sticky-col"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div>${(position.tags || []).length ? `<div class="position-row-tags">${position.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}</td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
               <td data-label="摊薄成本" class="num">${portfolioPrivate(formatPortfolioCost(position.averageCost))}</td>
@@ -7065,18 +7169,19 @@
     function renderPositionHistoryModal(modal) {
       const portfolio = activePortfolio();
       const position = modal.position;
+      const optionPosition=position?.assetType==="option";
       const rows = (portfolio?.tradeHistory || [])
         .filter((item) => item.positionId === position?.id || (item.code === position?.code && (!item.market || item.market === position?.market)))
         .sort((a, b) => String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")));
       const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
-        <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>变动股数</th><th>操作</th></tr></thead>
+        <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>${optionPosition?"变动张数":"变动股数"}</th><th>操作</th></tr></thead>
         <tbody>${rows.map((item) => {
-          const canRollback = !item.positionId || item.positionId === position?.id;
+          const canRollback = !optionPosition&&(!item.positionId || item.positionId === position?.id);
           const editing = canRollback && modal.editTradeId === item.id;
           const sign = portfolioTradeSign(item.type) > 0 ? "+" : "-";
           const sharesCell = editing
             ? `<div class="history-full-edit"><input type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(String(modal.editShares || item.shares || ""))}" data-history-shares="${escapeHtml(item.id)}" aria-label="修订交易股数"></div>`
-            : `${Number(item.shares).toLocaleString("zh-CN")}`;
+            : `${Number(optionPosition?item.contracts:item.shares).toLocaleString("zh-CN")}`;
           const actions = !canRollback
             ? `<span class="muted">历史周期</span>`
             : editing
@@ -7297,12 +7402,12 @@
       const position = modal.position;
       const title = isOpen ? "开仓" : modal.type === "add" ? "加仓" : "减持";
       const stockBlock = isOpen ? `
-        <label class="field"><span>股票名称/代码搜索</span><div class="search-combobox">
-          <input data-input="portfolioStockSearch" autocomplete="off" placeholder="输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL" value="${escapeHtml(modal.searchQuery || "")}">
+        <div class="field"><span class="portfolio-search-heading"><span>${modal.searchOptions?"期权通用代码搜索":"股票名称/代码搜索"}</span><label class="portfolio-option-search-toggle"><input type="checkbox" data-input="portfolioOptionSearch" ${modal.searchOptions?"checked":""}>搜索期权</label></span><div class="search-combobox">
+          <input data-input="portfolioStockSearch" autocomplete="off" placeholder="${modal.searchOptions?"美股：FUTU260731P00097000；港股：00700.HK-20260731-C-500":"输入股票名称、代码或拼音，例如：腾讯 / 0700 / AAPL"}" value="${escapeHtml(modal.searchQuery || "")}">
           ${(state.portfolioSearchLoading || state.portfolioSearchResults.length || (modal.searchQuery && !modal.stock)) ? `<div class="search-results show">
-            ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配股票...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">没有匹配结果，请尝试其他名称或代码。</div>`}
+            ${state.portfolioSearchLoading ? `<div class="empty" style="padding:18px">正在匹配${modal.searchOptions?"期权":"股票"}...</div>` : state.portfolioSearchResults.length ? state.portfolioSearchResults.map((item, index) => `<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.assetType==="option"?`${item.underlyingName} ${item.optionType==="put"?"Put":"Call"}`:item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}${item.assetType==="option"?` · ${item.expiryDate} · ${formatPortfolioNumber(item.strikePrice)}`:""}</span></span></button>`).join("") : `<div class="empty" style="padding:18px">${modal.searchOptions?"请输入有效的美股 OCC 代码或“标的.市场-到期日-C/P-行权价”通用代码。":"没有匹配结果，请尝试其他名称或代码。"}</div>`}
           </div>` : ""}
-        </div></label>
+        </div></div>
       ` : `<div class="portfolio-selected-stock"><strong>${escapeHtml(position.name)}</strong> <span class="stock-code">${escapeHtml(position.code)} · ${position.currency}</span></div>`;
       const currency = modal.stock?.currency || position?.currency || "";
       if (modal.type === "edit") return modalShell("编辑持仓", `<div class="position-edit-layout">
@@ -7318,15 +7423,19 @@
       const stockConnectNote = portfolio?.accountType === "CNY" && stockMarket === "HK"
         ? `<div class="muted">港股通按港币成交价录入，成交金额将按当前汇率折算为人民币现金。</div>`
         : "";
-      const suggestion = !isOpen ? positionTradeSuggestion(position, portfolio, modal.type) : null;
+      const suggestion = !isOpen && position?.assetType!=="option" ? positionTradeSuggestion(position, portfolio, modal.type) : null;
       const suggestedShares = suggestion?.action === modal.type ? suggestion.gridShares : 0;
       const defaultTradeShares = modal.type === "add" ? "" : (suggestedShares || "");
       const suggestionBlock = suggestion ? renderPositionTradeSuggestion(suggestion, modal.type) : "";
       const tradePrice = Number(position?.latestPrice || modal.stock?.latestPrice) || "";
-      const tradeFields = `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
+      const option=modal.stock?.assetType==="option"?modal.stock:position?.assetType==="option"?position:null;
+      const optionFields=option?`<div class="portfolio-option-fields"><div class="grid-3"><label class="field"><span>方向</span><select name="direction" ${!isOpen?"disabled":""}><option value="long" ${option.direction!=="short"?"selected":""}>做多</option><option value="short" ${option.direction==="short"?"selected":""}>做空</option></select></label><label class="field"><span>类型</span><select name="optionType" disabled><option value="call" ${option.optionType==="call"?"selected":""}>Call</option><option value="put" ${option.optionType==="put"?"selected":""}>Put</option></select></label><label class="field"><span>到期日</span><input name="expiryDate" type="date" value="${escapeHtml(option.expiryDate||"")}" required></label></div><div class="grid-3"><label class="field"><span>行权价</span><input name="strikePrice" type="number" min="0.0001" step="any" value="${Number(option.strikePrice)||""}" required></label><label class="field"><span>每张股数</span><input name="contractMultiplier" type="number" min="1" step="1" value="${Number(option.contractMultiplier)||""}" placeholder="${option.market==="US"?"默认 100":"按港交所合约填写"}" required></label><label class="field"><span>${modal.type==="reduce"?"平仓":"交易"}张数</span><input name="contracts" type="number" min="1" step="1" max="${modal.type==="reduce"?Number(option.contracts||0):""}" required></label></div><div class="portfolio-option-hint">美股通常每张代表100股；港股每张对应股数随标的而异，以交易所合约资料为准。</div></div>`:"";
+      const tradeFields = option
+        ? `${optionFields}<div class="grid-2"><label class="field"><span>${modal.type==="reduce"?"平仓":"开仓"}权利金</span><div class="input-with-suffix"><input name="price" type="number" min="0.0001" step="any" value="${Number(position?.latestPrice)||""}" required><span class="input-suffix">${currency||option.currency}</span></div></label><div class="field"><span>标的现价</span><div class="position-current-weight">${formatPortfolioNumber(option.underlyingLatestPrice||option.latestUnderlyingPrice||0)||"--"}</div></div></div>`
+        : `<div class="grid-2"><label class="field"><span>${modal.type === "reduce" ? "卖出" : "买入"}价格</span><div class="input-with-suffix"><input name="price" type="number" min="0" ${priceInputAttrs(stockMarket, tradePrice)} value="${tradePrice}" required><span class="input-suffix">${currency || "原币"}</span></div></label><div class="field"><span class="trade-quantity-heading"><span>${modal.type === "reduce" ? "卖出" : "买入"}数量</span><label class="portfolio-backfill"><input name="backfillTrade" type="checkbox" data-input="portfolioBackfill" ${modal.backfillTrade ? "checked" : ""}>补录交易</label></span><div class="input-with-suffix"><input name="shares" type="number" min="1" step="1" value="${defaultTradeShares}" required ${modal.type === "reduce" ? `max="${position.shares}"` : ""}><span class="input-suffix">股</span></div></div></div>${modal.backfillTrade ? `<label class="field portfolio-backfill-time"><span>交易时间（日期 · 小时 · 分钟）</span><input name="occurredAt" type="datetime-local" step="60" max="${localDateTimeMinuteValue()}" value="${escapeHtml(modal.occurredAt || localDateTimeMinuteValue())}" required></label>` : ""}`;
       const tradeMain = `${stockBlock}${suggestionBlock}${tradeFields}${stockConnectNote}${modal.type === "reduce" ? `<div class="muted">当前持有 ${Number(position.shares).toLocaleString("zh-CN")} 股</div>` : ""}`;
       const body = isOpen ? tradeMain : `<div class="position-trade-layout"><div class="position-trade-main">${tradeMain}</div>${renderPositionTradePlanReadonly(position, modal.type === "reduce" ? "sell" : "buy")}</div>`;
-      return modalShell(title, body, "positionTrade", modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
+      return modalShell(title, body, "positionTrade", option?(modal.type==="reduce"?"确认平仓":"确认开仓"):modal.type === "reduce" ? "确认减持" : "确认买入", isOpen ? "" : "position-trade-modal");
     }
 
     function normalizedPositionTradePlan(position) {
@@ -8634,6 +8743,15 @@
       });
       const stockSearch = document.querySelector("[data-input='stockSearch']");
       if (stockSearch) stockSearch.addEventListener("input", onStockSearch);
+      const portfolioOptionSearch = document.querySelector("[data-input='portfolioOptionSearch']");
+      if (portfolioOptionSearch) portfolioOptionSearch.addEventListener("change", (event) => {
+        if (state.portfolioModal?.type !== "open") return;
+        state.portfolioModal = { ...state.portfolioModal, searchOptions: event.target.checked, searchQuery: "", stock: null };
+        state.portfolioSearchResults = [];
+        state.portfolioSearchLoading = false;
+        render();
+        requestAnimationFrame(() => document.querySelector("[data-input='portfolioStockSearch']")?.focus());
+      });
       const journalForm = document.querySelector("[data-form='journal']");
       if (journalForm) journalForm.addEventListener("submit", submitJournal);
       const journalContent = document.querySelector("[data-input='journalContent']");
@@ -8941,6 +9059,55 @@
       return { portfolios: normalized, changed };
     }
 
+    function settleExpiredOptionsInPortfolio(portfolio) {
+      const today=portfolioCalendarDateString(new Date());
+      const expired=(portfolio.positions||[]).filter((position)=>position.assetType==="option"&&position.expiryDate&&position.expiryDate<today);
+      if(!expired.length) return {portfolio,changed:false};
+      let positions=[...(portfolio.positions||[])],cash={...(portfolio.cash||{})},tradeHistory=[...(portfolio.tradeHistory||[])],changed=false;
+      expired.forEach((option)=>{
+        const underlying=positions.find((position)=>position.assetType!=="option"&&optionUnderlyingKey(position)===optionUnderlyingKey(option));
+        const underlyingPrice=Number(underlying?.latestPrice)||Number(option.underlyingLatestPrice)||0,strike=Number(option.strikePrice)||0;
+        const itm=option.optionType==="call"?underlyingPrice>strike:underlyingPrice<strike;
+        positions=positions.filter((position)=>position.id!==option.id);
+        const settledAt=new Date().toISOString();
+        if(!itm){
+          tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"expire",contracts:option.contracts,occurredAt:settledAt});
+          changed=true;
+          return;
+        }
+        const direction=option.direction==="short"?-1:1,optionFactor=option.optionType==="call"?1:-1;
+        const sharesDelta=direction*optionFactor*Number(option.contracts||0)*Number(option.contractMultiplier||0);
+        const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
+        const cashDelta=-sharesDelta*strike*portfolioFx(currency,cashCurrency);
+        cash[cashCurrency]=Number(cash[cashCurrency]||0)+cashDelta;
+        const stockIndex=positions.findIndex((position)=>position.assetType!=="option"&&optionUnderlyingKey(position)===optionUnderlyingKey(option));
+        if(stockIndex>=0){
+          const stock=positions[stockIndex],oldShares=Number(stock.shares||0),nextShares=oldShares+sharesDelta;
+          if(!nextShares) positions.splice(stockIndex,1);
+          else{
+            const sameDirection=!oldShares||Math.sign(oldShares)===Math.sign(sharesDelta);
+            const nextCost=sameDirection?(Math.abs(oldShares)*Number(stock.averageCost||strike)+Math.abs(sharesDelta)*strike)/(Math.abs(oldShares)+Math.abs(sharesDelta)):Math.sign(nextShares)===Math.sign(oldShares)?Number(stock.averageCost||strike):strike;
+            positions[stockIndex]={...stock,shares:nextShares,averageCost:roundPortfolioCost(nextCost),latestPrice:underlyingPrice||stock.latestPrice};
+          }
+        }else{
+          positions.push({id:id("position"),name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(strike),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:settledAt});
+        }
+        tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"exercise",contracts:option.contracts,shares:Math.abs(sharesDelta),price:strike,currency,occurredAt:settledAt});
+        changed=true;
+      });
+      return {portfolio:{...portfolio,positions,cash,tradeHistory,updatedAt:new Date().toISOString()},changed};
+    }
+
+    function settleExpiredOptions() {
+      let changed=false;
+      state.portfolios=state.portfolios.map((portfolio)=>{
+        const result=settleExpiredOptionsInPortfolio(portfolio);
+        changed=changed||result.changed;
+        return result.portfolio;
+      });
+      return changed;
+    }
+
     async function loadPortfolios() {
       const saved = readJson(portfolioStorageKey(), { portfolios: [], activePortfolioId: "" });
       state.portfolios = Array.isArray(saved?.portfolios) ? saved.portfolios : [];
@@ -8960,12 +9127,13 @@
       }
       const normalized = normalizePortfolioPositionIds(state.portfolios);
       state.portfolios = normalized.portfolios;
+      const optionsSettled=settleExpiredOptions();
       if (state.activePortfolioId && !state.portfolios.some((item) => item.id === state.activePortfolioId)) {
         state.activePortfolioId = state.portfolios[0]?.id || "";
       }
       if (!state.activePortfolioId) state.activePortfolioId = state.portfolios[0]?.id || "";
       writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
-      if (normalized.changed && state.session?.access_token && state.session.access_token !== "local-demo") {
+      if ((normalized.changed||optionsSettled) && state.session?.access_token && state.session.access_token !== "local-demo") {
         persistPortfoliosToCloud(state.portfolios).catch((error) => console.warn("旧持仓标识修复同步失败。", error));
       }
     }
@@ -8985,7 +9153,10 @@
         cash: { CNY: 0, HKD: 60000, USD: 18000 },
         positions: [
           { id: "position-demo-0700", name: "腾讯控股", code: "0700.HK", rawCode: "0700", market: "HK", exchange: "HKEX", quoteId: "116.00700", currency: "HKD", shares: 300, averageCost: 360, latestPrice: 385, previousClose: 380, changePercent: 1.32, targetWeight: 18, tags: ["AI", "中国互联网"], valuationStockId: "stock-demo-0700-neutral", tradePlan: { buy: [{ price: 350, shares: 100, done: false }], sell: [{ price: 380, shares: 100, done: false }] }, priceUpdatedAt: now },
-          { id: "position-demo-aapl", name: "苹果", code: "AAPL", rawCode: "AAPL", market: "US", exchange: "NASDAQ", quoteId: "105.AAPL", currency: "USD", shares: 50, averageCost: 188, latestPrice: 205, previousClose: 202, changePercent: 1.49, targetWeight: 35, tags: ["AI", "美国科技"], valuationStockId: "stock-demo-aapl-neutral", tradePlan: { buy: [{ price: 210, shares: 10, done: false }], sell: [{ price: 245, shares: 10, done: false }] }, priceUpdatedAt: now }
+          { id: "position-demo-aapl", name: "苹果", code: "AAPL", rawCode: "AAPL", market: "US", exchange: "NASDAQ", quoteId: "105.AAPL", currency: "USD", shares: 50, averageCost: 188, latestPrice: 205, previousClose: 202, changePercent: 1.49, targetWeight: 35, tags: ["AI", "美国科技"], valuationStockId: "stock-demo-aapl-neutral", tradePlan: { buy: [{ price: 210, shares: 10, done: false }], sell: [{ price: 245, shares: 10, done: false }] }, priceUpdatedAt: now },
+          { id: "position-demo-futu", name: "富途控股", code: "FUTU", rawCode: "FUTU", market: "US", exchange: "NASDAQ", quoteId: "105.FUTU", currency: "USD", shares: 300, averageCost: 94, latestPrice: 100, previousClose: 99, changePercent: 1.01, targetWeight: 20, tags: ["互联网券商"], priceUpdatedAt: now },
+          { id: "option-demo-futu-put", assetType: "option", name: "富途控股", underlyingName: "富途控股", underlyingCode: "FUTU", code: "FUTU260731P00097000", contractCode: "FUTU260731P00097000", rawCode: "FUTU", market: "US", exchange: "US", quoteId: "105.FUTU", currency: "USD", optionType: "put", direction: "short", expiryDate: "2026-07-31", strikePrice: 97, contractMultiplier: 100, contracts: 1, averageCost: 2, latestPrice: 2, previousClose: 2.1, underlyingLatestPrice: 100, priceUpdatedAt: now },
+          { id: "option-demo-futu-call", assetType: "option", name: "富途控股", underlyingName: "富途控股", underlyingCode: "FUTU", code: "FUTU260731C00102000", contractCode: "FUTU260731C00102000", rawCode: "FUTU", market: "US", exchange: "US", quoteId: "105.FUTU", currency: "USD", optionType: "call", direction: "short", expiryDate: "2026-07-31", strikePrice: 102, contractMultiplier: 100, contracts: 1, averageCost: 3, latestPrice: 3, previousClose: 3.1, underlyingLatestPrice: 100, priceUpdatedAt: now }
         ],
         tagTargets: { AI: 50, 中国互联网: 15, 美国科技: 32 },
         tradeHistory: [],
@@ -9127,7 +9298,7 @@
         })()
         : type === "rebalance"
         ? { type, searchSide: "sell", sellStock: null, buyStock: null, sellQuery: "", buyQuery: "", sellPrice: "", buyPrice: "", sellShares: "", buyShares: "", lastEditedSide: "" }
-        : { type, position, stock: null, searchQuery: "", tags: [...(position?.tags || [])] };
+        : { type, position, stock: null, searchQuery: "", searchOptions: false, tags: [...(position?.tags || [])] };
       render();
     }
 
@@ -9251,7 +9422,7 @@
       const expectedQuery = query;
       render();
       try {
-        const results = await searchStocks(query);
+        const results = state.portfolioModal?.type==="open"&&state.portfolioModal?.searchOptions ? await searchOptions(query) : await searchStocks(query);
         if (state.portfolioModal?.type === "rebalance") {
           const safeSide = side === "buy" ? "buy" : "sell";
           if (state.portfolioModal?.[`${safeSide}Query`] !== expectedQuery || state.portfolioModal?.searchSide !== safeSide) return;
@@ -9290,7 +9461,10 @@
           [`${safeSide}Price`]: Number(stock.latestPrice) || ""
         };
       } else {
-        state.portfolioModal = { ...state.portfolioModal, stock: { ...selected, ...quote }, searchQuery: `${selected.name} ${selected.code}` };
+        const stock=selected.assetType==="option"
+          ? {...selected,underlyingLatestPrice:Number(quote.latestPrice)||Number(selected.underlyingLatestPrice)||0,latestPrice:0,previousClose:0}
+          : {...selected,...quote};
+        state.portfolioModal = { ...state.portfolioModal, stock, searchQuery: `${selected.name} ${selected.code}` };
       }
       state.portfolioSearchResults = [];
       state.portfolioSearchLoading = false;
@@ -9633,7 +9807,7 @@
     }
 
     function portfolioTradeSign(type) { return type === "reduce" ? -1 : 1; }
-    function portfolioTradeTypeText(type) { return type === "open" ? "开仓" : type === "add" ? "加仓" : "减持"; }
+    function portfolioTradeTypeText(type) { return type === "open" ? "开仓" : type === "add" ? "加仓" : type === "expire" ? "到期作废" : type === "exercise" ? "自动行权" : "减持/平仓"; }
     function portfolioTradeDate(trade) { return localDateTimeMinuteValue(trade?.occurredAt).slice(0, 10); }
 
     function historicalFx(currency, baseCurrency, rates = {}) {
@@ -9712,10 +9886,12 @@
       if (!portfolio || !modal) return;
       const form = new FormData(event.currentTarget);
       const price = Number(form.get("price"));
+      const selectedAsset = modal.type === "open" ? modal.stock : modal.position;
       const shares = Number(form.get("shares"));
       if (!Number.isFinite(price) || price <= 0) return showPortfolioError("请输入有效价格。");
+      if(selectedAsset?.assetType==="option") return submitOptionTrade(form,portfolio,modal,selectedAsset,price);
       if (!Number.isInteger(shares) || shares <= 0) return showPortfolioError("买卖数量必须为正整数。");
-      const stock = modal.type === "open" ? modal.stock : modal.position;
+      const stock = selectedAsset;
       if (!stock) return showPortfolioError("请先选择股票。");
       if (modal.type === "edit") {
         const targetWeight = parsePositionTargetWeight(form.get("targetWeight"));
@@ -9792,6 +9968,49 @@
         return { ...item, positions, tradeHistory, navHistoryCorrections: navRevision?.corrections || item.navHistoryCorrections, cash: { ...item.cash, [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta }, updatedAt: now };
       });
       if (navRevision) { state.navHistory = navRevision.rows; state.navHistoryPortfolioId = portfolio.id; }
+      closePortfolioModal();
+    }
+
+    function submitOptionTrade(form,portfolio,modal,option,price){
+      const contracts=Number(form.get("contracts")),multiplier=Number(form.get("contractMultiplier")||option.contractMultiplier),strike=Number(form.get("strikePrice")||option.strikePrice);
+      const expiryDate=String(form.get("expiryDate")||option.expiryDate||""),direction=String(form.get("direction")||option.direction||"long")==="short"?"short":"long";
+      if(!Number.isInteger(contracts)||contracts<=0) return showPortfolioError("期权交易张数必须为正整数。");
+      if(!Number.isInteger(multiplier)||multiplier<=0) return showPortfolioError("每张对应股数必须为正整数。");
+      if(!(strike>0)||!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) return showPortfolioError("请填写有效的行权价和到期日。");
+      if(expiryDate<portfolioCalendarDateString(new Date())) return showPortfolioError("到期日不能早于今天。");
+      if(!["HK","US"].includes(option.market)) return showPortfolioError("第一期期权仅支持港股和美股标的。");
+      if(portfolio.accountType==="CNY"&&option.market!=="HK") return showPortfolioError("人民币账户第一期仅支持港股期权。");
+      if(modal.type==="reduce"&&contracts>Number(option.contracts||0)) return showPortfolioError("平仓张数不能超过当前持仓。");
+      if(modal.type==="open"&&(portfolio.positions||[]).some((item)=>item.assetType==="option"&&item.code===option.code&&item.direction===direction)) return showPortfolioError("该方向的期权合约已在组合中，请使用加仓。");
+      const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
+      const premiumAmount=price*contracts*multiplier,baseCashAmount=premiumAmount*portfolioFx(currency,cashCurrency);
+      const opening=modal.type!=="reduce",cashDelta=(direction==="long"?(opening?-1:1):(opening?1:-1))*baseCashAmount;
+      if(Number(portfolio.cash?.[cashCurrency]||0)+cashDelta<-.000001) return showPortfolioError(`${currencies[cashCurrency]?.label||cashCurrency}现金余额不足。`);
+      const now=new Date().toISOString(),newPositionId=modal.type==="open"?id("option"):option.id;
+      const trade={id:id("trade"),positionId:newPositionId,code:option.code,market:option.market,assetType:"option",type:modal.type,direction,currency,price,contracts,multiplier,occurredAt:now};
+      updateActivePortfolio((item)=>{
+        const positions=[...(item.positions||[])];
+        if(modal.type==="open"){
+          positions.push({
+            id:newPositionId,assetType:"option",name:option.underlyingName||option.name,code:option.contractCode||option.code,contractCode:option.contractCode||option.code,
+            underlyingCode:option.underlyingCode,underlyingName:option.underlyingName||option.name,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",
+            quoteId:option.underlyingQuoteId||option.quoteId||"",currency,optionType:option.optionType,direction,expiryDate,strikePrice:strike,contractMultiplier:multiplier,
+            contracts,averageCost:roundPortfolioCost(price),latestPrice:price,previousClose:price,underlyingLatestPrice:Number(option.underlyingLatestPrice)||0,priceUpdatedAt:now
+          });
+        }else{
+          const index=positions.findIndex((position)=>position.id===option.id);
+          if(index>=0&&modal.type==="add"){
+            const old=positions[index],nextContracts=Number(old.contracts)+contracts;
+            positions[index]={...old,contracts:nextContracts,averageCost:roundPortfolioCost((Number(old.contracts)*Number(old.averageCost)+contracts*price)/nextContracts),latestPrice:price};
+          }
+          if(index>=0&&modal.type==="reduce"){
+            const remaining=Number(option.contracts)-contracts;
+            if(!remaining) positions.splice(index,1);
+            else positions[index]={...positions[index],contracts:remaining,latestPrice:price};
+          }
+        }
+        return {...item,positions,tradeHistory:[...(item.tradeHistory||[]),trade],cash:{...item.cash,[cashCurrency]:Number(item.cash?.[cashCurrency]||0)+cashDelta},updatedAt:now};
+      });
       closePortfolioModal();
     }
 
@@ -10047,8 +10266,9 @@
             ...position,
             quoteId: updates[index].quoteId || position.quoteId || stockQuoteId(position),
             rawCode: updates[index].rawCode || position.rawCode,
-            latestPrice: updates[index].latestPrice,
-            previousClose: updates[index].previousClose,
+            ...(position.assetType==="option"
+              ? {underlyingLatestPrice:updates[index].latestPrice,underlyingPreviousClose:updates[index].previousClose}
+              : {latestPrice:updates[index].latestPrice,previousClose:updates[index].previousClose}),
             dayHigh: updates[index].dayHigh,
             dayLow: updates[index].dayLow,
             intradayQuoteAt: updates[index].intradayQuoteAt || "",
@@ -10056,8 +10276,10 @@
             priceUpdatedAt: new Date().toISOString()
           } : position)
         } : item);
+        const optionsSettled=settleExpiredOptions();
         state.portfolioQuotesUpdatedAt = new Date().toISOString();
         writeJson(portfolioStorageKey(), { portfolios: state.portfolios, activePortfolioId: state.activePortfolioId });
+        if(optionsSettled&&state.session?.access_token&&state.session.access_token!=="local-demo") persistPortfoliosToCloud(state.portfolios).catch((error)=>console.warn("到期期权结算同步失败。",error));
       } finally {
         portfolioQuoteRefreshInFlight = false;
         if (shouldRender) render();
