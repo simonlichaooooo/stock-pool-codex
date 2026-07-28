@@ -6534,20 +6534,45 @@
       return row ? Number(row.unit_nav) : null;
     }
 
+    function portfolioPositionDailyProfit(position, portfolio) {
+      const latestPrice = Number(position?.latestPrice);
+      if (!(latestPrice > 0)) return NaN;
+      const optionPosition = position?.assetType === "option";
+      const positionDirection = optionPosition && position.direction === "short" ? -1 : 1;
+      const positionMultiplier = optionPosition ? Number(position.contractMultiplier || 0) : 1;
+      const currentUnits = optionPosition
+        ? positionDirection * Number(position.contracts || 0) * positionMultiplier
+        : Number(position.shares || 0);
+      const trades = (portfolio?.tradeHistory || []).filter((trade) => {
+        if (!["open", "add", "reduce"].includes(trade.type) || portfolioTradeDate(trade) !== todayString()) return false;
+        if (trade.positionId) return trade.positionId === position.id;
+        return trade.code === position.code && (!trade.market || trade.market === position.market);
+      }).map((trade) => {
+        const quantity = optionPosition ? Number(trade.contracts || 0) : Number(trade.shares || 0);
+        const multiplier = optionPosition ? Number(trade.multiplier || trade.contractMultiplier || positionMultiplier) : 1;
+        const direction = optionPosition && (trade.direction || position.direction) === "short" ? -1 : 1;
+        const tradeSign = trade.type === "reduce" ? -1 : 1;
+        return { units: tradeSign * direction * quantity * multiplier, price: Number(trade.price) };
+      }).filter((trade) => Number.isFinite(trade.units) && trade.units !== 0 && trade.price > 0);
+      const tradedUnits = trades.reduce((sum, trade) => sum + trade.units, 0);
+      const openingUnits = currentUnits - tradedUnits;
+      const previousClose = Number(position.previousClose);
+      if (Math.abs(openingUnits) > 0.000001 && !(previousClose > 0)) return NaN;
+      const openingProfit = Math.abs(openingUnits) > 0.000001 ? openingUnits * (latestPrice - previousClose) : 0;
+      const tradeProfit = trades.reduce((sum, trade) => sum + trade.units * (latestPrice - trade.price), 0);
+      return (openingProfit + tradeProfit) * portfolioFx(position.currency, portfolioBaseCurrency(portfolio));
+    }
+
     function portfolioDailyProfit(portfolio) {
-      const base = portfolioBaseCurrency(portfolio);
       let dailyProfit = 0;
       let quotedPositions = 0;
       for (const position of portfolio.positions || []) {
-        const shares = position.assetType==="option"
-          ? (position.direction==="short"?-1:1)*Number(position.contracts||0)*Number(position.contractMultiplier||0)
-          : Number(position.shares||0);
-        if (!shares) continue;
-        const latestPrice = Number(position.latestPrice);
-        const previousClose = Number(position.previousClose);
-        if (!(latestPrice > 0) || !(previousClose > 0)) continue;
+        const quantity = position.assetType==="option" ? Number(position.contracts||0) : Number(position.shares||0);
+        if (!quantity) continue;
+        const positionProfit = portfolioPositionDailyProfit(position, portfolio);
+        if (!Number.isFinite(positionProfit)) continue;
         quotedPositions += 1;
-        dailyProfit += (latestPrice - previousClose) * shares * portfolioFx(position.currency, base);
+        dailyProfit += positionProfit;
       }
       return { amount: dailyProfit, quotedPositions };
     }
@@ -6957,7 +6982,7 @@
               const directionSign=position.direction==="short"?-1:1,contracts=Number(position.contracts||0),multiplier=Number(position.contractMultiplier||0);
               const value=positionBaseValue(position,portfolio),exposure=positionExposureBaseValue(position,portfolio),weight=metrics.netBase?exposure/metrics.netBase:0;
               const latest=Number(position.latestPrice)||Number(position.averageCost)||0,previous=Number(position.previousClose),cost=Number(position.averageCost)||0;
-              const dailyProfit=previous>0?directionSign*(latest-previous)*contracts*multiplier*portfolioFx(position.currency,base):NaN;
+              const dailyProfit=portfolioPositionDailyProfit(position,portfolio);
               const holdingProfit=directionSign*(latest-cost)*contracts*multiplier*portfolioFx(position.currency,base);
               const profitClass=holdingProfit>0?"gain":holdingProfit<0?"loss":"muted",dailyClass=Number.isFinite(dailyProfit)?dailyProfit>0?"gain":dailyProfit<0?"loss":"muted":"muted";
               return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num portfolio-option-exposure">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
@@ -6969,10 +6994,7 @@
             const weight = positionWeight(position);
             const change = position.changePercent == null ? NaN : Number(position.changePercent);
             const changeClass = Number.isFinite(change) ? (change > 0 ? "gain" : change < 0 ? "loss" : "") : "muted";
-            const previousClose = Number(position.previousClose);
-            const dailyProfit = previousClose > 0 && Number(position.latestPrice) > 0
-              ? (Number(position.latestPrice) - previousClose) * Number(position.shares || 0) * portfolioFx(position.currency, base)
-              : NaN;
+            const dailyProfit = portfolioPositionDailyProfit(position, portfolio);
             const dailyProfitClass = state.portfolioPrivacyMode ? "muted" : Number.isFinite(dailyProfit) ? (dailyProfit > 0 ? "gain" : dailyProfit < 0 ? "loss" : "") : "muted";
             const dailyProfitText = Number.isFinite(dailyProfit)
               ? `${dailyProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioNumber(dailyProfit) : formatWan(dailyProfit)}`
