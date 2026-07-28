@@ -1765,7 +1765,9 @@
     .portfolio-table.summary-expanded .table-scroll { max-height: calc(100vh - 280px); }
     .portfolio-table.tags-expanded.summary-expanded .table-scroll { max-height: calc(100vh - 370px); }
     .portfolio-table .stock-name { font-weight: 720; }
-    .portfolio-table .portfolio-position-weight { font-weight: 750; }
+    .portfolio-table .portfolio-position-weight { font-weight: 750; text-align: right; }
+    .portfolio-table .portfolio-weight-cell { text-align: right; }
+    .portfolio-table .portfolio-option-exposure { font-size: 10.5px; letter-spacing: -.01em; white-space: nowrap; }
     .portfolio-valuation-cell { min-width: 92px; font-variant-numeric: tabular-nums; }
     .portfolio-valuation-cell span { display: block; line-height: 1.55; white-space: nowrap; }
     .portfolio-valuation-cell .muted { font-size: 11px; }
@@ -2035,15 +2037,16 @@
     .portfolio-plan-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
     .portfolio-plan-board-head h3 { margin: 0; font-size: 15px; }
     .portfolio-plan-board-actions { display: flex; align-items: center; gap: 7px; }
-    .portfolio-plan-board-actions button { color: #fff; border-color: var(--brand); background: var(--brand); font-weight: 700; }
+    .portfolio-plan-board-actions button { color: var(--brand-strong); border-color: color-mix(in srgb,var(--brand) 30%,rgba(255,255,255,.58)); background: color-mix(in srgb,var(--brand-soft) 66%,rgba(255,255,255,.74)); box-shadow: inset 0 1px 0 rgba(255,255,255,.9),0 3px 9px color-mix(in srgb,var(--brand) 9%,transparent); font-weight: 700; }
+    .portfolio-plan-board-actions button:hover { color: var(--brand-strong); border-color: color-mix(in srgb,var(--brand) 44%,rgba(255,255,255,.48)); background: color-mix(in srgb,var(--brand-soft) 82%,rgba(255,255,255,.7)); }
     .portfolio-plan-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-    .portfolio-plan-column { position: relative; min-width: 0; padding: 13px 12px 14px; border: 0; border-radius: 8px; background: rgba(246,249,252,.72); }
+    .portfolio-plan-column { position: relative; min-width: 0; overflow: hidden; padding: 13px 12px 14px; border: 0; border-radius: 8px; background: rgba(246,249,252,.72); }
     .portfolio-plan-column.buy { background: rgba(255,247,246,.64); }
     .portfolio-plan-column.sell { background: rgba(242,250,246,.72); }
-    .portfolio-plan-column-title { position: absolute; z-index: 1; top: 10px; right: 14px; margin: 0; color: currentColor; font-family: "STHupo","STCaiyun","FZYaoti","Arial Rounded MT Bold",sans-serif; font-size: 23px; font-style: normal; font-weight: 400; letter-spacing: 0; line-height: 1; opacity: .5; pointer-events: none; transform: rotate(45deg); transform-origin: center; }
+    .portfolio-plan-column-title { position: absolute; z-index: 0; top: 5px; right: 9px; margin: 0; color: currentColor; font-family: "Arial Rounded MT Bold","PingFang SC",sans-serif; font-size: 50px; font-style: normal; font-weight: 800; letter-spacing: 0; line-height: 1; opacity: .08; pointer-events: none; }
     .portfolio-plan-column.buy .portfolio-plan-column-title { color: #b42318; }
     .portfolio-plan-column.sell .portfolio-plan-column-title { color: #067647; }
-    .portfolio-plan-stock { display: grid; gap: 8px; }
+    .portfolio-plan-stock { position: relative; z-index: 1; display: grid; gap: 8px; }
     .portfolio-plan-stock + .portfolio-plan-stock { margin-top: 15px; padding-top: 1px; }
     .portfolio-plan-stock-name { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 3px; color: #21334a; font-size: 14px; font-weight: 800; line-height: 1.3; }
     .portfolio-plan-stock-weight { padding: 3px 7px; border: 0; border-radius: 999px; color: #5d6f86; background: rgba(226,233,241,.72); font-size: 10px; font-weight: 650; white-space: nowrap; }
@@ -3546,13 +3549,18 @@
       -webkit-backdrop-filter:blur(10px);
     }
     button.portfolio-action-open { color:#087473; border-color:rgba(63,151,148,.38); background:rgba(230,250,248,.54); }
+    .portfolio-actions > button.portfolio-action-plan { color:var(--brand-strong); border-color:color-mix(in srgb,var(--brand) 36%,rgba(255,255,255,.5)); background:color-mix(in srgb,var(--brand-soft) 62%,rgba(255,255,255,.62)); }
+    .portfolio-actions > button.portfolio-action-plan.active { color:var(--brand-strong); border-color:color-mix(in srgb,var(--brand) 50%,rgba(255,255,255,.42)); background:color-mix(in srgb,var(--brand-soft) 84%,rgba(255,255,255,.56)); box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 12px color-mix(in srgb,var(--brand) 13%,transparent); }
     button.portfolio-action-rebalance { color:#245f96; border-color:rgba(82,139,197,.38); background:rgba(230,241,255,.54); }
-    button.portfolio-action-advice,
-    button.portfolio-action-advice.active { color:#6a531f; border-color:rgba(176,139,55,.42); background:rgba(255,248,222,.62); }
+    button.portfolio-action-advice { color:#704b08; border-color:rgba(190,145,42,.52); background:rgba(255,241,190,.72); }
     button.portfolio-action-summary { color:#525ca8; border-color:rgba(112,122,199,.36); background:rgba(237,237,255,.52); }
     button.portfolio-action-tags,
     button.portfolio-action-tags.active { color:#4d6592; border-color:rgba(91,123,169,.38); background:rgba(232,240,251,.54); }
     button.portfolio-action-more { color:#405875; border-color:rgba(91,123,161,.38); background:rgba(239,244,251,.56); }
+    .portfolio-actions > button.portfolio-action-btn.active {
+      transform:translateY(-1px);
+      box-shadow:inset 0 -2px 0 currentColor,inset 0 1px 0 rgba(255,255,255,.94),0 5px 13px rgba(52,111,181,.13);
+    }
     button.portfolio-action-open:hover,
     button.portfolio-action-rebalance:hover,
     button.portfolio-action-advice:hover,
@@ -4133,6 +4141,16 @@
       background:color-mix(in srgb,var(--brand-soft) 66%,rgba(255,255,255,.70));
       box-shadow:inset 0 1px 0 rgba(255,255,255,.94),0 5px 14px color-mix(in srgb,var(--brand) 13%,transparent);
     }
+    html[data-theme]:not([data-theme="glacier"]) .portfolio-actions > button.portfolio-action-advice {
+      color:#704b08;
+      border-color:rgba(190,145,42,.52);
+      background:rgba(255,241,190,.72);
+    }
+    html[data-theme]:not([data-theme="glacier"]) .portfolio-actions > button.portfolio-action-btn.active {
+      border-color:color-mix(in srgb,var(--brand) 48%,rgba(255,255,255,.44));
+      background:color-mix(in srgb,var(--brand-soft) 78%,rgba(255,255,255,.62));
+      box-shadow:inset 0 -2px 0 var(--brand-strong),inset 0 1px 0 rgba(255,255,255,.94),0 5px 13px color-mix(in srgb,var(--brand) 14%,transparent);
+    }
     html[data-theme]:not([data-theme="glacier"]) button.portfolio-action-tags.active {
       color:var(--brand-strong);
       border-color:color-mix(in srgb,var(--brand) 40%,rgba(255,255,255,.50));
@@ -4233,10 +4251,10 @@
     button.portfolio-action-advice.active,
     html[data-theme] .portfolio-actions > button.portfolio-action-advice,
     html[data-theme] .portfolio-actions > button.portfolio-action-advice.active {
-      color:color-mix(in srgb,var(--brand-strong) 88%,#195f70);
-      border-color:color-mix(in srgb,var(--brand) 28%,rgba(255,255,255,.60));
-      background:color-mix(in srgb,var(--brand-soft) 46%,rgba(255,255,255,.66));
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.90);
+      color:var(--brand-strong);
+      border-color:color-mix(in srgb,var(--brand) 40%,rgba(255,255,255,.55));
+      background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.72));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.94);
     }
     button.portfolio-action-advice:hover,
     html[data-theme] .portfolio-actions > button.portfolio-action-advice:hover {
@@ -4247,7 +4265,9 @@
     }
     button.portfolio-action-advice.active,
     html[data-theme] .portfolio-actions > button.portfolio-action-advice.active {
-      background:linear-gradient(120deg,rgba(255,255,255,.86),color-mix(in srgb,var(--brand-soft) 78%,rgba(255,255,255,.62)));
+      border-color:color-mix(in srgb,var(--brand) 50%,rgba(255,255,255,.44));
+      background:linear-gradient(120deg,rgba(255,255,255,.86),color-mix(in srgb,var(--brand-soft) 82%,rgba(255,255,255,.60)));
+      box-shadow:inset 0 -2px 0 var(--brand-strong),inset 0 1px 0 rgba(255,255,255,.96),0 5px 13px color-mix(in srgb,var(--brand) 14%,transparent);
     }
 
     @keyframes navCapsuleLight {
@@ -6591,7 +6611,7 @@
         }).join("");
         return `<section class="portfolio-plan-column ${side}"><div class="portfolio-plan-column-title"><span>${label}</span></div>${body||`<div class="portfolio-plan-empty">暂无${label}计划</div>`}</section>`;
       };
-      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合计划</h3><div class="portfolio-plan-board-actions"><button type="button" data-action="addPortfolioPlan">+ 添加计划</button></div></div><div class="portfolio-plan-columns">${column("buy","买")}${column("sell","卖")}</div></section>`;
+      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合</h3><div class="portfolio-plan-board-actions"><button type="button" data-action="addPortfolioPlan">+ 添加计划</button></div></div><div class="portfolio-plan-columns">${column("buy","买")}${column("sell","卖")}</div></section>`;
     }
 
     function renderPortfolioView() {
@@ -6616,10 +6636,10 @@
           </div>
           <div class="portfolio-actions">
             <button class="portfolio-action-btn portfolio-action-open" data-action="openPosition">${portfolioActionIcon("open")}<span>开仓</span></button>
-            <button class="portfolio-action-btn ${state.portfolioPlansExpanded?"active":""}" data-action="togglePortfolioPlans">${portfolioActionIcon("plan")}<span>计划</span></button>
+            <button class="portfolio-action-btn portfolio-action-plan ${state.portfolioPlansExpanded?"active":""}" data-action="togglePortfolioPlans">${portfolioActionIcon("plan")}<span>计划</span></button>
             <button class="portfolio-action-btn portfolio-action-rebalance" data-action="rebalancePortfolio">${portfolioActionIcon("rebalance")}<span>换仓</span></button>
             <button class="portfolio-action-btn portfolio-action-advice ${state.portfolioAdviceExpanded ? "active" : ""}" data-action="togglePortfolioAdvice">${portfolioActionIcon("advice")}<span>${state.portfolioAdviceExpanded ? "关闭建议" : "调仓建议"}</span></button>
-            <button class="portfolio-action-btn portfolio-action-summary portfolio-summary-toggle" data-action="togglePortfolioSummary">
+            <button class="portfolio-action-btn portfolio-action-summary portfolio-summary-toggle ${summaryExpanded ? "active" : ""}" data-action="togglePortfolioSummary">
               ${summaryExpanded
                 ? `${portfolioActionIcon("collapse")}<span>收起组合卡片</span>`
                 : `${portfolioActionIcon("expand")}<span>展开组合卡片</span>`}
@@ -6907,11 +6927,11 @@
             </div>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th class="sticky-col">股票 / 合约</th><th>数量</th><th class="num">成本</th><th class="num">现价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值 / 仓位</th><th class="sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值 / 合约信息</th><th>操作</th></tr></thead>
+          <thead><tr><th class="sticky-col">股票 / 合约</th><th>数量</th><th class="num">成本</th><th class="num">现价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值/敞口</th><th class="num sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值 / 合约信息</th><th>操作</th></tr></thead>
           <tbody>${displayRows.map((entry) => {
             if(entry.kind==="group"){
               const group=entry.group,stock=group.items.find((item)=>item.assetType!=="option")||group.items[0],weight=metrics.netBase?group.exposure/metrics.netBase:0;
-              return `<tr class="portfolio-group-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(stock.assetType==="option"?(stock.underlyingName||stock.name):stock.name)}</div><div class="stock-code">${escapeHtml(stock.assetType==="option"?stock.underlyingCode:stock.code)}</div></td><td><span class="portfolio-group-summary">${group.items.length} 个仓位</span></td><td class="num" colspan="5"></td><td class="num">${portfolioPrivate(base==="USD"?formatPortfolioMoney(group.exposure,"USD"):formatWan(group.exposure))}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td></td><td>--</td></tr>`;
+              return `<tr class="portfolio-group-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(stock.assetType==="option"?(stock.underlyingName||stock.name):stock.name)}</div><div class="stock-code">${escapeHtml(stock.assetType==="option"?stock.underlyingCode:stock.code)}</div></td><td><span class="portfolio-group-summary">${group.items.length} 个仓位</span></td><td class="num" colspan="5"></td><td class="num">${portfolioPrivate(base==="USD"?formatPortfolioMoney(group.exposure,"USD"):formatWan(group.exposure))}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td></td><td>--</td></tr>`;
             }
             const position=entry.position;
             if(position.assetType==="option"){
@@ -6921,7 +6941,7 @@
               const dailyProfit=previous>0?directionSign*(latest-previous)*contracts*multiplier*portfolioFx(position.currency,base):NaN;
               const holdingProfit=directionSign*(latest-cost)*contracts*multiplier*portfolioFx(position.currency,base);
               const profitClass=holdingProfit>0?"gain":holdingProfit<0?"loss":"muted",dailyClass=Number.isFinite(dailyProfit)?dailyProfit>0?"gain":dailyProfit<0?"loss":"muted":"muted";
-              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
+              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num portfolio-option-exposure">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
             }
             const pendingPlans = pendingByPositionId.get(position.id) || [];
             const pendingBuys = pendingPlans.filter((item) => item.side === "buy");
@@ -6960,7 +6980,7 @@
               <td data-label="当日盈亏" class="num ${dailyProfitClass}">${portfolioPrivate(dailyProfitText)}</td>
               <td data-label="持仓盈亏" class="num ${holdingProfitClass}">${holdingProfitCell}</td>
               <td data-label="市值" class="num">${portfolioPrivate(base === "USD" ? formatPortfolioMoney(value, "USD") : formatWan(value))}</td>
-              <td data-label="仓位比例" class="portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
+              <td data-label="仓位比例" class="num portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
               <td data-label="操作"><div class="actions"><button class="trade-add ${pendingBuys.length ? "trade-plan-alert" : ""}" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingBuys.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>加仓` : "加仓"}</button><button class="trade-reduce ${pendingSells.length ? "trade-plan-alert" : ""}" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingSells.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>减仓` : "减仓"}</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
