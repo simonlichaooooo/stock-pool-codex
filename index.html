@@ -2023,23 +2023,48 @@
     .portfolio-plan-board { margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.78); box-shadow: var(--shadow); }
     .portfolio-plan-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .portfolio-plan-board-head h3 { margin: 0; font-size: 15px; }
-    .portfolio-plan-board-head button { color: #fff; border-color: var(--brand); background: var(--brand); font-weight: 700; }
+    .portfolio-plan-board-actions { display: flex; align-items: center; gap: 7px; }
+    .portfolio-plan-board-actions button { color: #fff; font-weight: 700; }
+    .portfolio-plan-board-actions .buy { border-color: #d92d20; background: #d92d20; }
+    .portfolio-plan-board-actions .sell { border-color: #087443; background: #087443; }
     .portfolio-plan-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .portfolio-plan-column { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 7px; background: rgba(248,250,252,.82); }
     .portfolio-plan-column-title { display: flex; justify-content: space-between; margin-bottom: 9px; font-size: 12px; font-weight: 800; }
     .portfolio-plan-column.buy .portfolio-plan-column-title { color: #b42318; }
     .portfolio-plan-column.sell .portfolio-plan-column-title { color: #067647; }
-    .portfolio-plan-stock { display: grid; gap: 6px; }
+    .portfolio-plan-stock { display: grid; gap: 5px; }
     .portfolio-plan-stock + .portfolio-plan-stock { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
     .portfolio-plan-stock-name { font-size: 11px; font-weight: 750; }
-    .portfolio-plan-item { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: start; padding: 8px 9px; border-radius: 5px; background: #fff; }
-    .portfolio-plan-item-main { min-width: 0; display: grid; gap: 3px; }
-    .portfolio-plan-item-main strong { font-size: 12px; font-variant-numeric: tabular-nums; }
-    .portfolio-plan-item-main span { color: var(--muted); font-size: 10px; line-height: 1.45; }
-    .portfolio-plan-item input { width: 17px; height: 17px; min-height: 17px; margin: 1px 0 0; accent-color: var(--brand); }
+    .portfolio-plan-stock-items { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+    .portfolio-plan-item { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; align-items: center; min-width: 0; padding: 5px 7px; border: 1px solid rgba(146,165,187,.34); border-radius: 5px; background: rgba(255,255,255,.86); }
+    .portfolio-plan-item-main { min-width: 0; display: grid; gap: 1px; }
+    .portfolio-plan-item-value { overflow: hidden; color: var(--text); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+    .portfolio-plan-remark { overflow: hidden; color: var(--muted); font-size: 9.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; cursor: help; }
+    .portfolio-plan-item input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 17px;
+      height: 17px;
+      min-height: 17px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid color-mix(in srgb,var(--brand) 48%,#8090a3);
+      border-radius: 4px;
+      background: rgba(255,255,255,.78);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+      cursor: pointer;
+    }
+    .portfolio-plan-item input:checked {
+      border-color: var(--brand);
+      background-color: var(--brand);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 13 13'%3E%3Cpath d='m2.8 6.7 2.2 2.2 5.2-5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      box-shadow: 0 2px 7px color-mix(in srgb,var(--brand) 24%,transparent);
+    }
     .portfolio-plan-empty { padding: 18px 8px; color: var(--muted); text-align: center; font-size: 11px; }
     .portfolio-plan-weight-preview { min-height: 38px; display: flex; align-items: center; justify-content: flex-end; padding: 7px 10px; border: 1px solid #c4ced9; border-radius: 4px; background: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
-    @media (max-width: 760px) { .portfolio-plan-columns { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .portfolio-plan-columns,.portfolio-plan-stock-items { grid-template-columns: 1fr; } }
     .portfolio-group-row td { border-top: 2px solid #c8d6d3; border-bottom-color: #cbd8d5; background: #eef5f3; font-weight: 720; }
     .portfolio-group-row .stock-name { color: #163f3a; }
     .portfolio-group-summary { color: #52625f; font-size: 11px; font-weight: 600; }
@@ -2172,7 +2197,7 @@
     .position-plan-actions button { min-height: 30px; padding: 4px 10px; font-size: 11px; font-weight: 700; }
     .position-plan-actions button[data-plan-side="buy"] { color: #b42318; border-color: #f2b8b5; background: #fff5f5; }
     .position-plan-actions button[data-plan-side="sell"] { color: #067647; border-color: #a9d8c2; background: #f0faf5; }
-    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 13ch 11ch 11ch 11ch 11ch 9ch 54px; gap: 7px; align-items: center; width: max-content; min-width: 0; }
+    .position-plan-head, .position-plan-row { display: grid; grid-template-columns: 48px 13ch 11ch 11ch 11ch 11ch 9ch 18ch 54px; gap: 7px; align-items: center; width: max-content; min-width: 0; }
     .position-plan-head { color: var(--muted); font-size: 11px; padding: 0 2px 5px; }
     .position-plan-head span { white-space: nowrap; }
     .position-plan-head span:nth-child(n+2):nth-child(-n+7) { text-align: right; padding-right: 7px; }
@@ -2188,7 +2213,7 @@
     .position-plan-readonly { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
     .position-plan-readonly .position-plan-head,
     .position-plan-readonly .position-plan-row {
-      grid-template-columns: 42px 13ch 11ch 11ch 11ch 11ch 9ch 48px;
+      grid-template-columns: 42px 13ch 11ch 11ch 11ch 11ch 9ch 18ch 48px;
       gap: 5px;
       min-width: 0;
     }
@@ -6561,10 +6586,10 @@
           if(!groups.has(key)) groups.set(key,[]);
           groups.get(key).push(entry);
         });
-        const body=[...groups.values()].map((items)=>`<div class="portfolio-plan-stock"><div class="portfolio-plan-stock-name">${escapeHtml(items[0].name)} <span class="stock-code">${escapeHtml(items[0].code)}</span></div>${items.map((item)=>`<div class="portfolio-plan-item"><div class="portfolio-plan-item-main"><strong>${formatPortfolioMoney(item.price,item.currency)} · ${item.shares.toLocaleString("zh-CN")} 股 · ${item.targetWeight.toFixed(2)}%</strong>${item.remark?`<span>${escapeHtml(item.remark)}</span>`:""}</div><input type="checkbox" data-plan-card-done data-plan-source="${item.source}" data-plan-id="${escapeHtml(item.planId||"")}" data-position-id="${escapeHtml(item.positionId||"")}" data-plan-side="${item.side}" data-plan-index="${item.index??""}" aria-label="完成 ${escapeHtml(item.name)} ${label}计划"></div>`).join("")}</div>`).join("");
+        const body=[...groups.values()].map((items)=>`<div class="portfolio-plan-stock"><div class="portfolio-plan-stock-name">${escapeHtml(items[0].name)} <span class="stock-code">${escapeHtml(items[0].code)}</span></div><div class="portfolio-plan-stock-items">${items.map((item)=>`<div class="portfolio-plan-item"><div class="portfolio-plan-item-main"><span class="portfolio-plan-item-value">${formatPortfolioMoney(item.price,item.currency)} · ${item.shares.toLocaleString("zh-CN")} 股 · ${item.targetWeight.toFixed(2)}%</span>${item.remark?`<span class="portfolio-plan-remark" title="${escapeHtml(item.remark)}">${escapeHtml(item.remark)}</span>`:""}</div><input type="checkbox" data-plan-card-done data-plan-source="${item.source}" data-plan-id="${escapeHtml(item.planId||"")}" data-position-id="${escapeHtml(item.positionId||"")}" data-plan-side="${item.side}" data-plan-index="${item.index??""}" aria-label="完成 ${escapeHtml(item.name)} ${label}计划"></div>`).join("")}</div></div>`).join("");
         return `<section class="portfolio-plan-column ${side}"><div class="portfolio-plan-column-title"><span>${label}</span><span>${sideEntries.length} 条</span></div>${body||`<div class="portfolio-plan-empty">暂无${label}计划</div>`}</section>`;
       };
-      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合计划</h3><button type="button" data-action="addPortfolioPlan">+ 增加计划</button></div><div class="portfolio-plan-columns">${column("buy","买入")}${column("sell","卖出")}</div></section>`;
+      return `<section class="portfolio-plan-board"><div class="portfolio-plan-board-head"><h3>组合计划</h3><div class="portfolio-plan-board-actions"><button type="button" class="buy" data-action="addPortfolioPlan" data-plan-side="buy">+ 添加买入计划</button><button type="button" class="sell" data-action="addPortfolioPlan" data-plan-side="sell">+ 添加卖出计划</button></div></div><div class="portfolio-plan-columns">${column("buy","买入")}${column("sell","卖出")}</div></section>`;
     }
 
     function renderPortfolioView() {
@@ -7259,8 +7284,9 @@
 
     function renderPortfolioPlanModal(modal) {
       const stock=modal.stock;
+      const side=modal.planSide==="sell"?"sell":"buy",sideLabel=side==="sell"?"卖出":"买入";
       const search=`<div class="field"><span>股票名称/代码搜索</span><div class="search-combobox"><input data-input="portfolioStockSearch" autocomplete="off" placeholder="输入股票名称或代码" value="${escapeHtml(modal.searchQuery||"")}">${(state.portfolioSearchLoading||state.portfolioSearchResults.length||(modal.searchQuery&&!stock))?`<div class="search-results show">${state.portfolioSearchLoading?`<div class="empty" style="padding:18px">正在匹配股票...</div>`:state.portfolioSearchResults.length?state.portfolioSearchResults.map((item,index)=>`<button type="button" class="result-item" data-action="selectPortfolioStock" data-index="${index}"><span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.code)} · ${marketLabel(item.market)}</span></span></button>`).join(""):`<div class="empty" style="padding:18px">没有匹配结果，请尝试其他名称或代码。</div>`}</div>`:""}</div></div>`;
-      return modalShell("增加计划", `${search}${stock?`<div class="portfolio-selected-stock"><strong>${escapeHtml(stock.name)}</strong> <span class="stock-code">${escapeHtml(stock.code)} · ${escapeHtml(stock.currency||marketCurrency(stock.market))}</span></div>`:""}<div class="grid-2"><label class="field"><span>计划类型</span><select name="side"><option value="buy">买入</option><option value="sell">卖出</option></select></label><label class="field"><span>目标价格</span><div class="input-with-suffix"><input name="targetPrice" data-plan-target-price type="number" min="0.0001" step="any" required><span class="input-suffix">${escapeHtml(stock?.currency||"原币")}</span></div></label></div><div class="grid-2"><label class="field"><span>目标数量</span><div class="input-with-suffix"><input name="targetShares" data-plan-target-shares type="number" min="1" step="1" required><span class="input-suffix">股</span></div></label><div class="field"><span>目标仓位</span><div class="portfolio-plan-weight-preview" data-plan-target-weight>--</div></div></div><label class="field"><span>建仓备注</span><textarea name="remark" rows="3" maxlength="300" placeholder="记录建仓逻辑、触发条件或风险提示"></textarea></label>`, "portfolioPlan", "增加计划");
+      return modalShell(`添加${sideLabel}计划`, `${search}${stock?`<div class="portfolio-selected-stock"><strong>${escapeHtml(stock.name)}</strong> <span class="stock-code">${escapeHtml(stock.code)} · ${escapeHtml(stock.currency||marketCurrency(stock.market))}</span></div>`:""}<div class="grid-2"><label class="field"><span>目标价格</span><div class="input-with-suffix"><input name="targetPrice" data-plan-target-price type="number" min="0.0001" step="any" required><span class="input-suffix">${escapeHtml(stock?.currency||"原币")}</span></div></label><label class="field"><span>目标数量</span><div class="input-with-suffix"><input name="targetShares" data-plan-target-shares type="number" min="1" step="1" required><span class="input-suffix">股</span></div></label></div><div class="field"><span>目标仓位</span><div class="portfolio-plan-weight-preview" data-plan-target-weight>--</div></div><label class="field"><span>备注</span><textarea name="remark" rows="3" maxlength="300" placeholder="记录交易逻辑、触发条件或风险提示"></textarea></label>`, "portfolioPlan", `添加${sideLabel}计划`);
     }
 
     function renderPortfolioTagModal(modal) {
@@ -7601,11 +7627,12 @@
         <div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="${computed ? formatPositionPlanNumber(computed.shareholderReturnRate * 100) : ""}" placeholder="--" aria-label="${label}${index + 1}股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div>
         <div class="input-with-suffix"><input name="plan_${side}_${index}_shares" data-plan-shares data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="1" value="${row.shares}" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div>
         <div class="position-plan-value position-plan-weight" data-plan-weight data-plan-side="${side}" data-plan-index="${index}">${formatPositionWeight(weight)}</div>
+        <input name="plan_${side}_${index}_remark" type="text" maxlength="300" value="${escapeHtml(row.remark)}" placeholder="备注" aria-label="${label}${index + 1}备注">
         <input name="plan_${side}_${index}_done" type="checkbox" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成">
       </div>`;
       };
       const rows = (side, label) => plan[side].map((row, index) => rowHtml(side, label, row, index)).join("");
-      return `<section class="position-plan"><div class="position-plan-title"><h3>加减仓计划</h3><div class="position-plan-actions"><button type="button" data-action="addPositionPlanPoint" data-plan-side="buy">+ 添加买点</button><button type="button" data-action="addPositionPlanPoint" data-plan-side="sell">+ 添加卖点</button></div></div><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>股东回报率</span><span>股数</span><span>对应仓位</span><span>完成</span></div><div data-plan-rows="buy">${rows("buy", "买点")}</div><div data-plan-rows="sell">${rows("sell", "卖点")}</div></section>`;
+      return `<section class="position-plan"><div class="position-plan-title"><h3>加减仓计划</h3><div class="position-plan-actions"><button type="button" data-action="addPositionPlanPoint" data-plan-side="buy">+ 添加买点</button><button type="button" data-action="addPositionPlanPoint" data-plan-side="sell">+ 添加卖点</button></div></div><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>股东回报率</span><span>股数</span><span>对应仓位</span><span>备注</span><span>完成</span></div><div data-plan-rows="buy">${rows("buy", "买点")}</div><div data-plan-rows="sell">${rows("sell", "卖点")}</div></section>`;
     }
 
     function bindPositionPlanRow(row) {
@@ -7628,7 +7655,7 @@
       const label = side === "buy" ? "买点" : "卖点";
       const currency = position.currency || "原币";
       const valuationStock = portfolioValuationStock(position, currentPositionPlanValuationId());
-      container.insertAdjacentHTML("beforeend", `<div class="position-plan-row plan-${side}" data-plan-row data-plan-side="${side}" data-plan-index="${index}"><span>${label}${index + 1}</span><div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="any" value="" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${escapeHtml(currency)}</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="upside" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1} Upside" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="forwardPE" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1} Forward PE" ${valuationStock ? "" : "disabled"}><span class="input-suffix">x</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1}股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div><div class="input-with-suffix"><input name="plan_${side}_${index}_shares" data-plan-shares data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="1" value="" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div><div class="position-plan-value position-plan-weight" data-plan-weight data-plan-side="${side}" data-plan-index="${index}">--</div><input name="plan_${side}_${index}_done" type="checkbox" aria-label="${label}${index + 1}完成"></div>`);
+      container.insertAdjacentHTML("beforeend", `<div class="position-plan-row plan-${side}" data-plan-row data-plan-side="${side}" data-plan-index="${index}"><span>${label}${index + 1}</span><div class="input-with-suffix"><input name="plan_${side}_${index}_price" data-plan-price data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="any" value="" placeholder="价格" aria-label="${label}${index + 1}价格"><span class="input-suffix">${escapeHtml(currency)}</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="upside" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1} Upside" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="forwardPE" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1} Forward PE" ${valuationStock ? "" : "disabled"}><span class="input-suffix">x</span></div><div class="input-with-suffix position-plan-metric"><input data-plan-metric="shareholderReturnRate" data-plan-side="${side}" data-plan-index="${index}" type="number" step="any" value="" placeholder="--" aria-label="${label}${index + 1}股东回报率" ${valuationStock ? "" : "disabled"}><span class="input-suffix">%</span></div><div class="input-with-suffix"><input name="plan_${side}_${index}_shares" data-plan-shares data-plan-side="${side}" data-plan-index="${index}" type="number" min="0" step="1" value="" placeholder="股数" aria-label="${label}${index + 1}股数"><span class="input-suffix">股</span></div><div class="position-plan-value position-plan-weight" data-plan-weight data-plan-side="${side}" data-plan-index="${index}">--</div><input name="plan_${side}_${index}_remark" type="text" maxlength="300" value="" placeholder="备注" aria-label="${label}${index + 1}备注"><input name="plan_${side}_${index}_done" type="checkbox" aria-label="${label}${index + 1}完成"></div>`);
       const row = container.querySelector(`[data-plan-row][data-plan-index='${index}']`);
       if (row) bindPositionPlanRow(row);
     }
@@ -7640,7 +7667,7 @@
       const rows = plan.map((row, index) => {
         const computed = positionPlanValuation(position, row.price);
         const weight = positionWeightPercent(position, row.shares, row.price);
-        return `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "upside")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "forwardPE")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "shareholderReturnRate")}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><div class="position-plan-value">${formatPositionWeight(weight)}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`;
+        return `<div class="position-plan-row plan-${side}"><span>${label}${index + 1}</span><div class="position-plan-value">${row.price ? `${row.price} ${currency}` : "--"}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "upside")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "forwardPE")}</div><div class="position-plan-value">${renderPositionPlanMetricValue(computed, "shareholderReturnRate")}</div><div class="position-plan-value">${row.shares ? `${row.shares} 股` : "--"}</div><div class="position-plan-value">${formatPositionWeight(weight)}</div><div class="position-plan-value" title="${escapeHtml(row.remark)}">${escapeHtml(row.remark)||"--"}</div><input type="checkbox" data-plan-live-done data-position-id="${position.id}" data-plan-side="${side}" data-plan-index="${index}" ${row.done ? "checked" : ""} aria-label="${label}${index + 1}完成"></div>`;
       }).join("");
       return `<section class="position-plan-readonly"><div class="position-plan-head"><span>计划</span><span>价格</span><span>Upside</span><span>Forward PE</span><span>股东回报率</span><span>股数</span><span>对应仓位</span><span>完成</span></div>${rows}</section>`;
     }
@@ -9049,7 +9076,11 @@
         state.portfolioPage="positions";
         render();
       }
-      if (action === "addPortfolioPlan") openPortfolioModal("plan");
+      if (action === "addPortfolioPlan") {
+        openPortfolioModal("plan");
+        state.portfolioModal.planSide=event.currentTarget.dataset.planSide==="sell"?"sell":"buy";
+        render();
+      }
       if (action === "rebalancePortfolio") openPortfolioModal("rebalance");
       if (action === "calibrateCash") openPortfolioModal("cash");
       if (action === "subscribePortfolio") openPortfolioModal("subscription");
@@ -10029,10 +10060,11 @@
           for (let index = 0; index < rowCount; index += 1) {
             const planPrice = Number(form.get(`plan_${side}_${index}_price`) || 0);
             const planShares = Number(form.get(`plan_${side}_${index}_shares`) || 0);
+            const planRemark = String(form.get(`plan_${side}_${index}_remark`) || "").trim();
             if (!Number.isFinite(planPrice) || planPrice < 0) return showPortfolioError("计划价格不能小于 0。");
             if (!Number.isInteger(planShares) || planShares < 0) return showPortfolioError("计划股数必须为非负整数。");
             const existingPlan=normalizedPositionTradePlan(stock)[side][index]||{};
-            tradePlan[side].push({ ...existingPlan, price: planPrice, shares: planShares, done: form.has(`plan_${side}_${index}_done`) });
+            tradePlan[side].push({ ...existingPlan, price: planPrice, shares: planShares, remark: planRemark, done: form.has(`plan_${side}_${index}_done`) });
           }
         }
         updateActivePortfolio((item) => ({
@@ -10396,7 +10428,7 @@
       event.preventDefault();
       const portfolio=activePortfolio(),modal=state.portfolioModal,stock=modal?.stock;
       if(!portfolio||modal?.type!=="plan"||!stock) return showPortfolioError("请先选择股票。");
-      const form=new FormData(event.currentTarget),side=form.get("side")==="sell"?"sell":"buy";
+      const form=new FormData(event.currentTarget),side=modal.planSide==="sell"?"sell":"buy";
       const price=Number(form.get("targetPrice")),shares=Number(form.get("targetShares")),remark=String(form.get("remark")||"").trim();
       if(!(price>0)) return showPortfolioError("请输入有效的目标价格。");
       if(!Number.isInteger(shares)||shares<=0) return showPortfolioError("目标数量必须为正整数。");
