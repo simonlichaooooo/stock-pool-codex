@@ -6370,6 +6370,25 @@
         : null;
     }
 
+    function portfolioCashSecuredSummary(portfolio) {
+      const base = portfolioBaseCurrency(portfolio);
+      const cashCurrencies = portfolio?.accountType === "HKUS" ? ["USD", "HKD"] : ["CNY"];
+      const frozenByCurrency = Object.fromEntries(cashCurrencies.map((currency) => [currency, 0]));
+      (portfolio?.positions || []).forEach((position) => {
+        if (position.assetType !== "option" || position.direction !== "short" || position.optionType !== "put") return;
+        const optionCurrency = position.currency || marketCurrency(position.market);
+        const cashCurrency = portfolio?.accountType === "CNY" ? "CNY" : optionCurrency;
+        if (!(cashCurrency in frozenByCurrency)) frozenByCurrency[cashCurrency] = 0;
+        const required = Number(position.strikePrice || 0) * Number(position.contractMultiplier || 0) * Number(position.contracts || 0);
+        frozenByCurrency[cashCurrency] += required * portfolioFx(optionCurrency, cashCurrency);
+      });
+      const cash = portfolio?.cash || {};
+      const freeByCurrency = Object.fromEntries(Object.keys(frozenByCurrency).map((currency) => [currency, Number(cash[currency] || 0) - Number(frozenByCurrency[currency] || 0)]));
+      const frozenBase = Object.entries(frozenByCurrency).reduce((sum, [currency, amount]) => sum + amount * portfolioFx(currency, base), 0);
+      const freeBase = Object.entries(freeByCurrency).reduce((sum, [currency, amount]) => sum + amount * portfolioFx(currency, base), 0);
+      return { frozenByCurrency, freeByCurrency, frozenBase, freeBase };
+    }
+
     function portfolioMetrics(portfolio) {
       if (!portfolio) return { positionBase: 0, cashBase: 0, netBase: 0, netCny: 0, positionCny: 0, cashCny: 0, nav: 0 };
       const base = portfolioBaseCurrency(portfolio);
@@ -6378,6 +6397,7 @@
       const cashBase = portfolio.accountType === "HKUS"
         ? Number(cash.USD || 0) + Number(cash.HKD || 0) * portfolioFx("HKD", "USD")
         : Number(cash.CNY || 0);
+      const cashSecured = portfolioCashSecuredSummary(portfolio);
       const netBase = positionBase + cashBase;
       const baseToCny = currencies[base]?.rateToCny || 1;
       const totalUnits = Number(portfolio.totalUnits || portfolio.startBase || 0);
@@ -6385,6 +6405,10 @@
       return {
         positionBase,
         cashBase,
+        frozenCashBase: cashSecured.frozenBase,
+        freeCashBase: cashSecured.freeBase,
+        frozenCashByCurrency: cashSecured.frozenByCurrency,
+        freeCashByCurrency: cashSecured.freeByCurrency,
         netBase,
         positionCny: positionBase * baseToCny,
         cashCny: cashBase * baseToCny,
@@ -6717,7 +6741,7 @@
           <div class="portfolio-metric">
             <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
             <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
-            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
+            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>自由现金 ${portfolioPrivate(formatPortfolioSummary(metrics.freeCashBase, portfolio))} · 冻结现金 ${portfolioPrivate(formatPortfolioSummary(metrics.frozenCashBase, portfolio))}<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
         </section>` : ""}
