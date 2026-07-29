@@ -6739,9 +6739,9 @@
           <div class="portfolio-metric"><div class="portfolio-metric-label">净资产</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.netBase, portfolio))}</div><div class="portfolio-metric-sub">总盈亏 <span class="${profitClass}">${portfolioPrivate(formatPortfolioSummary(totalProfit, portfolio, { signed: true }))}</span></div></div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">仓位市值</div><div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.positionBase, portfolio))}</div><div class="portfolio-metric-sub">仓位比例 ${(positionRatio * 100).toFixed(2)}%</div></div>
           <div class="portfolio-metric">
-            <div class="portfolio-cash-head"><div class="portfolio-metric-label">自由现金</div><button data-action="calibrateCash">校准现金</button></div>
-            <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.freeCashBase, portfolio))}</div>
-            <div class="portfolio-metric-sub">总现金比例 ${(cashRatio * 100).toFixed(2)}%<br>总现金 ${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))} · 冻结现金 ${portfolioPrivate(formatPortfolioSummary(metrics.frozenCashBase, portfolio))}<br>${portfolioPrivate(isHkus ? `港币 ${formatPortfolioMoney(portfolio.cash?.HKD, "HKD")} · 美元 ${formatPortfolioMoney(portfolio.cash?.USD, "USD")}` : `人民币 ${formatPortfolioMoney(portfolio.cash?.CNY, "CNY")}`)}</div>
+            <div class="portfolio-cash-head"><div class="portfolio-metric-label">现金市值</div><button data-action="calibrateCash">校准现金</button></div>
+            <div class="portfolio-metric-value">${portfolioPrivate(formatPortfolioSummary(metrics.cashBase, portfolio))}</div>
+            <div class="portfolio-metric-sub">现金比例 ${(cashRatio * 100).toFixed(2)}%<br>冻结现金 ${portfolioPrivate(formatPortfolioSummary(metrics.frozenCashBase, portfolio))}<br>${portfolioPrivate(isHkus ? `港币自由现金 ${formatPortfolioMoney(metrics.freeCashByCurrency.HKD, "HKD")} · 美元自由现金 ${formatPortfolioMoney(metrics.freeCashByCurrency.USD, "USD")}` : `人民币自由现金 ${formatPortfolioMoney(metrics.freeCashByCurrency.CNY, "CNY")}`)}</div>
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
         </section>` : ""}
