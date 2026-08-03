@@ -7410,7 +7410,8 @@
       const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
         <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>${optionPosition?"变动张数":"变动股数"}</th><th>操作</th></tr></thead>
         <tbody>${rows.map((item) => {
-          const canRollback = !optionPosition&&(!item.positionId || item.positionId === position?.id);
+          const sameStock = item.code === position?.code && (!item.market || item.market === position?.market);
+          const canRollback = !optionPosition && (item.positionId === position?.id || sameStock);
           const editing = canRollback && modal.editTradeId === item.id;
           const sign = portfolioTradeSign(item.type) > 0 ? "+" : "-";
           const sharesCell = editing
@@ -10402,13 +10403,14 @@
       if (!portfolio || !tradeId) return;
       const trade = (portfolio.tradeHistory || []).find((item) => item.id === tradeId);
       if (!trade || !["open", "add", "reduce"].includes(trade.type)) return showPortfolioError("没有找到可回滚的交易记录。");
-      const position = (portfolio.positions || []).find((item) => item.id === trade.positionId || (!trade.positionId && item.code === trade.code));
+      const position = (portfolio.positions || []).find((item) => item.id === trade.positionId)
+        || (portfolio.positions || []).find((item) => item.assetType !== "option" && item.code === trade.code && (!trade.market || item.market === trade.market));
       if (!position) return showPortfolioError("当前持仓中已找不到这只股票，无法安全回滚。");
       const price = Number(trade.price);
       const shares = Number(trade.shares);
       const currentShares = Number(position.shares);
       const currentCost = Number(position.averageCost);
-      if (!(price > 0) || !Number.isInteger(shares) || shares <= 0 || !Number.isFinite(currentShares) || currentShares < 0) return showPortfolioError("这条交易记录数据不完整，无法回滚。");
+      if (!(price > 0) || !Number.isInteger(shares) || shares <= 0 || !Number.isFinite(currentShares)) return showPortfolioError("这条交易记录数据不完整，无法回滚。");
       if (portfolioTradeSign(trade.type) > 0 && currentShares < shares) return showPortfolioError("当前股数少于这笔买入数量，无法安全回滚。");
       const tradeTypeText = portfolioTradeTypeText(trade.type);
       const occurredAt = trade.occurredAt ? new Date(trade.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "--";
@@ -10438,9 +10440,14 @@
           }
         } else {
           const restoredShares = Number(old.shares) + shares;
-          const restoredCost = (Number(old.shares) * (Number.isFinite(currentCost) ? currentCost : 0) + price * shares) / restoredShares;
-          nextPosition = { ...old, shares: restoredShares, averageCost: roundPortfolioCost(restoredCost), latestPrice: Number(old.latestPrice) || price };
-          positions[index] = nextPosition;
+          if (!restoredShares) {
+            positions.splice(index, 1);
+            nextPosition = null;
+          } else {
+            const restoredCost = (Number(old.shares) * (Number.isFinite(currentCost) ? currentCost : 0) + price * shares) / restoredShares;
+            nextPosition = { ...old, shares: restoredShares, averageCost: roundPortfolioCost(restoredCost), latestPrice: Number(old.latestPrice) || price };
+            positions[index] = nextPosition;
+          }
         }
         const cashDelta = portfolioTradeSign(trade.type) > 0 ? cashAmount : -cashAmount;
         const nextCash = { ...(item.cash || {}), [cashCurrency]: Number(item.cash?.[cashCurrency] || 0) + cashDelta };
