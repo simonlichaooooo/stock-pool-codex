@@ -260,6 +260,24 @@
     .bias-metric-cell { min-width: 112px; font-variant-numeric: tabular-nums; }
     .bias-metric-cell span { display: block; line-height: 1.45; white-space: nowrap; }
     .bias-metric-cell .muted { font-size: 10.5px; }
+    .bias-alert-panel { margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); box-shadow: var(--shadow); }
+    .bias-alert-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+    .bias-alert-head strong { color: var(--text); font-size: 13px; }
+    .bias-alert-head span { color: var(--muted); font-size: 10.5px; }
+    .bias-alert-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+    .bias-alert-card { min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+    .bias-alert-card.weak { border-color: #9fc8df; background: #f2f9fd; }
+    .bias-alert-card.strong { border-color: #e8b2a9; background: #fff5f2; }
+    .bias-alert-card.expanding { border-color: #e6c77b; background: #fffaf0; }
+    .bias-alert-card.compressing { border-color: #b8c1d9; background: #f7f8fc; }
+    .bias-alert-card-title { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--text); font-size: 11.5px; font-weight: 800; }
+    .bias-alert-count { display: inline-flex; align-items: center; justify-content: center; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; color: var(--muted); background: rgba(255,255,255,.72); font-size: 10px; }
+    .bias-alert-guide { min-height: 30px; margin: 5px 0 7px; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+    .bias-alert-stocks { display: flex; flex-wrap: wrap; gap: 5px; }
+    .bias-alert-stock { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 3px 6px; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); border-radius: 999px; color: var(--text); background: rgba(255,255,255,.76); font-size: 10.5px; white-space: nowrap; }
+    .bias-alert-stock b { max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+    .bias-alert-stock em { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; }
+    .bias-alert-empty { color: var(--muted); font-size: 10.5px; }
     tbody tr:hover { background: #f8fbfb; }
     tbody tr.stock-row.dragging { opacity: .45; }
     tbody tr.stock-row.drag-over-before td { box-shadow: inset 0 2px 0 var(--brand); }
@@ -4463,6 +4481,7 @@
       .portfolio-list-tools { width: 100%; justify-content: space-between; }
       .portfolio-trade-alert-head { align-items:flex-start; flex-direction:column; }
       button.portfolio-trade-alert-item { flex-basis:100%; width:100%; }
+      .bias-alert-grid { grid-template-columns: 1fr; }
       .table-panel { background: transparent; border: 0; box-shadow: none; overflow: visible; }
       .table-scroll { overflow: visible; max-height: none; }
       .portfolio-table .table-scroll { max-height: none; }
@@ -5351,7 +5370,7 @@
     }
 
     async function fetchEastmoneyWeeklyCloses(stock) {
-      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
       const quoteId = stockQuoteId(stock);
       if (!quoteId) throw new Error("无法识别周线行情代码");
       const end = todayString().replace(/-/g, "");
@@ -5367,7 +5386,7 @@
     }
 
     async function fetchBiasMetrics(stock) {
-      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
       const cacheKey = `${stockQuoteId(stock) || tencentHistorySymbol(stock)}:30w:2y`;
       const cached = biasMetricCache.get(cacheKey);
       if (cached && Date.now() - cached.savedAt < BIAS_METRIC_CACHE_MS) return cached.value;
@@ -5388,11 +5407,13 @@
       if (weeklyBiases.length < 104) throw new Error("不足两年有效周线数据");
       const observations = weeklyBiases.slice(-104);
       const bias30w = observations.at(-1);
+      const biasRecentValues = observations.slice(-3);
       const lower = observations.filter((value) => value < bias30w).length;
       const equal = observations.filter((value) => value === bias30w).length;
       const value = {
         bias30w,
         bias2yPercentile: (lower + 0.5 * (equal - 1)) / (observations.length - 1) * 100,
+        biasRecentValues,
         biasUpdatedAt: new Date().toISOString()
       };
       biasMetricCache.set(cacheKey, { savedAt: Date.now(), value });
@@ -5413,6 +5434,7 @@
         marketCapSourceCurrency,
         bias30w,
         bias2yPercentile,
+        biasRecentValues,
         biasUpdatedAt,
         versionCustom,
         ...persisted
@@ -5432,6 +5454,7 @@
         marketCapUpdatedAt: quote.marketCapUpdatedAt || stock.marketCapUpdatedAt || todayString(),
         bias30w: Number.isFinite(quote.bias30w) ? quote.bias30w : (Number.isFinite(stock.bias30w) ? stock.bias30w : null),
         bias2yPercentile: Number.isFinite(quote.bias2yPercentile) ? quote.bias2yPercentile : (Number.isFinite(stock.bias2yPercentile) ? stock.bias2yPercentile : null),
+        biasRecentValues: Array.isArray(quote.biasRecentValues) && quote.biasRecentValues.length ? quote.biasRecentValues : (Array.isArray(stock.biasRecentValues) ? stock.biasRecentValues : []),
         biasUpdatedAt: quote.biasUpdatedAt || stock.biasUpdatedAt || ""
       };
     }
@@ -5454,7 +5477,7 @@
               fetchQuote(item.stock),
               fetchBiasMetrics(item.stock).catch((error) => {
                 console.warn("刷新乖离率失败。", item.stock?.code, error);
-                return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+                return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
               })
             ]);
             return { ...item, quote: { ...quote, ...bias } };
@@ -5914,6 +5937,7 @@
         ${renderUpdateBanner()}
         ${renderPublisherPanel()}
         ${renderToolbar()}
+        ${renderBiasAlertPanel(userStocks(), "股池")}
         ${renderTable()}
       `;
     }
@@ -6853,7 +6877,7 @@
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
         </section>` : ""}
-        ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : renderPortfolioTable(portfolio, metrics)}
+        ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : `${renderBiasAlertPanel(portfolio.positions || [], "组合")}${renderPortfolioTable(portfolio, metrics)}`}
       `;
     }
 
@@ -8211,6 +8235,54 @@
       if (key === "buybackRate") return latest ? (Number(stock.expectedBuybackCny) || 0) / latest : -Infinity;
       if (key === "bias30w" || key === "bias2yPercentile") return Number.isFinite(stock[key]) ? stock[key] : NaN;
       return c[key] ?? -Infinity;
+    }
+
+    function biasTrendDirection(item) {
+      const values = Array.isArray(item?.biasRecentValues)
+        ? item.biasRecentValues.slice(-3).map(Number).filter(Number.isFinite)
+        : [];
+      if (values.length !== 3) return "";
+      if (values[0] < values[1] && values[1] < values[2]) return "strengthening";
+      if (values[0] > values[1] && values[1] > values[2]) return "weakening";
+      return "";
+    }
+
+    function renderBiasAlertPanel(items, scopeLabel) {
+      const unique = new Map();
+      (items || []).filter((item) => item?.assetType !== "option" && !item?.sourceDeletedAt).forEach((item) => {
+        const key = `${item.market || ""}:${item.code || item.id || ""}`;
+        if (!unique.has(key)) unique.set(key, item);
+      });
+      const rows = [...unique.values()].filter((item) => Number.isFinite(item.bias30w) && Number.isFinite(item.bias2yPercentile));
+      if (!rows.length) return "";
+      const categories = [
+        {
+          key: "weak", title: "弱周期极端位置", guide: "观察基本面转折信号", condition: (item) => item.bias30w < -30 || item.bias2yPercentile < 10
+        },
+        {
+          key: "strong", title: "强周期极端位置", guide: "观察基本面赔率空间是否充足和基本面转弱信号", condition: (item) => item.bias30w > 30 || item.bias2yPercentile > 90
+        },
+        {
+          key: "expanding", title: "叙事展开期", guide: "乖离值连续3周走强，观察基本面变化趋势", condition: (item) => biasTrendDirection(item) === "strengthening"
+        },
+        {
+          key: "compressing", title: "叙事压缩期", guide: "乖离值连续3周走弱，观察基本面变化趋势", condition: (item) => biasTrendDirection(item) === "weakening"
+        }
+      ];
+      const renderStock = (item, categoryKey) => {
+        const trend = (item.biasRecentValues || []).slice(-3).map((value) => `${Number(value).toFixed(1)}%`).join(" → ");
+        const metric = ["expanding", "compressing"].includes(categoryKey)
+          ? trend
+          : `${item.bias30w > 0 ? "+" : ""}${item.bias30w.toFixed(1)}% · P${item.bias2yPercentile.toFixed(0)}`;
+        return `<span class="bias-alert-stock" title="${escapeHtml(`${item.name || item.code} ${metric}`)}"><b>${escapeHtml(item.name || item.code || "--")}</b><em>${escapeHtml(metric)}</em></span>`;
+      };
+      return `<section class="bias-alert-panel" aria-label="${escapeHtml(scopeLabel)}乖离值提醒">
+        <div class="bias-alert-head"><strong>乖离值提醒</strong><span>极端位置看30周乖离率或2年分位；趋势按最近3个周度乖离值判断</span></div>
+        <div class="bias-alert-grid">${categories.map((category) => {
+          const matched = rows.filter(category.condition);
+          return `<article class="bias-alert-card ${category.key}"><div class="bias-alert-card-title"><span>${category.title}</span><span class="bias-alert-count">${matched.length}</span></div><div class="bias-alert-guide">${category.guide}</div><div class="bias-alert-stocks">${matched.length ? matched.map((item) => renderStock(item, category.key)).join("") : `<span class="bias-alert-empty">暂无命中</span>`}</div></article>`;
+        }).join("")}</div>
+      </section>`;
     }
 
     function biasMetricCell(item) {
@@ -10747,7 +10819,7 @@
               fetchQuote(position),
               fetchBiasMetrics(position).catch((error) => {
                 console.warn("刷新组合乖离率失败。", position?.code, error);
-                return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+                return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
               })
             ]);
             return { ...quote, ...bias };
@@ -10769,6 +10841,7 @@
             changePercent: updates[index].changePercent,
             bias30w: Number.isFinite(updates[index].bias30w) ? updates[index].bias30w : (Number.isFinite(position.bias30w) ? position.bias30w : null),
             bias2yPercentile: Number.isFinite(updates[index].bias2yPercentile) ? updates[index].bias2yPercentile : (Number.isFinite(position.bias2yPercentile) ? position.bias2yPercentile : null),
+            biasRecentValues: Array.isArray(updates[index].biasRecentValues) && updates[index].biasRecentValues.length ? updates[index].biasRecentValues : (Array.isArray(position.biasRecentValues) ? position.biasRecentValues : []),
             biasUpdatedAt: updates[index].biasUpdatedAt || position.biasUpdatedAt || "",
             priceUpdatedAt: new Date().toISOString()
           } : position)
