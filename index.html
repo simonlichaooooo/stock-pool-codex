@@ -4539,6 +4539,7 @@
     let portfolioQuoteRefreshTimer = null;
     let portfolioQuoteRefreshInFlight = false;
     const biasMetricCache = new Map();
+    const biasMetricInFlight = new Map();
     const BIAS_METRIC_CACHE_MS = 15 * 60 * 1000;
     let sessionRefreshPromise = null;
     let journalSearchTimer = null;
@@ -5320,13 +5321,39 @@
       };
     }
 
-    async function fetchBiasMetrics(stock) {
+    function tencentHistorySymbol(stock) {
+      const base = tencentSymbol(stock);
+      if (stock?.market !== "US") return base;
+      const marketNumber = String(stock?.quoteId || "").split(".")[0];
+      const exchange = String(stock?.exchange || "").toUpperCase();
+      const suffix = marketNumber === "105" || exchange.includes("NASDAQ")
+        ? ".OQ"
+        : marketNumber === "106" || exchange.includes("NYSE")
+          ? ".N"
+          : marketNumber === "107" || exchange.includes("AMEX")
+            ? ".A"
+            : "";
+      return suffix ? `${base}${suffix}` : base;
+    }
+
+    async function fetchTencentWeeklyCloses(stock) {
+      const symbol = tencentHistorySymbol(stock);
+      if (!symbol) throw new Error("无法识别腾讯周线代码");
+      const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${encodeURIComponent(symbol)},week,,,180,qfq&_=${Date.now()}`;
+      const response = await fetchWithTimeout(url, 8000);
+      if (!response.ok) throw new Error(`腾讯周线 HTTP ${response.status}`);
+      const json = await response.json();
+      const data = json?.data?.[symbol];
+      const rows = data?.qfqweek || data?.week || [];
+      const closes = rows.map((row) => Number(row?.[2])).filter((value) => Number.isFinite(value) && value > 0);
+      if (closes.length < 133) throw new Error("腾讯周线数据不足");
+      return closes;
+    }
+
+    async function fetchEastmoneyWeeklyCloses(stock) {
       if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
       const quoteId = stockQuoteId(stock);
       if (!quoteId) throw new Error("无法识别周线行情代码");
-      const cacheKey = `${quoteId}:30w:2y`;
-      const cached = biasMetricCache.get(cacheKey);
-      if (cached && Date.now() - cached.savedAt < BIAS_METRIC_CACHE_MS) return cached.value;
       const end = todayString().replace(/-/g, "");
       const beginDate = new Date();
       beginDate.setFullYear(beginDate.getFullYear() - 3);
@@ -5334,9 +5361,25 @@
       const begin = beginDate.toISOString().slice(0, 10).replace(/-/g, "");
       const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${encodeURIComponent(quoteId)}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=102&fqt=1&beg=${begin}&end=${end}`;
       const json = await jsonp(url);
-      const weeklyCloses = (json?.data?.klines || [])
+      return (json?.data?.klines || [])
         .map((line) => Number(String(line).split(",")[2]))
         .filter((value) => Number.isFinite(value) && value > 0);
+    }
+
+    async function fetchBiasMetrics(stock) {
+      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+      const cacheKey = `${stockQuoteId(stock) || tencentHistorySymbol(stock)}:30w:2y`;
+      const cached = biasMetricCache.get(cacheKey);
+      if (cached && Date.now() - cached.savedAt < BIAS_METRIC_CACHE_MS) return cached.value;
+      if (biasMetricInFlight.has(cacheKey)) return biasMetricInFlight.get(cacheKey);
+      const request = (async () => {
+        let weeklyCloses;
+        try {
+          weeklyCloses = await fetchTencentWeeklyCloses(stock);
+        } catch (tencentError) {
+          console.warn("腾讯周线不可用，尝试东方财富备用周线。", stock?.code, tencentError);
+          weeklyCloses = await fetchEastmoneyWeeklyCloses(stock);
+        }
       const weeklyBiases = weeklyCloses.map((close, index) => {
         if (index < 29) return null;
         const average30w = weeklyCloses.slice(index - 29, index + 1).reduce((sum, value) => sum + value, 0) / 30;
@@ -5354,6 +5397,13 @@
       };
       biasMetricCache.set(cacheKey, { savedAt: Date.now(), value });
       return value;
+      })();
+      biasMetricInFlight.set(cacheKey, request);
+      try {
+        return await request;
+      } finally {
+        biasMetricInFlight.delete(cacheKey);
+      }
     }
 
     function stripRuntimeMarketCapFields(stock) {
@@ -5380,9 +5430,9 @@
         latestMarketCapCny: Number(quote.latestMarketCapCny) || Number(stock.latestMarketCapCny) || 0,
         marketCapSourceCurrency: quote.marketCapSourceCurrency || stock.marketCapSourceCurrency || marketCurrency(stock.market),
         marketCapUpdatedAt: quote.marketCapUpdatedAt || stock.marketCapUpdatedAt || todayString(),
-        bias30w: Number.isFinite(quote.bias30w) ? quote.bias30w : null,
-        bias2yPercentile: Number.isFinite(quote.bias2yPercentile) ? quote.bias2yPercentile : null,
-        biasUpdatedAt: quote.biasUpdatedAt || ""
+        bias30w: Number.isFinite(quote.bias30w) ? quote.bias30w : (Number.isFinite(stock.bias30w) ? stock.bias30w : null),
+        bias2yPercentile: Number.isFinite(quote.bias2yPercentile) ? quote.bias2yPercentile : (Number.isFinite(stock.bias2yPercentile) ? stock.bias2yPercentile : null),
+        biasUpdatedAt: quote.biasUpdatedAt || stock.biasUpdatedAt || ""
       };
     }
 
@@ -10717,9 +10767,9 @@
             dayLow: updates[index].dayLow,
             intradayQuoteAt: updates[index].intradayQuoteAt || "",
             changePercent: updates[index].changePercent,
-            bias30w: Number.isFinite(updates[index].bias30w) ? updates[index].bias30w : null,
-            bias2yPercentile: Number.isFinite(updates[index].bias2yPercentile) ? updates[index].bias2yPercentile : null,
-            biasUpdatedAt: updates[index].biasUpdatedAt || "",
+            bias30w: Number.isFinite(updates[index].bias30w) ? updates[index].bias30w : (Number.isFinite(position.bias30w) ? position.bias30w : null),
+            bias2yPercentile: Number.isFinite(updates[index].bias2yPercentile) ? updates[index].bias2yPercentile : (Number.isFinite(position.bias2yPercentile) ? position.bias2yPercentile : null),
+            biasUpdatedAt: updates[index].biasUpdatedAt || position.biasUpdatedAt || "",
             priceUpdatedAt: new Date().toISOString()
           } : position)
         } : item);
