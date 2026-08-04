@@ -253,6 +253,13 @@
     }
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { color: var(--brand); }
+    .bias-metric-head { min-width: 112px; }
+    .bias-sort-line { display: block; cursor: pointer; white-space: nowrap; }
+    .bias-sort-line + .bias-sort-line { margin-top: 3px; color: var(--muted); font-size: 10.5px; }
+    .bias-sort-line:hover { color: var(--brand); }
+    .bias-metric-cell { min-width: 112px; font-variant-numeric: tabular-nums; }
+    .bias-metric-cell span { display: block; line-height: 1.45; white-space: nowrap; }
+    .bias-metric-cell .muted { font-size: 10.5px; }
     tbody tr:hover { background: #f8fbfb; }
     tbody tr.stock-row.dragging { opacity: .45; }
     tbody tr.stock-row.drag-over-before td { box-shadow: inset 0 2px 0 var(--brand); }
@@ -4531,6 +4538,8 @@
     let marketCapRefreshInFlight = false;
     let portfolioQuoteRefreshTimer = null;
     let portfolioQuoteRefreshInFlight = false;
+    const biasMetricCache = new Map();
+    const BIAS_METRIC_CACHE_MS = 15 * 60 * 1000;
     let sessionRefreshPromise = null;
     let journalSearchTimer = null;
     let journalSearchRequestId = 0;
@@ -5311,11 +5320,50 @@
       };
     }
 
+    async function fetchBiasMetrics(stock) {
+      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+      const quoteId = stockQuoteId(stock);
+      if (!quoteId) throw new Error("无法识别周线行情代码");
+      const cacheKey = `${quoteId}:30w:2y`;
+      const cached = biasMetricCache.get(cacheKey);
+      if (cached && Date.now() - cached.savedAt < BIAS_METRIC_CACHE_MS) return cached.value;
+      const end = todayString().replace(/-/g, "");
+      const beginDate = new Date();
+      beginDate.setFullYear(beginDate.getFullYear() - 3);
+      beginDate.setMonth(beginDate.getMonth() - 3);
+      const begin = beginDate.toISOString().slice(0, 10).replace(/-/g, "");
+      const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${encodeURIComponent(quoteId)}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=102&fqt=1&beg=${begin}&end=${end}`;
+      const json = await jsonp(url);
+      const weeklyCloses = (json?.data?.klines || [])
+        .map((line) => Number(String(line).split(",")[2]))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      const weeklyBiases = weeklyCloses.map((close, index) => {
+        if (index < 29) return null;
+        const average30w = weeklyCloses.slice(index - 29, index + 1).reduce((sum, value) => sum + value, 0) / 30;
+        return (close / average30w - 1) * 100;
+      }).filter(Number.isFinite);
+      if (weeklyBiases.length < 104) throw new Error("不足两年有效周线数据");
+      const observations = weeklyBiases.slice(-104);
+      const bias30w = observations.at(-1);
+      const lower = observations.filter((value) => value < bias30w).length;
+      const equal = observations.filter((value) => value === bias30w).length;
+      const value = {
+        bias30w,
+        bias2yPercentile: (lower + 0.5 * (equal - 1)) / (observations.length - 1) * 100,
+        biasUpdatedAt: new Date().toISOString()
+      };
+      biasMetricCache.set(cacheKey, { savedAt: Date.now(), value });
+      return value;
+    }
+
     function stripRuntimeMarketCapFields(stock) {
       const {
         latestMarketCapCny,
         marketCapUpdatedAt,
         marketCapSourceCurrency,
+        bias30w,
+        bias2yPercentile,
+        biasUpdatedAt,
         versionCustom,
         ...persisted
       } = stock || {};
@@ -5331,7 +5379,10 @@
         ...stock,
         latestMarketCapCny: Number(quote.latestMarketCapCny) || Number(stock.latestMarketCapCny) || 0,
         marketCapSourceCurrency: quote.marketCapSourceCurrency || stock.marketCapSourceCurrency || marketCurrency(stock.market),
-        marketCapUpdatedAt: quote.marketCapUpdatedAt || stock.marketCapUpdatedAt || todayString()
+        marketCapUpdatedAt: quote.marketCapUpdatedAt || stock.marketCapUpdatedAt || todayString(),
+        bias30w: Number.isFinite(quote.bias30w) ? quote.bias30w : null,
+        bias2yPercentile: Number.isFinite(quote.bias2yPercentile) ? quote.bias2yPercentile : null,
+        biasUpdatedAt: quote.biasUpdatedAt || ""
       };
     }
 
@@ -5349,7 +5400,14 @@
       try {
         const quotes = await Promise.all(targets.map(async (item) => {
           try {
-            return { ...item, quote: await fetchQuote(item.stock) };
+            const [quote, bias] = await Promise.all([
+              fetchQuote(item.stock),
+              fetchBiasMetrics(item.stock).catch((error) => {
+                console.warn("刷新乖离率失败。", item.stock?.code, error);
+                return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+              })
+            ]);
+            return { ...item, quote: { ...quote, ...bias } };
           } catch (error) {
             console.warn("刷新市值失败。", item.stock?.code, error);
             return null;
@@ -6944,9 +7002,15 @@
     }
 
     function renderPortfolioTable(portfolio, metrics) {
-      const sort = state.portfolioTagFilter ? { key: "weight", dir: "desc" } : (state.portfolioSort || { key: "value", dir: "desc" });
+      const sort = state.portfolioSort || { key: "value", dir: "desc" };
       const positionWeight = (position) => metrics.netBase ? positionBaseValue(position, portfolio) / metrics.netBase : 0;
-      const sortValue = (position) => sort.key === "change" ? (position.changePercent == null ? NaN : Number(position.changePercent)) : sort.key === "weight" ? positionWeight(position) : positionBaseValue(position, portfolio);
+      const sortValue = (position) => sort.key === "change"
+        ? (position.changePercent == null ? NaN : Number(position.changePercent))
+        : sort.key === "weight"
+          ? positionWeight(position)
+          : ["bias30w", "bias2yPercentile"].includes(sort.key)
+            ? (Number.isFinite(position[sort.key]) ? position[sort.key] : NaN)
+            : positionBaseValue(position, portfolio);
       const allPositions = [...(portfolio.positions || [])];
       const pendingByPosition = allPositions.map((position) => {
         const items = triggeredPositionTradePlans(position, portfolio).sort((a, b) => b.executionAmountBase - a.executionAmountBase || a.index - b.index);
@@ -6962,19 +7026,20 @@
         return (aValue - bValue) * (sort.dir === "asc" ? 1 : -1);
       });
       const groupMap=new Map();
-      sortedPositions.forEach((position)=>{
+      sortedPositions.forEach((position,sortRank)=>{
         const key=optionUnderlyingKey(position);
-        if(!groupMap.has(key)) groupMap.set(key,[]);
-        groupMap.get(key).push(position);
+        if(!groupMap.has(key)) groupMap.set(key,{items:[],sortRank});
+        groupMap.get(key).items.push(position);
       });
-      const displayRows=[...groupMap.entries()].map(([key,items])=>{
+      const displayRows=[...groupMap.entries()].map(([key,groupEntry])=>{
+        const items=groupEntry.items;
         const hasOptions=items.some((item)=>item.assetType==="option");
         const exposure=items.reduce((sum,item)=>sum+positionExposureBaseValue(item,portfolio),0);
         const stockPosition=items.find((item)=>item.assetType!=="option");
         const stockValue=stockPosition?positionBaseValue(stockPosition,portfolio):0;
         const sortedItems=[...items].sort((a,b)=>Math.abs(positionExposureBaseValue(b,portfolio))-Math.abs(positionExposureBaseValue(a,portfolio)));
-        return {key,items:sortedItems,hasOptions,exposure,stockValue};
-      }).sort((a,b)=>b.stockValue-a.stockValue).flatMap((group)=>group.hasOptions?[{kind:"group",group},...group.items.map((position)=>({kind:"position",position,grouped:true}))]:group.items.map((position)=>({kind:"position",position,grouped:false})));
+        return {key,items:sortedItems,hasOptions,exposure,stockValue,sortRank:groupEntry.sortRank};
+      }).sort((a,b)=>a.sortRank-b.sortRank).flatMap((group)=>group.hasOptions?[{kind:"group",group},...group.items.map((position)=>({kind:"position",position,grouped:true}))]:group.items.map((position)=>({kind:"position",position,grouped:false})));
       if (!allPositions.length) return `<section class="portfolio-empty"><strong>暂无持仓</strong><p>点击“开仓”录入第一只股票。</p><button class="primary" data-action="openPosition">+ 开仓</button></section>`;
       const base = portfolioBaseCurrency(portfolio);
       const dailySummary = portfolioDailyProfitSummary(portfolio, metrics);
@@ -6997,11 +7062,11 @@
             </div>
           </div>
           <div class="table-scroll"><table>
-          <thead><tr><th class="sticky-col">股票 / 合约</th><th>数量</th><th class="num">成本</th><th class="num">现价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值/敞口</th><th class="num sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值 / 合约信息</th><th>操作</th></tr></thead>
+          <thead><tr><th class="sticky-col">股票 / 合约</th><th>数量</th><th class="num">成本</th><th class="num">现价</th><th class="sortable" data-action="sortPortfolio" data-sort-key="change">当日涨跌幅${sortIndicator("change")}</th><th class="num">当日盈亏</th><th class="num">持仓盈亏</th><th class="num">市值/敞口</th><th class="num sortable" data-action="sortPortfolio" data-sort-key="weight">仓位比例${sortIndicator("weight")}</th><th>目标仓位</th><th>估值 / 合约信息</th>${biasMetricHeader(sort, "sortPortfolio")}<th>操作</th></tr></thead>
           <tbody>${displayRows.map((entry) => {
             if(entry.kind==="group"){
               const group=entry.group,stock=group.items.find((item)=>item.assetType!=="option")||group.items[0],weight=metrics.netBase?group.exposure/metrics.netBase:0;
-              return `<tr class="portfolio-group-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(stock.assetType==="option"?(stock.underlyingName||stock.name):stock.name)}</div><div class="stock-code">${escapeHtml(stock.assetType==="option"?stock.underlyingCode:stock.code)}</div></td><td><span class="portfolio-group-summary">${group.items.length} 个仓位</span></td><td class="num" colspan="5"></td><td class="num">${portfolioPrivate(base==="USD"?formatPortfolioMoney(group.exposure,"USD"):formatWan(group.exposure))}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td></td><td>--</td></tr>`;
+              return `<tr class="portfolio-group-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(stock.assetType==="option"?(stock.underlyingName||stock.name):stock.name)}</div><div class="stock-code">${escapeHtml(stock.assetType==="option"?stock.underlyingCode:stock.code)}</div></td><td><span class="portfolio-group-summary">${group.items.length} 个仓位</span></td><td class="num" colspan="5"></td><td class="num">${portfolioPrivate(base==="USD"?formatPortfolioMoney(group.exposure,"USD"):formatWan(group.exposure))}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td></td>${biasMetricCell(stock)}<td>--</td></tr>`;
             }
             const position=entry.position;
             if(position.assetType==="option"){
@@ -7011,7 +7076,7 @@
               const dailyProfit=portfolioPositionDailyProfit(position,portfolio);
               const holdingProfit=directionSign*(latest-cost)*contracts*multiplier*portfolioFx(position.currency,base);
               const profitClass=holdingProfit>0?"gain":holdingProfit<0?"loss":"muted",dailyClass=Number.isFinite(dailyProfit)?dailyProfit>0?"gain":dailyProfit<0?"loss":"muted":"muted";
-              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num portfolio-option-exposure">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td><td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
+              return `<tr class="portfolio-child-row portfolio-option-row"><td class="sticky-col"><div class="stock-name">${escapeHtml(position.optionType==="put"?"Put":"Call")}<span class="portfolio-option-badge ${position.direction==="short"?"short":""}">${position.direction==="short"?"做空":"做多"}</span></div><div class="stock-code">${escapeHtml(position.code)}</div></td><td>${portfolioPrivate(`${position.direction==="short"?"-":""}${contracts} 张`)}</td><td class="num">${portfolioPrivate(formatPortfolioCost(cost))}</td><td class="num">${formatPortfolioNumber(latest)}</td><td class="muted">--</td><td class="num ${dailyClass}">${Number.isFinite(dailyProfit)?portfolioPrivate(`${dailyProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(dailyProfit):formatWan(dailyProfit)}`):"--"}</td><td class="num ${profitClass}">${portfolioPrivate(`${holdingProfit>0?"+":""}${base==="USD"?formatPortfolioNumber(holdingProfit):formatWan(holdingProfit)}`)}</td><td class="num portfolio-option-exposure">${portfolioPrivate(`${base==="USD"?formatPortfolioMoney(value,"USD"):formatWan(value)} / ${base==="USD"?formatPortfolioMoney(exposure,"USD"):formatWan(exposure)}`)}</td><td class="num portfolio-weight-cell ${weight<0?"loss":weight>0?"gain":""}">${(weight*100).toFixed(2)}%</td><td>--</td><td class="portfolio-valuation-cell"></td>${biasMetricCell(position)}<td><div class="actions"><button class="trade-add" data-action="addPosition" data-id="${escapeHtml(position.id)}">加仓</button><button class="trade-reduce" data-action="reducePosition" data-id="${escapeHtml(position.id)}">平仓</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(position.id)}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(position.id)}">交易历史</button></div></td></tr>`;
             }
             const pendingPlans = pendingByPositionId.get(position.id) || [];
             const pendingBuys = pendingPlans.filter((item) => item.side === "buy");
@@ -7050,6 +7115,7 @@
               <td data-label="仓位比例" class="num portfolio-position-weight">${(weight * 100).toFixed(2)}%</td>
               <td data-label="目标仓位">${Number(position.targetWeight) > 0 ? `${Number(position.targetWeight).toFixed(2)}%` : "--"}</td>
               <td data-label="估值信息" class="portfolio-valuation-cell">${renderPortfolioValuation(position)}</td>
+              ${biasMetricCell(position)}
               <td data-label="操作"><div class="actions"><button class="trade-add ${pendingBuys.length ? "trade-plan-alert" : ""}" data-action="addPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingBuys.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>加仓` : "加仓"}</button><button class="trade-reduce ${pendingSells.length ? "trade-plan-alert" : ""}" data-action="reducePosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">${pendingSells.length ? `<span class="trade-alert-dot" aria-hidden="true"></span>减仓` : "减仓"}</button><button class="trade-edit" data-action="editPosition" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">编辑</button><button class="trade-history" data-action="positionHistory" data-id="${escapeHtml(String(position.id || ""))}" data-position-key="${escapeHtml(portfolioPositionKey(position))}">交易历史</button></div></td>
             </tr>`;
           }).join("")}</tbody>
@@ -8078,6 +8144,10 @@
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
         const va = listSortValue(a, state.sort.key);
         const vb = listSortValue(b, state.sort.key);
+        if (["bias30w", "bias2yPercentile"].includes(state.sort.key)) {
+          const aMissing = !Number.isFinite(va), bMissing = !Number.isFinite(vb);
+          if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        }
         return state.sort.dir === "asc" ? va - vb : vb - va;
       });
       return rows;
@@ -8089,7 +8159,25 @@
       if (key === "shareholderReturnRate") return shareholderReturnRateForList(stock, c) ?? -Infinity;
       if (key === "dividendYield") return latest ? (Number(stock.expectedDividendCny) || 0) / latest : -Infinity;
       if (key === "buybackRate") return latest ? (Number(stock.expectedBuybackCny) || 0) / latest : -Infinity;
+      if (key === "bias30w" || key === "bias2yPercentile") return Number.isFinite(stock[key]) ? stock[key] : NaN;
       return c[key] ?? -Infinity;
+    }
+
+    function biasMetricCell(item) {
+      const bias = Number.isFinite(item?.bias30w) ? Number(item.bias30w) : NaN;
+      const percentile = Number.isFinite(item?.bias2yPercentile) ? Number(item.bias2yPercentile) : NaN;
+      const biasText = Number.isFinite(bias) ? `${bias > 0 ? "+" : ""}${bias.toFixed(2)}%` : "--";
+      const percentileText = Number.isFinite(percentile) ? `2年分位 ${percentile.toFixed(0)}%` : "2年分位 --";
+      const valueClass = Number.isFinite(bias) ? (bias > 0 ? "gain" : bias < 0 ? "loss" : "") : "muted";
+      return `<td data-label="30周乖离率 / 2年分位" class="num bias-metric-cell ${valueClass}"><span>${biasText}</span><span class="muted">${percentileText}</span></td>`;
+    }
+
+    function biasMetricHeader(sort, action = "") {
+      const indicator = (key) => sort.key === key ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
+      const attributes = (key) => action
+        ? `data-action="${action}" data-sort-key="${key}"`
+        : `data-sort="${key}"`;
+      return `<th class="num bias-metric-head"><span class="bias-sort-line" ${attributes("bias30w")}>30周乖离率${indicator("bias30w")}</span><span class="bias-sort-line" ${attributes("bias2yPercentile")}>2年分位${indicator("bias2yPercentile")}</span></th>`;
     }
 
     function renderStockTableColgroup(viewingOwn) {
@@ -8098,6 +8186,7 @@
         <col class="pool-width-stock">
         <col class="pool-width-version">
         <col class="pool-width-market-cap">
+        <col class="pool-width-bias">
         <col class="pool-width-upside">
         <col class="pool-width-forward-pe">
         <col class="pool-width-return-rate">
@@ -8142,6 +8231,7 @@
                   <th class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">股票名称</th>
                   <th>版本</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
+                  ${biasMetricHeader(state.sort)}
                   ${sortTh("upside", "Upside", "num")}
                   ${sortTh("forwardPE", "Forward PE", "num")}
                   ${sortTh("shareholderReturnRate", "股东回报率", "num")}
@@ -8167,7 +8257,7 @@
     }
 
     function renderTableSkeleton(viewingOwn) {
-      const colSpan = viewingOwn ? 18 : 15;
+      const colSpan = viewingOwn ? 19 : 16;
       return `
         <section class="table-panel horizontal-data-table stock-pool-table">
           <div class="table-scroll">
@@ -8203,6 +8293,7 @@
           </td>
           <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
           <td data-label="最新市值" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
+          ${sourceDeleted ? `<td data-label="30周乖离率 / 2年分位" class="num bias-metric-cell muted"><span>--</span><span class="muted">2年分位 --</span></td>` : biasMetricCell(stock)}
           <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
           <td data-label="Forward PE" class="kpi plain-kpi">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
           <td data-label="股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(shareholderRate)}</td>
@@ -10601,7 +10692,16 @@
       if (shouldRender) render();
       try {
         const [updates] = await Promise.all([Promise.all(portfolio.positions.map(async (position) => {
-          try { return await fetchQuote(position); }
+          try {
+            const [quote, bias] = await Promise.all([
+              fetchQuote(position),
+              fetchBiasMetrics(position).catch((error) => {
+                console.warn("刷新组合乖离率失败。", position?.code, error);
+                return { bias30w: null, bias2yPercentile: null, biasUpdatedAt: "" };
+              })
+            ]);
+            return { ...quote, ...bias };
+          }
           catch { return null; }
         })), refreshIntradayBenchmarks(portfolio)]);
         state.portfolios = state.portfolios.map((item) => item.id === portfolio.id ? {
@@ -10617,6 +10717,9 @@
             dayLow: updates[index].dayLow,
             intradayQuoteAt: updates[index].intradayQuoteAt || "",
             changePercent: updates[index].changePercent,
+            bias30w: Number.isFinite(updates[index].bias30w) ? updates[index].bias30w : null,
+            bias2yPercentile: Number.isFinite(updates[index].bias2yPercentile) ? updates[index].bias2yPercentile : null,
+            biasUpdatedAt: updates[index].biasUpdatedAt || "",
             priceUpdatedAt: new Date().toISOString()
           } : position)
         } : item);
