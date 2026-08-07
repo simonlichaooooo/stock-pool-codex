@@ -17,12 +17,15 @@
 | `index.html` | 全部前端结构、样式、状态、业务逻辑和 REST 调用 |
 | `data/market-insights.json` | 恒生科技指数成分、空头和港股通公开快照 |
 | `scripts/update-market-insights.mjs` | 更新香港证监会空头快照 |
-| `.github/workflows/update-market-insights.yml` | 工作日检查证监会最新 CSV 并提交变化 |
+| `.github/workflows/update-market-insights.yml` | 周五 18:00 检查证监会最新 CSV 并提交前端快照 |
+| `scripts/market-data-ingest.py` | HSCI、空头与港股通历史数据回填和日常更新 |
+| `.github/workflows/update-market-data-history.yml` | 空头周度、港股通日度数据库计划 |
 | `logo/` | Logo 和透明素材 |
 | `supabase/schema.sql` | 基础数据库结构 |
 | `supabase/portfolio-management.sql` | 组合表和权限 |
 | `supabase/portfolio-nav.sql` | 现金流、净值和基准数据 |
 | `supabase/portfolio-nav-schedule.sql` | pg_cron / pg_net 调度模板 |
+| `supabase/market-data-history.sql` | 市场历史数据表、RLS、索引和 HSCI 视图 |
 | `supabase/functions/daily-portfolio-nav/index.ts` | 日终净值 Edge Function |
 | `supabase/journal-entries.sql` | 日志表 |
 | `supabase/social-sharing.sql` | 发布、关注和共享数据 |
@@ -69,6 +72,8 @@ python3 -m http.server 8765
 4. 手工验证请求和写表结果。
 5. 数据库与定时任务变更必须记录执行时间和结果。
 
+市场历史数据首次部署与回填见 [`MARKET_DATA_OPERATIONS.md`](./MARKET_DATA_OPERATIONS.md)。
+
 已有生产密钥和调度不应在无备份时重建。
 
 ## 6. 发布前回归
@@ -90,7 +95,7 @@ python3 -m http.server 8765
 - 页面完全异常：先检查浏览器控制台的 JavaScript 语法错误。
 - 数据为空或保存失败：检查会话、REST 响应和 RLS。
 - 行情或市值为空：检查 `quoteId` 推导、外部接口和降级路径。
-- 市场洞察空头为空：检查官方 CSV 更新任务和行情总股本估算；港股通为空时先确认是否为快照缺数，不要填零。
+- 市场洞察空头为空：检查两个 market data workflow、Actions secrets 和 `market_data_ingestion_runs`；港股通最近日期为空时先等回看任务补齐，不要填零。
 - 组合数字异常：依次核对币种、汇率、现金、持仓市值和 `totalUnits`。
 - 净值未更新：检查 cron、Edge Function 日志、secrets 和三张净值表。
 - 发布后未变化：确认 `main` 已推送、Pages workflow 完成并排除缓存。

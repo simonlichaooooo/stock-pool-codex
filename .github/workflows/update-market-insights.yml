@@ -2,7 +2,8 @@ name: Update market insights
 
 on:
   schedule:
-    - cron: "30 1 * * 1-5"
+    # 香港时间周五 18:00，在证监会通常完成周度发布后刷新前端快照。
+    - cron: "0 10 * * 5"
   workflow_dispatch:
 
 permissions:

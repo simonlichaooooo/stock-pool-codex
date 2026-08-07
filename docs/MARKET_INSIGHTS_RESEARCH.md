@@ -4,95 +4,69 @@
 
 ## 结论
 
-整体可行，但两类数据的实施难度不同：
+从 2023-01-01 起存储“持股数”可行；要得到严谨的历史“持仓比例”，还需要报告日总股本。
 
-- 历史空头持仓：可以直接回填。香港证监会按周发布指明股份的合计须申报淡仓 CSV，公开数据可追溯至 2012 年 9 月。
-- 历史港股通持仓：业务上可行，但生产化前需要合规的授权数据源或港交所正式数据申请。不建议通过脚本批量抓取 HKEXnews，其查询服务条款明确限制程序化和系统性获取。
+- 空头：香港证监会官方历史 CSV 可直接回填，数据为周度。CSV 给出申报空仓股数和市值，不给总股本，因此比例暂时为空。
+- 港股通：深交所官方逐股持仓能回查至 2023 年；上交所当前公开接口从 2024-08-19 才有逐股持仓。2023-01-01 至 2024-08-18 只能标记为 `partial_sz`，不能冒充沪深合计。
+- 完整的 2023 年港股通总持仓及历史比例，需要向港交所购买历史 CCASS 数据，或采购 Wind、Choice、Bloomberg、LSEG 等授权数据。HKEXnews 查询页不用于自动化建库。
+- 当前恒生综合指数成分由恒生指数公司官方实时成分接口同步；截至验收日返回 534 只。
 
-## 数据源
+## 官方数据源与更新规律
 
-### 1. 空头持仓比例
+### 空头持仓
 
-主数据源：香港证监会“Aggregated reportable short positions of specified shares”。
+数据源：香港证监会 [Aggregated reportable short positions of specified shares](https://www.sfc.hk/en/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares)。
 
-- 频率：周度，报告日为每周最后一个交易日。
-- 原始字段：报告日、股票代码、股票名称、合计须申报空仓股数、空仓市值。
-- 历史深度：聚合数据发布于 2012-09-07 启动，官网保留历史 CSV/PDF。
-- 口径限制：只包含达到申报门槛的净空头，不是全市场总做空量。现行普通指明股份门槛为发行人市值 0.02% 或 3,000 万港元的较低者。
+- 报告日：通常为每周最后一个交易日，节假日周可能提前。
+- 发布：证监会说明为报告日后三个营业日，通常周五发布。
+- 计划：香港时间每周五 18:00 读取最新 CSV；任务按 `stock_code + report_date` upsert，官方迟发时下周运行仍会补上。
+- 数据含义：仅包含达到申报门槛的合计须申报淡仓，不等于所有做空交易或所有借券。
 
-比例计算建议：
+### 港股通持仓
+
+官方公告明确为交易日收市后，沪深交易所分别披露每只港股通证券的投资者合计持有数量；未承诺固定时点。
+
+- 沪股通渠道：[上交所港股通证券持有数量](https://star.sse.com.cn/services/hkexsc/ggtscsj/ggtzqcysl/)。当前逐股公开历史起点为 2024-08-19。
+- 深股通渠道：[深交所港股通持股数量](https://www.szse.cn/szhk/szhkshareholding/hkholdamount/index.html)。抽样确认 2023-01-03 可用。
+- 实测规律：2026-08-07 上午，两站最新均为 2026-08-05，2026-08-06 尚未出现，存在至少一个工作日的发布滞后。
+- 计划：香港时间工作日 20:00 运行，每次回看最近 10 个自然日。即使 T+1/T+2 才发布，后续任务也会自动补齐。
+
+完整性规则：
+
+| 状态 | 含义 | 是否生成合计持股数 |
+| --- | --- | --- |
+| `complete` | 当日沪、深两个官方数据集都已发布 | 是 |
+| `partial_sh` | 只有上交所渠道 | 否 |
+| `partial_sz` | 只有深交所渠道 | 否 |
+
+### 恒生综合指数成分
+
+数据源：恒生指数公司 [Hang Seng Composite Index](https://origin-www.hsi.com.hk/eng/indexes/all-indexes/hsci) 及其官网成分接口。
+
+- 每次港股通或空头任务运行前同步一份成分快照。
+- 历史数据表保留原始证券数据，展示视图按最新 HSCI 成分筛选，因此指数调样后无需改历史表。
+
+## 比例口径
 
 ```text
-空头持仓比例 = 合计须申报空仓股数 / 报告日已发行股数
+空头持仓比例 = 合计须申报空仓股数 / 报告日已发行股数 × 100%
+港股通持仓比例 = 沪股通持股数与深股通持股数之和 / 报告日已发行股数 × 100%
 ```
 
-证监会 CSV 不直接给出比例，因此历史回填需要同时获取“报告日已发行股数”。不能用当前总股本回算多年历史，否则拆股、回购、配股和双柜台变更会导致偏差。
+不能用当前总股本倒算 2023 年比例。拆股、合股、配股、回购、增发和双柜台安排都会造成历史失真。数据库已预留 `issued_shares`、比例和质量字段；在取得报告日总股本或授权供应商直接提供的比例后再回填。
 
-### 2. 港股通持仓比例
+## 已实现
 
-权威口径：中国结算对应的两个 CCASS 参与者日终持仓合计，除以已发行股数。
+- Supabase 表、RLS、HSCI 当前成分历史视图：`supabase/market-data-history.sql`。
+- 官方源回填与日常更新程序：`scripts/market-data-ingest.py`。
+- 周五 18:00 空头计划、工作日 20:00 港股通计划：`.github/workflows/update-market-data-history.yml`。
+- 回填与验收操作：`docs/MARKET_DATA_OPERATIONS.md`。
 
-- 频率：交易日日终。
-- 公开起点：HKEXnews 的 Stock Connect 持仓查询从 2017-03-17 起提供。
-- 字段：日期、股票代码、持股数、占已发行股份比例。
-- 官方提示：用于计算比例的已发行股数可能尚未反映公司行动，比例仅供参考。
-- 合规边界：HKEXnews 条款不允许使用程序化或机械方式获取并建立数据库。
+## 验收样本
 
-可选生产数据源，按优先级排序：
+2026-08-07 只读验证：
 
-1. 采购 Choice、Wind、Bloomberg、LSEG/Refinitiv 等包含港股通历史持仓的授权数据。
-2. 向港交所正式申请历史 CCASS 数据，确认批量使用、再发布和费用条款。
-3. 仅用于内部原型时，可以对第三方公开页面做小样本人工核验，但不作为正式历史数据管道。
-
-## 建议存储设计
-
-建议放入 Supabase PostgreSQL，原始文件放入 Supabase Storage。比例与原始股数同时保存，避免后续口径变更时无法复算。
-
-### `market_securities`
-
-- `security_id` UUID
-- `hk_stock_code` text，固定五位存储
-- `name_zh` / `name_en`
-- `listed_at` / `delisted_at`
-
-### `hk_short_positions_weekly`
-
-- 联合主键：`security_id + report_date`
-- `short_shares`
-- `short_value_hkd`
-- `issued_shares`
-- `short_ratio`
-- `source_url` / `raw_object_path` / `ingested_at`
-- `quality_status`：`official` / `denominator_estimated` / `missing_denominator`
-
-### `hk_stock_connect_holdings_daily`
-
-- 联合主键：`security_id + holding_date`
-- `holding_shares`
-- `holding_ratio_reported`
-- `issued_shares_reported`
-- 可选 `sh_connect_shares` / `sz_connect_shares`
-- `source_vendor` / `source_record_id` / `ingested_at`
-- `license_scope`：标记是否允许对终端用户展示
-
-### `market_data_ingestion_runs`
-
-记录每次任务的数据日期、来源、文件哈希、行数、缺失股票数、状态和错误，用于发现源站格式变更和迟到数据。
-
-## 回填与日常更新
-
-1. 先建立股票代码和公司行动映射，统一 `00700`、`700`、`0700.HK` 等代码。
-2. 将证监会历史 CSV 原样归档，按周写入空头表，再用当日总股本计算比例。
-3. 授权数据源到位后，按交易日回填港股通；保留数据源给出的原始比例。
-4. 日常任务使用 upsert，以数据日期而不是抓取日期作为唯一键，允许官方更正。
-5. 前端时序图默认展示原始比例，并标注周度/日度频率、缺失日和数据滞后。
-
-## 实施建议
-
-下一阶段先选 3 只股做数据验收（腾讯、阿里、美团）：
-
-- 空头从 2012 年或上市日起全量回填。
-- 港股通从 2017-03-17 或首次可用日起回填。
-- 抽查 20 个日期与官方页面/原始文件一致性，再扩展到全部港股。
-
-对“单只股历史曲线”的数据量很小，Supabase 完全能承载；真正的前置条件是港股通历史数据的授权和供应稳定性，不是技术容量。
+- HSCI：534 只成分股。
+- 证监会最新 CSV：1,232 条空头记录。
+- 2024-08-19 港股通：794 只证券，两渠道完整。
+- 2023-01-03 港股通：712 只证券，仅深交所渠道，正确标记为 `partial_sz`。

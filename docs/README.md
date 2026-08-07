@@ -9,6 +9,7 @@
 | [`PRD.md`](./PRD.md) | 整体产品定位、模块范围和产品验收 |
 | [`PORTFOLIO_MANAGEMENT.md`](./PORTFOLIO_MANAGEMENT.md) | 组合管理需求、计算规则、后台部署和专项回归 |
 | [`MARKET_INSIGHTS_RESEARCH.md`](./MARKET_INSIGHTS_RESEARCH.md) | 市场洞察数据口径与港股持仓历史数据预研 |
+| [`MARKET_DATA_OPERATIONS.md`](./MARKET_DATA_OPERATIONS.md) | HSCI、空头与港股通历史数据部署、回填和日常运维 |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 技术架构、数据域、权限、外部依赖和演进方向 |
 | [`HANDOFF.md`](./HANDOFF.md) | 本地开发、发布、排障、回归和接手优先级 |
 

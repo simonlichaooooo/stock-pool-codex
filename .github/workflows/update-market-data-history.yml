@@ -1,0 +1,79 @@
+name: Update market data history
+
+on:
+  schedule:
+    # 香港时间周五 18:00：证监会周度空头数据。
+    - cron: "0 10 * * 5"
+    # 香港时间工作日 20:00：港股通数据；每次回看 10 天以修复节假日和迟到数据。
+    - cron: "0 12 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: Dataset to backfill
+        required: true
+        type: choice
+        default: both
+        options:
+          - both
+          - short
+          - stock-connect
+      start_date:
+        description: Backfill start date (YYYY-MM-DD)
+        required: true
+        default: "2023-01-01"
+      end_date:
+        description: Backfill end date (YYYY-MM-DD, blank means today)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-market-data-history
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      DISPATCH_DATASET: ${{ inputs.dataset }}
+      DISPATCH_START: ${{ inputs.start_date }}
+      DISPATCH_END: ${{ inputs.end_date }}
+      TRIGGER_SCHEDULE: ${{ github.event.schedule }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check database secrets
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::warning::SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured; skipping update."
+            echo "MARKET_DATA_SKIP=1" >> "$GITHUB_ENV"
+          fi
+      - name: Sync HSCI constituents
+        if: env.MARKET_DATA_SKIP != '1'
+        run: python scripts/market-data-ingest.py sync-hsci
+      - name: Run scheduled SFC update
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 10 * * 5'
+        run: python scripts/market-data-ingest.py short --latest-only
+      - name: Run scheduled Stock Connect update
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 12 * * 1-5'
+        run: python scripts/market-data-ingest.py stock-connect --lookback-days 10
+      - name: Run manual backfill
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'workflow_dispatch'
+        run: |
+          END_ARGS=()
+          if [ -n "$DISPATCH_END" ]; then
+            END_ARGS=(--end "$DISPATCH_END")
+          fi
+          if [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "short" ]; then
+            python scripts/market-data-ingest.py short --start "$DISPATCH_START" "${END_ARGS[@]}"
+          fi
+          if [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "stock-connect" ]; then
+            python scripts/market-data-ingest.py stock-connect --start "$DISPATCH_START" "${END_ARGS[@]}"
+          fi
+

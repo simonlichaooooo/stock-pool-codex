@@ -11,7 +11,7 @@
 ├─ Supabase REST：业务数据与 RLS
 ├─ Supabase Edge Function：日终组合净值
 ├─ GitHub Pages：静态前端发布
-└─ 外部数据：东方财富、腾讯、Open ER API、香港证监会、港交所
+└─ 外部数据：东方财富、腾讯、Open ER API、恒生指数公司、香港证监会、上交所、深交所
 ```
 
 前端使用原生 HTML、CSS 和 JavaScript，无框架、打包器和构建步骤。全部页面结构、状态、业务逻辑和接口调用集中在 `index.html`。
@@ -39,6 +39,7 @@
 - `calculateMarketInsightBiases()` / `marketInsightShortRatio()`
 - `data/market-insights.json`：成分、证监会空头与港股通当前快照
 - `scripts/update-market-insights.mjs`：证监会官方周度 CSV 更新任务
+- `scripts/market-data-ingest.py`：HSCI、空头与港股通历史数据库管道
 
 ## 3. 数据域
 
@@ -53,6 +54,10 @@
 | 净值 | `portfolio_cash_flows`、`portfolio_daily_nav` | 外部现金流和日终净值 |
 | 基准 | `benchmark_daily_close` | 指数收盘价 |
 | 市场洞察快照 | `data/market-insights.json` | 静态公开数据，不含用户数据 |
+| 指数成分 | `market_index_constituents` | HSCI 每日成分快照 |
+| 空头历史 | `hk_short_positions_weekly` | 证监会周度申报空头股数与市值 |
+| 港股通历史 | `hk_stock_connect_holdings_daily` | 沪、深渠道日度持股数与完整性 |
+| 市场数据任务 | `market_data_ingestion_runs` | 回填与日常任务审计记录 |
 
 股池与组合主体使用 JSONB payload，便于单文件前端快速迭代，但缺少强 schema 约束。新增字段必须兼容旧 payload，并优先提供默认值或迁移函数。
 
@@ -90,8 +95,9 @@ portfolio
 - 行情失败时持仓价格按最近价、摊薄成本顺序回退。
 - 旧记录缺少 `quoteId` 时，根据市场和代码推导行情标识。
 - 外部数据均可能超时、限流或缺数，UI 必须允许空值并显示刷新状态。
-- 市场洞察周线行情由腾讯提供、东方财富兜底；证监会空头数据由 GitHub Actions 在工作日检查官方 CSV。
-- 港股通快照不得通过脚本抓取 HKEXnews；历史链路需采购授权数据或向港交所正式申请。
+- 市场洞察周线行情由腾讯提供、东方财富兜底；证监会空头数据每周五 18:00 检查官方 CSV。
+- 港股通持股数由上交所、深交所官方公开数据每日更新并回看 10 天；2024-08-19 以前缺少上交所公开逐股历史，只能标记为 `partial_sz`。
+- 港股通和空头比例需要报告日总股本。不得用当前总股本倒算，完整 2023 年港股通总持仓需采购授权数据或向港交所正式申请。
 
 ## 6. 日终净值链路
 
