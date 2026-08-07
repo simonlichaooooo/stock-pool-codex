@@ -1,7 +1,7 @@
 # 钞·作业系统架构
 
-最后更新：2026-07-18
-代码基线：`main@d57d6cc`
+最后更新：2026-08-07
+代码基线：`main`
 
 ## 1. 架构概览
 
@@ -11,7 +11,7 @@
 ├─ Supabase REST：业务数据与 RLS
 ├─ Supabase Edge Function：日终组合净值
 ├─ GitHub Pages：静态前端发布
-└─ 外部数据：东方财富、腾讯、Open ER API
+└─ 外部数据：东方财富、腾讯、Open ER API、香港证监会、港交所
 ```
 
 前端使用原生 HTML、CSS 和 JavaScript，无框架、打包器和构建步骤。全部页面结构、状态、业务逻辑和接口调用集中在 `index.html`。
@@ -33,6 +33,13 @@
 - `refreshPortfolioQuotes()` / `refreshMarketCaps()`
 - `positionPlanValuation()` / `positionPlanPriceFromMetric()`
 
+市场洞察关键入口：
+
+- `renderMarketInsightView()` / `refreshMarketInsight()`
+- `calculateMarketInsightBiases()` / `marketInsightShortRatio()`
+- `data/market-insights.json`：成分、证监会空头与港股通当前快照
+- `scripts/update-market-insights.mjs`：证监会官方周度 CSV 更新任务
+
 ## 3. 数据域
 
 | 数据域 | 主要存储 | 说明 |
@@ -45,6 +52,7 @@
 | 组合 | `portfolios` | 组合主体和嵌套 payload |
 | 净值 | `portfolio_cash_flows`、`portfolio_daily_nav` | 外部现金流和日终净值 |
 | 基准 | `benchmark_daily_close` | 指数收盘价 |
+| 市场洞察快照 | `data/market-insights.json` | 静态公开数据，不含用户数据 |
 
 股池与组合主体使用 JSONB payload，便于单文件前端快速迭代，但缺少强 schema 约束。新增字段必须兼容旧 payload，并优先提供默认值或迁移函数。
 
@@ -82,6 +90,8 @@ portfolio
 - 行情失败时持仓价格按最近价、摊薄成本顺序回退。
 - 旧记录缺少 `quoteId` 时，根据市场和代码推导行情标识。
 - 外部数据均可能超时、限流或缺数，UI 必须允许空值并显示刷新状态。
+- 市场洞察周线行情由腾讯提供、东方财富兜底；证监会空头数据由 GitHub Actions 在工作日检查官方 CSV。
+- 港股通快照不得通过脚本抓取 HKEXnews；历史链路需采购授权数据或向港交所正式申请。
 
 ## 6. 日终净值链路
 

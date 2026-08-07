@@ -1,0 +1,267 @@
+{
+  "generatedAt": "2026-08-07T01:25:49.192Z",
+  "constituents": {
+    "index": "HSTECH",
+    "asOf": "2026-06-08",
+    "sourceUrl": "https://www.hsi.com.hk/static/uploads/contents/en/news/pressRelease/20260522T174500.pdf"
+  },
+  "shortPositions": {
+    "asOf": "2026-07-24",
+    "sourceUrl": "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares",
+    "reportUrl": "https://www.sfc.hk/-/media/EN/pdf/spr/2026/07/24/Short_Position_Reporting_Aggregated_Data_20260724.csv?rev=01d01e4956ab43ea9840ec2112a77829",
+    "byCode": {
+      "1024": {
+        "shares": 354105790,
+        "valueHkd": 14907853759,
+        "name": "KUAISHOU-W"
+      },
+      "1211": {
+        "shares": 275664549,
+        "valueHkd": 24437662269,
+        "name": "BYD COMPANY"
+      },
+      "1347": {
+        "shares": 59150696,
+        "valueHkd": 8860774261,
+        "name": "HUA HONG GRACE"
+      },
+      "1698": {
+        "shares": 9671164,
+        "valueHkd": 331720925,
+        "name": "TME-SW"
+      },
+      "1810": {
+        "shares": 1406605286,
+        "valueHkd": 37584493242,
+        "name": "XIAOMI-W"
+      },
+      "2015": {
+        "shares": 182904354,
+        "valueHkd": 8775750905,
+        "name": "LI AUTO-W"
+      },
+      "2382": {
+        "shares": 163817849,
+        "valueHkd": 9558771489,
+        "name": "SUNNY OPTICAL"
+      },
+      "2513": {
+        "shares": 5610343,
+        "valueHkd": 6939994291,
+        "name": "Z.AI"
+      },
+      "3690": {
+        "shares": 186736959,
+        "valueHkd": 16190094345,
+        "name": "MEITUAN-W"
+      },
+      "6618": {
+        "shares": 64873115,
+        "valueHkd": 2400305255,
+        "name": "JD HEALTH"
+      },
+      "6690": {
+        "shares": 93874588,
+        "valueHkd": 1999528724,
+        "name": "HAIER SMARTHOME"
+      },
+      "9618": {
+        "shares": 70771759,
+        "valueHkd": 8358144738,
+        "name": "JD-SW"
+      },
+      "9626": {
+        "shares": 42800686,
+        "valueHkd": 5816613227,
+        "name": "BILIBILI-W"
+      },
+      "9660": {
+        "shares": 1817493677,
+        "valueHkd": 8033322052,
+        "name": "HORIZONROBOT-W"
+      },
+      "9863": {
+        "shares": 110298879,
+        "valueHkd": 4008261263,
+        "name": "LEAPMOTOR"
+      },
+      "9866": {
+        "shares": 86691988,
+        "valueHkd": 3178128280,
+        "name": "NIO-SW"
+      },
+      "9868": {
+        "shares": 159717297,
+        "valueHkd": 7902811856,
+        "name": "XPENG-W"
+      },
+      "9888": {
+        "shares": 65595221,
+        "valueHkd": 6841581550,
+        "name": "BIDU-SW"
+      },
+      "9961": {
+        "shares": 13453042,
+        "valueHkd": 4609012189,
+        "name": "TRIP.COM-S"
+      },
+      "9988": {
+        "shares": 168117398,
+        "valueHkd": 18492913780,
+        "name": "BABA-W"
+      },
+      "9999": {
+        "shares": 59014324,
+        "valueHkd": 11076988615,
+        "name": "NTES"
+      },
+      "0020": {
+        "shares": 2913011325,
+        "valueHkd": 3845174949,
+        "name": "SENSETIME-W"
+      },
+      "0100": {
+        "shares": 3466041,
+        "valueHkd": 679344036,
+        "name": "MINIMAX-W"
+      },
+      "0241": {
+        "shares": 2007698201,
+        "valueHkd": 6705711991,
+        "name": "ALI HEALTH"
+      },
+      "0285": {
+        "shares": 134083743,
+        "valueHkd": 3124151212,
+        "name": "BYD ELECTRONIC"
+      },
+      "0300": {
+        "shares": 113993690,
+        "valueHkd": 10800902128,
+        "name": "MIDEA GROUP"
+      },
+      "0700": {
+        "shares": 76251854,
+        "valueHkd": 33139055748,
+        "name": "TENCENT"
+      },
+      "0780": {
+        "shares": 101659155,
+        "valueHkd": 1338851071,
+        "name": "TONGCHENGTRAVEL"
+      },
+      "0981": {
+        "shares": 67542422,
+        "valueHkd": 4819151810,
+        "name": "SMIC"
+      },
+      "0992": {
+        "shares": 1186769223,
+        "valueHkd": 28885962888,
+        "name": "LENOVO GROUP"
+      }
+    }
+  },
+  "stockConnect": {
+    "asOf": "2026-08-06",
+    "sourceUrl": "https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk",
+    "byCode": {
+      "1024": {
+        "shares": 847454999,
+        "ratio": 19.58
+      },
+      "1211": {
+        "shares": 358801764,
+        "ratio": 9.73
+      },
+      "1347": {
+        "shares": 380926429,
+        "ratio": 21.91
+      },
+      "1810": {
+        "shares": 4993571013,
+        "ratio": 19.32
+      },
+      "2015": {
+        "shares": 488317977,
+        "ratio": 22.56
+      },
+      "2382": {
+        "shares": 149729971,
+        "ratio": 13.67
+      },
+      "2513": {
+        "shares": 25218830,
+        "ratio": 10.45
+      },
+      "3690": {
+        "shares": 1206181780,
+        "ratio": 19.52
+      },
+      "6618": {
+        "shares": 213807707,
+        "ratio": 6.7
+      },
+      "6690": {
+        "shares": 612037026,
+        "ratio": 21.43
+      },
+      "9618": {
+        "shares": 1601302,
+        "ratio": 0.05
+      },
+      "9626": {
+        "shares": 92530578,
+        "ratio": 21.76
+      },
+      "9660": {
+        "shares": 3302536473,
+        "ratio": 20.69
+      },
+      "9863": {
+        "shares": 342714998,
+        "ratio": 30.29
+      },
+      "9868": {
+        "shares": 392645687,
+        "ratio": 20.48
+      },
+      "9988": {
+        "shares": 1999502556,
+        "ratio": 10.42
+      },
+      "0300": {
+        "shares": 164865452,
+        "ratio": 25.32
+      },
+      "0780": {
+        "shares": 223573336,
+        "ratio": 9.48
+      },
+      "0700": {
+        "shares": 1065920947,
+        "ratio": 11.72
+      },
+      "0981": {
+        "shares": 2487173230,
+        "ratio": 29.04
+      },
+      "0992": {
+        "shares": 1016445496,
+        "ratio": 8.19
+      },
+      "0020": {
+        "shares": 9923722266,
+        "ratio": 23.5
+      },
+      "0285": {
+        "shares": 244508110,
+        "ratio": 10.84
+      },
+      "0241": {
+        "shares": 1970361242,
+        "ratio": 12.17
+      }
+    }
+  }
+}

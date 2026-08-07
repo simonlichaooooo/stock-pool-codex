@@ -1,12 +1,12 @@
 # 钞·作业项目交接手册
 
-最后更新：2026-07-18
-交接基线：`main@d57d6cc`
+最后更新：2026-08-07
+交接基线：`main`
 线上地址：https://simonlichaooooo.github.io/stock-pool-codex/
 
 ## 1. 当前状态
 
-项目是已上线的静态单页股票研究与组合管理工具。股池、组合管理、日志、广场、管理后台和四套主题均已投入使用。
+项目是已上线的静态单页股票研究与组合管理工具。股池、组合管理、市场洞察、日志、广场、管理后台和四套主题均已投入使用。
 
 产品规则见 [`PRD.md`](./PRD.md)，组合细则见 [`PORTFOLIO_MANAGEMENT.md`](./PORTFOLIO_MANAGEMENT.md)，技术边界见 [`ARCHITECTURE.md`](./ARCHITECTURE.md)。
 
@@ -15,6 +15,9 @@
 | 路径 | 作用 |
 | --- | --- |
 | `index.html` | 全部前端结构、样式、状态、业务逻辑和 REST 调用 |
+| `data/market-insights.json` | 恒生科技指数成分、空头和港股通公开快照 |
+| `scripts/update-market-insights.mjs` | 更新香港证监会空头快照 |
+| `.github/workflows/update-market-insights.yml` | 工作日检查证监会最新 CSV 并提交变化 |
 | `logo/` | Logo 和透明素材 |
 | `supabase/schema.sql` | 基础数据库结构 |
 | `supabase/portfolio-management.sql` | 组合表和权限 |
@@ -33,6 +36,7 @@ python3 -m http.server 8765
 
 - 普通页面：`http://127.0.0.1:8765/index.html`
 - 组合演示：`http://127.0.0.1:8765/index.html?portfolio-demo`
+- 市场洞察演示：`http://127.0.0.1:8765/index.html?market-insight-demo`
 - 演示模式使用 Local Storage，不写生产数据库。
 
 修改前先检查工作区和最新提交，避免覆盖其他对话正在进行的变更。
@@ -73,6 +77,7 @@ python3 -m http.server 8765
 - [ ] 股池列表、搜索、估值编辑、保存和发布。
 - [ ] 广场、关注、复制和订阅。
 - [ ] 组合切换、开仓、加仓、减持和调仓。
+- [ ] 市场洞察成分数量、周线指标、数据日期、缺失值和来源链接。
 - [ ] 申购、赎回、现金校准、份额和净值。
 - [ ] 持仓估值联动、动态买卖点、提醒和保存。
 - [ ] 日志、股票提及和筛选。
@@ -85,6 +90,7 @@ python3 -m http.server 8765
 - 页面完全异常：先检查浏览器控制台的 JavaScript 语法错误。
 - 数据为空或保存失败：检查会话、REST 响应和 RLS。
 - 行情或市值为空：检查 `quoteId` 推导、外部接口和降级路径。
+- 市场洞察空头为空：检查官方 CSV 更新任务和行情总股本估算；港股通为空时先确认是否为快照缺数，不要填零。
 - 组合数字异常：依次核对币种、汇率、现金、持仓市值和 `totalUnits`。
 - 净值未更新：检查 cron、Edge Function 日志、secrets 和三张净值表。
 - 发布后未变化：确认 `main` 已推送、Pages workflow 完成并排除缓存。
