@@ -1,163 +1,163 @@
 {
-  "generatedAt": "2026-08-07T01:25:49.192Z",
+  "generatedAt": "2026-08-07T10:58:49.638Z",
   "constituents": {
     "index": "HSTECH",
     "asOf": "2026-06-08",
     "sourceUrl": "https://www.hsi.com.hk/static/uploads/contents/en/news/pressRelease/20260522T174500.pdf"
   },
   "shortPositions": {
-    "asOf": "2026-07-24",
+    "asOf": "2026-07-31",
     "sourceUrl": "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares",
-    "reportUrl": "https://www.sfc.hk/-/media/EN/pdf/spr/2026/07/24/Short_Position_Reporting_Aggregated_Data_20260724.csv?rev=01d01e4956ab43ea9840ec2112a77829",
+    "reportUrl": "https://www.sfc.hk/-/media/EN/pdf/spr/2026/07/31/Short_Position_Reporting_Aggregated_Data_20260731.csv?rev=f10979a585ba4f66a24e44b657977c92",
     "byCode": {
       "1024": {
-        "shares": 354105790,
-        "valueHkd": 14907853759,
+        "shares": 345556158,
+        "valueHkd": 15100804105,
         "name": "KUAISHOU-W"
       },
       "1211": {
-        "shares": 275664549,
-        "valueHkd": 24437662269,
+        "shares": 266802761,
+        "valueHkd": 25119479948,
         "name": "BYD COMPANY"
       },
       "1347": {
-        "shares": 59150696,
-        "valueHkd": 8860774261,
+        "shares": 66326577,
+        "valueHkd": 8509699829,
         "name": "HUA HONG GRACE"
       },
       "1698": {
-        "shares": 9671164,
-        "valueHkd": 331720925,
+        "shares": 7871696,
+        "valueHkd": 303060296,
         "name": "TME-SW"
       },
       "1810": {
-        "shares": 1406605286,
-        "valueHkd": 37584493242,
+        "shares": 1354270840,
+        "valueHkd": 38975914775,
         "name": "XIAOMI-W"
       },
       "2015": {
-        "shares": 182904354,
-        "valueHkd": 8775750905,
+        "shares": 161136394,
+        "valueHkd": 8604683440,
         "name": "LI AUTO-W"
       },
       "2382": {
-        "shares": 163817849,
-        "valueHkd": 9558771489,
+        "shares": 163875631,
+        "valueHkd": 9185229118,
         "name": "SUNNY OPTICAL"
       },
       "2513": {
-        "shares": 5610343,
-        "valueHkd": 6939994291,
+        "shares": 6778833,
+        "valueHkd": 6694097588,
         "name": "Z.AI"
       },
       "3690": {
-        "shares": 186736959,
-        "valueHkd": 16190094345,
+        "shares": 177706547,
+        "valueHkd": 16437855598,
         "name": "MEITUAN-W"
       },
       "6618": {
-        "shares": 64873115,
-        "valueHkd": 2400305255,
+        "shares": 54357700,
+        "valueHkd": 2141693380,
         "name": "JD HEALTH"
       },
       "6690": {
-        "shares": 93874588,
-        "valueHkd": 1999528724,
+        "shares": 69829326,
+        "valueHkd": 1578142768,
         "name": "HAIER SMARTHOME"
       },
       "9618": {
-        "shares": 70771759,
-        "valueHkd": 8358144738,
+        "shares": 69301705,
+        "valueHkd": 8808246706,
         "name": "JD-SW"
       },
       "9626": {
-        "shares": 42800686,
-        "valueHkd": 5816613227,
+        "shares": 42422386,
+        "valueHkd": 6265786412,
         "name": "BILIBILI-W"
       },
       "9660": {
-        "shares": 1817493677,
-        "valueHkd": 8033322052,
+        "shares": 1578931359,
+        "valueHkd": 8163075126,
         "name": "HORIZONROBOT-W"
       },
       "9863": {
-        "shares": 110298879,
-        "valueHkd": 4008261263,
+        "shares": 109397598,
+        "valueHkd": 4371528016,
         "name": "LEAPMOTOR"
       },
       "9866": {
-        "shares": 86691988,
-        "valueHkd": 3178128280,
+        "shares": 91264002,
+        "valueHkd": 3542868558,
         "name": "NIO-SW"
       },
       "9868": {
-        "shares": 159717297,
-        "valueHkd": 7902811856,
+        "shares": 151441465,
+        "valueHkd": 7662938129,
         "name": "XPENG-W"
       },
       "9888": {
-        "shares": 65595221,
-        "valueHkd": 6841581550,
+        "shares": 57616256,
+        "valueHkd": 6101561510,
         "name": "BIDU-SW"
       },
       "9961": {
-        "shares": 13453042,
-        "valueHkd": 4609012189,
+        "shares": 14033274,
+        "valueHkd": 5141791594,
         "name": "TRIP.COM-S"
       },
       "9988": {
-        "shares": 168117398,
-        "valueHkd": 18492913780,
+        "shares": 181120582,
+        "valueHkd": 21191108094,
         "name": "BABA-W"
       },
       "9999": {
-        "shares": 59014324,
-        "valueHkd": 11076988615,
+        "shares": 58417383,
+        "valueHkd": 12139132187,
         "name": "NTES"
       },
       "0020": {
-        "shares": 2913011325,
-        "valueHkd": 3845174949,
+        "shares": 2848970173,
+        "valueHkd": 4131006751,
         "name": "SENSETIME-W"
       },
       "0100": {
-        "shares": 3466041,
-        "valueHkd": 679344036,
+        "shares": 4146060,
+        "valueHkd": 956081436,
         "name": "MINIMAX-W"
       },
       "0241": {
-        "shares": 2007698201,
-        "valueHkd": 6705711991,
+        "shares": 1995389008,
+        "valueHkd": 7163446539,
         "name": "ALI HEALTH"
       },
       "0285": {
-        "shares": 134083743,
-        "valueHkd": 3124151212,
+        "shares": 130035058,
+        "valueHkd": 3053223162,
         "name": "BYD ELECTRONIC"
       },
       "0300": {
-        "shares": 113993690,
-        "valueHkd": 10800902128,
+        "shares": 119003151,
+        "valueHkd": 11822963052,
         "name": "MIDEA GROUP"
       },
       "0700": {
-        "shares": 76251854,
-        "valueHkd": 33139055748,
+        "shares": 63897482,
+        "valueHkd": 30364083446,
         "name": "TENCENT"
       },
       "0780": {
-        "shares": 101659155,
-        "valueHkd": 1338851071,
+        "shares": 98796427,
+        "valueHkd": 1410812978,
         "name": "TONGCHENGTRAVEL"
       },
       "0981": {
-        "shares": 67542422,
-        "valueHkd": 4819151810,
+        "shares": 50873600,
+        "valueHkd": 3217755200,
         "name": "SMIC"
       },
       "0992": {
-        "shares": 1186769223,
-        "valueHkd": 28885962888,
+        "shares": 1169317343,
+        "valueHkd": 27899911804,
         "name": "LENOVO GROUP"
       }
     }
