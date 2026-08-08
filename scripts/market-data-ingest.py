@@ -93,11 +93,18 @@ class SupabaseRest:
 
     def upsert(self, table: str, rows: list[dict], conflict: str, chunk_size: int = 500) -> int:
         written = 0
-        for offset in range(0, len(rows), chunk_size):
-            chunk = rows[offset : offset + chunk_size]
-            path = f"{table}?on_conflict={urllib.parse.quote(conflict)}"
-            self._request("POST", path, chunk, prefer="resolution=merge-duplicates,return=minimal")
-            written += len(chunk)
+        # PostgREST requires every object in one bulk request to expose the same keys.
+        # Exchange rows can legitimately have only a Chinese name or both names, so
+        # group them by shape before chunking and preserve omitted fields on upsert.
+        groups: dict[tuple[str, ...], list[dict]] = {}
+        for row in rows:
+            groups.setdefault(tuple(sorted(row)), []).append(row)
+        for group in groups.values():
+            for offset in range(0, len(group), chunk_size):
+                chunk = group[offset : offset + chunk_size]
+                path = f"{table}?on_conflict={urllib.parse.quote(conflict)}"
+                self._request("POST", path, chunk, prefer="resolution=merge-duplicates,return=minimal")
+                written += len(chunk)
         return written
 
     def insert_run(self, dataset: str, started_at: str, start: date | None, end: date | None,
