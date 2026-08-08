@@ -4562,7 +4562,7 @@
     .market-insight-meta strong { color:var(--text); font-weight:720; }
     .market-insight-meta a { color:var(--brand-strong); text-decoration:none; }
     .market-insight-meta a:hover { text-decoration:underline; }
-    .market-insight-table table { min-width:1080px; }
+    .market-insight-table table { min-width:1380px; }
     .market-insight-table th { white-space:nowrap; }
     .market-insight-table .stock-name { font-weight:700; }
     .market-insight-table .sticky-col { min-width:170px; }
@@ -4572,6 +4572,26 @@
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
+    .market-insight-detail-link { padding:0; border:0; background:transparent; color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
+    .market-insight-detail-link:hover { text-decoration:underline; }
+    .market-insight-detail-head { align-items:center; }
+    .market-insight-detail-title { display:flex; align-items:center; gap:12px; }
+    .market-insight-back { white-space:nowrap; }
+    .market-insight-charts { display:grid; gap:12px; }
+    .market-insight-chart-card { padding:16px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow); }
+    .market-insight-chart-card h3 { margin:0; color:var(--text); font-size:15px; }
+    .market-insight-chart-card > p { margin:5px 0 12px; color:var(--muted); font-size:11px; line-height:1.55; }
+    .market-insight-chart-wrap { overflow-x:auto; }
+    .market-insight-chart { display:block; width:100%; min-width:720px; height:320px; }
+    .market-insight-chart .grid { stroke:var(--line); stroke-width:1; }
+    .market-insight-chart .axis-label { fill:var(--muted); font-size:11px; }
+    .market-insight-chart .series-line { fill:none; stroke-width:2.25; vector-effect:non-scaling-stroke; }
+    .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
+    .market-insight-chart-legend { display:flex; gap:8px 16px; flex-wrap:wrap; margin-bottom:8px; color:var(--muted); font-size:11px; }
+    .market-insight-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .market-insight-chart-legend i { width:18px; height:0; border-top:2px solid var(--legend-color); }
+    .market-insight-chart-legend i.dashed { border-top-style:dashed; }
+    .market-insight-chart-empty { display:grid; place-items:center; min-height:220px; padding:24px; border:1px dashed var(--line); border-radius:5px; color:var(--muted); font-size:12px; text-align:center; line-height:1.7; }
     @media (max-width: 760px) {
       .market-insight-head { align-items:stretch; flex-direction:column; }
       .market-insight-title, .market-insight-title p { min-width:0; white-space:normal; overflow-wrap:anywhere; }
@@ -4691,6 +4711,10 @@
       marketInsightLoaded: false,
       marketInsightError: "",
       marketInsightUpdatedAt: "",
+      marketInsightDetailCode: "",
+      marketInsightDetail: null,
+      marketInsightDetailLoading: false,
+      marketInsightDetailError: "",
       portfolios: [],
       activePortfolioId: "",
       portfolioModal: null,
@@ -5443,7 +5467,7 @@
       return suffix ? `${base}${suffix}` : base;
     }
 
-    async function fetchTencentWeeklyCloses(stock) {
+    async function fetchTencentWeeklySeries(stock) {
       const symbol = tencentHistorySymbol(stock);
       if (!symbol) throw new Error("无法识别腾讯周线代码");
       const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${encodeURIComponent(symbol)},week,,,180,qfq&_=${Date.now()}`;
@@ -5452,13 +5476,17 @@
       const json = await response.json();
       const data = json?.data?.[symbol];
       const rows = data?.qfqweek || data?.week || [];
-      const closes = rows.map((row) => Number(row?.[2])).filter((value) => Number.isFinite(value) && value > 0);
-      if (!closes.length) throw new Error("腾讯周线数据为空");
-      return closes;
+      const series = rows.map((row) => ({ date: String(row?.[0] || ""), close: Number(row?.[2]) })).filter((item) => item.date && Number.isFinite(item.close) && item.close > 0);
+      if (!series.length) throw new Error("腾讯周线数据为空");
+      return series;
     }
 
-    async function fetchEastmoneyWeeklyCloses(stock) {
-      if (stock?.assetType === "option") return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
+    async function fetchTencentWeeklyCloses(stock) {
+      return (await fetchTencentWeeklySeries(stock)).map((item) => item.close);
+    }
+
+    async function fetchEastmoneyWeeklySeries(stock) {
+      if (stock?.assetType === "option") return [];
       const quoteId = stockQuoteId(stock);
       if (!quoteId) throw new Error("无法识别周线行情代码");
       const end = todayString().replace(/-/g, "");
@@ -5469,8 +5497,13 @@
       const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${encodeURIComponent(quoteId)}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=102&fqt=1&beg=${begin}&end=${end}`;
       const json = await jsonp(url);
       return (json?.data?.klines || [])
-        .map((line) => Number(String(line).split(",")[2]))
-        .filter((value) => Number.isFinite(value) && value > 0);
+        .map((line) => String(line).split(","))
+        .map((parts) => ({ date: parts[0], close: Number(parts[2]) }))
+        .filter((item) => item.date && Number.isFinite(item.close) && item.close > 0);
+    }
+
+    async function fetchEastmoneyWeeklyCloses(stock) {
+      return (await fetchEastmoneyWeeklySeries(stock)).map((item) => item.close);
     }
 
     async function fetchBiasMetrics(stock) {
@@ -6036,16 +6069,16 @@
       const bias = Number(metric?.bias);
       const percentile = Number(metric?.percentile);
       if (!Number.isFinite(bias) || !Number.isFinite(percentile)) {
-        return `<td data-label="MA${period} 乖离率 / 2年分位" class="num market-insight-metric muted"><div><span>--</span><small>2年分位 --</small></div></td>`;
+        return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
-      return `<td data-label="MA${period} 乖离率 / 2年分位" class="num market-insight-metric ${cls}"><div><span>${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位 ${percentile.toFixed(0)}%</small></div></td>`;
+      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
       const closes = (weeklyCloses || []).filter((value) => Number.isFinite(value) && value > 0);
       const result = {};
-      [30, 40, 50].forEach((period) => {
+      [5, 30, 40, 50].forEach((period) => {
         const biases = closes.map((close, index) => {
           if (index < period - 1) return null;
           const average = closes.slice(index - period + 1, index + 1).reduce((sum, value) => sum + value, 0) / period;
@@ -6077,7 +6110,95 @@
       return shortShares >= 0 && issuedShares > 0 ? shortShares / issuedShares * 100 : null;
     }
 
+    function calculateMarketInsightBiasHistory(weeklySeries) {
+      const rows = (weeklySeries || []).filter((item) => item?.date && Number(item.close) > 0);
+      const result = {};
+      [30, 40, 50].forEach((period) => {
+        const biases = rows.map((item, index) => {
+          if (index < period - 1) return null;
+          const window = rows.slice(index - period + 1, index + 1);
+          const average = window.reduce((sum, row) => sum + Number(row.close), 0) / period;
+          return { date: item.date, value: (Number(item.close) / average - 1) * 100 };
+        }).filter(Boolean);
+        result[`ma${period}`] = biases;
+        result[`p${period}`] = biases.map((item, index) => {
+          const observations = biases.slice(Math.max(0, index - 103), index + 1).map((row) => row.value);
+          if (observations.length < 104) return null;
+          const lower = observations.filter((value) => value < item.value).length;
+          const equal = observations.filter((value) => value === item.value).length;
+          return { date: item.date, value: (lower + 0.5 * (equal - 1)) / (observations.length - 1) * 100 };
+        }).filter(Boolean);
+      });
+      return result;
+    }
+
+    function renderMarketInsightChart(series, { dualAxis = false, includeZero = true } = {}) {
+      const validSeries = (series || []).map((item) => ({ ...item, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
+      if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>历史股本分母补齐后，这里会自动显示走势图。</div>`;
+      const timestamps = validSeries.flatMap((item) => item.values.map((point) => new Date(`${point.date}T00:00:00`).getTime())).filter(Number.isFinite);
+      const leftValues = validSeries.filter((item) => item.axis !== "right").flatMap((item) => item.values.map((point) => Number(point.value)));
+      const width = 1200, height = 320, left = 62, right = dualAxis ? 58 : 24, top = 18, bottom = 38;
+      const minTime = Math.min(...timestamps), maxTime = Math.max(...timestamps);
+      let minValue = Math.min(...leftValues), maxValue = Math.max(...leftValues);
+      if (includeZero) { minValue = Math.min(0, minValue); maxValue = Math.max(0, maxValue); }
+      const padding = Math.max((maxValue - minValue) * 0.12, 0.2);
+      minValue -= padding; maxValue += padding;
+      const x = (date) => left + ((new Date(`${date}T00:00:00`).getTime() - minTime) / Math.max(1, maxTime - minTime)) * (width - left - right);
+      const y = (value, axis) => top + (axis === "right" ? (100 - value) / 100 : (maxValue - value) / Math.max(0.0001, maxValue - minValue)) * (height - top - bottom);
+      const grids = Array.from({ length: 5 }, (_, index) => {
+        const ratio = index / 4, py = top + ratio * (height - top - bottom);
+        const leftLabel = maxValue - ratio * (maxValue - minValue);
+        return `<line class="grid" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="axis-label" x="${left - 8}" y="${py + 4}" text-anchor="end">${leftLabel.toFixed(1)}%</text>${dualAxis ? `<text class="axis-label" x="${width - right + 8}" y="${py + 4}">${(100 - ratio * 100).toFixed(0)}%</text>` : ""}`;
+      }).join("");
+      const paths = validSeries.map((item) => {
+        const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value), item.axis).toFixed(2)}`).join(" ");
+        return `<path class="series-line ${item.axis === "right" ? "percentile" : ""}" d="${d}" stroke="${item.color}"><title>${escapeHtml(item.label)}</title></path>`;
+      }).join("");
+      const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
+      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.axis === "right" ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${grids}${paths}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg></div>`;
+    }
+
+    function renderMarketInsightDetailView() {
+      const stock = state.marketInsightRows.find((item) => item.rawCode === state.marketInsightDetailCode) || HSTECH_CONSTITUENTS.find((item) => item.rawCode === state.marketInsightDetailCode);
+      const detail = state.marketInsightDetail || {};
+      const bias = detail.biasHistory || {};
+      const palette = { 30:"#0f9f8f", 40:"#3b82f6", 50:"#d68b16" };
+      const biasSeries = [30, 40, 50].flatMap((period) => [
+        { label:`${period}周乖离率`, color:palette[period], values:bias[`ma${period}`] || [] },
+        { label:`${period}周2年分位值`, color:palette[period], axis:"right", values:bias[`p${period}`] || [] }
+      ]);
+      const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:detail.shortHistory || [] }];
+      const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:detail.connectHistory || [] }];
+      return `<section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><button class="secondary market-insight-back" data-action="closeMarketInsightDetail">← 返回列表</button><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div>${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}</section>${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>实线为30周、40周、50周乖离率（左轴），虚线为各自滚动2年分位值（右轴）。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { dualAxis:true })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 对应时点已发行股份；通常按周披露。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries)}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>中国结算沪港通与深港通持仓合计 ÷ 对应时点已发行股份；按可取得的日终记录展示。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries)}</section></div>`;
+    }
+
+    async function openMarketInsightDetail(rawCode) {
+      const stock = state.marketInsightRows.find((item) => item.rawCode === rawCode) || HSTECH_CONSTITUENTS.find((item) => item.rawCode === rawCode);
+      if (!stock) return;
+      state.marketInsightDetailCode = rawCode;
+      state.marketInsightDetail = null;
+      state.marketInsightDetailLoading = true;
+      state.marketInsightDetailError = "";
+      render();
+      const stockCode = String(rawCode).padStart(5, "0");
+      const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
+      const canLoadDatabase = state.session?.access_token && state.session.access_token !== "local-demo";
+      const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&short_ratio_pct=not.is.null&select=report_date,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
+      const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&holding_ratio_pct=not.is.null&select=holding_date,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
+      const [weeklyResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, shortPromise, connectPromise]);
+      state.marketInsightDetail = {
+        biasHistory: weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
+        shortHistory: shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:Number(row.short_ratio_pct) })).filter((row) => Number.isFinite(row.value)) : [],
+        connectHistory: connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:Number(row.holding_ratio_pct) })).filter((row) => Number.isFinite(row.value)) : []
+      };
+      const errors = [weeklyResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
+      state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
+      state.marketInsightDetailLoading = false;
+      render();
+    }
+
     function renderMarketInsightView() {
+      if (state.marketInsightDetailCode) return renderMarketInsightDetailView();
       const index = MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0];
       const snapshot = state.marketInsightSnapshot || {};
       const rows = state.marketInsightRows || [];
@@ -6111,11 +6232,13 @@
             <table>
               <thead><tr>
                 <th class="sticky-col">股票名称</th>
-                <th class="num">MA30 乖离率<br><span class="stock-code">2年分位</span></th>
-                <th class="num">MA40 乖离率<br><span class="stock-code">2年分位</span></th>
-                <th class="num">MA50 乖离率<br><span class="stock-code">2年分位</span></th>
+                <th class="num">5周乖离率<br><span class="stock-code">2年分位值</span></th>
+                <th class="num">30周乖离率<br><span class="stock-code">2年分位值</span></th>
+                <th class="num">40周乖离率<br><span class="stock-code">2年分位值</span></th>
+                <th class="num">50周乖离率<br><span class="stock-code">2年分位值</span></th>
                 <th class="num">当前空头持仓比例<br><span class="stock-code">SFC 可申报空仓</span></th>
                 <th class="num">港股通持仓比例<br><span class="stock-code">HKEX 日终数据</span></th>
+                <th>操作</th>
               </tr></thead>
               <tbody>${rows.map((row) => {
                 const shortRatio = marketInsightShortRatio(row);
@@ -6124,11 +6247,13 @@
                   : Number(row.stockConnectRatio);
                 return `<tr>
                   <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}</div></td>
+                  ${marketInsightMetricCell(row.biasMetrics?.ma5, 5)}
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30)}
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40)}
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50)}
                   <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${shortRatio.toFixed(2)}%` : "--"}</span></td>
                   <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${connectRatio.toFixed(2)}%` : "--"}</span></td>
+                  <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
               }).join("")}</tbody>
             </table>
@@ -9552,6 +9677,8 @@
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
       if (action === "refreshMarketInsight") await refreshMarketInsight({ force: true });
+      if (action === "openMarketInsightDetail") await openMarketInsightDetail(event.currentTarget.dataset.code || "");
+      if (action === "closeMarketInsightDetail") { state.marketInsightDetailCode = ""; state.marketInsightDetail = null; state.marketInsightDetailError = ""; render(); }
       if (action === "newJournal") openJournal();
       if (action === "editJournal") openJournal(stockId);
       if (action === "deleteJournal") await deleteJournal(stockId);
@@ -9726,6 +9853,11 @@
     }
 
     async function switchMainView(view) {
+      if (view !== "marketInsight" || state.mainView === "marketInsight") {
+        state.marketInsightDetailCode = "";
+        state.marketInsightDetail = null;
+        state.marketInsightDetailError = "";
+      }
       state.mainView = view || "pool";
       state.query = "";
       render();
