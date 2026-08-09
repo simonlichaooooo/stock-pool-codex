@@ -6201,9 +6201,13 @@
     async function loadLatestMarketInsightRatios(rows) {
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
       const chunks = [];
-      for (let index = 0; index < rows.length; index += 40) chunks.push(rows.slice(index, index + 40));
+      // 90 天日线记录在 PostgREST 的 2000 行上限内分批取全，避免排在
+      // 查询后部的股票拿不到五周前记录而永远无法获得港股通增持星。
+      for (let index = 0; index < rows.length; index += 25) chunks.push(rows.slice(index, index + 25));
       const historyStart = new Date();
-      historyStart.setDate(historyStart.getDate() - 60);
+      // 港股通评星只比较持股数，不依赖历史股本。多回看一些日期，
+      // 保证节假日、停更或个别缺失日后仍能找到五周前的有效交易日。
+      historyStart.setDate(historyStart.getDate() - 90);
       const historyStartText = historyStart.toISOString().slice(0, 10);
       const shortByCode = new Map(), connectByCode = new Map();
       await Promise.all(chunks.map(async (chunk) => {
@@ -6217,14 +6221,15 @@
       }));
       return rows.map((row) => {
         const code = String(row.rawCode).padStart(5, "0");
-        const shortRows = shortByCode.get(code) || [], connectRows = connectByCode.get(code) || [];
+        const shortRows = shortByCode.get(code) || [];
+        const connectRows = (connectByCode.get(code) || []).filter((item) => item.total_holding_shares !== null && item.total_holding_shares !== undefined && Number.isFinite(Number(item.total_holding_shares)));
         const short = shortRows[0], shortFiveWeeksAgo = shortRows.length >= 6 ? shortRows[5] : null;
         const connect = connectRows[0];
         const connectTarget = connect ? new Date(`${connect.holding_date}T00:00:00`) : null;
         if (connectTarget) connectTarget.setDate(connectTarget.getDate() - 35);
         const connectFiveWeeksAgo = connectTarget ? connectRows.find((item) => new Date(`${item.holding_date}T00:00:00`) <= connectTarget) : null;
         const shortDecline5wShares = short && shortFiveWeeksAgo ? Number(shortFiveWeeksAgo.short_shares) - Number(short.short_shares) : null;
-        const connectIncrease5wShares = connect && connectFiveWeeksAgo && connect.total_holding_shares !== null && connectFiveWeeksAgo.total_holding_shares !== null ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
+        const connectIncrease5wShares = connect && connectFiveWeeksAgo ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
         return {
           ...row,
           shortShares:short?.short_shares ?? row.shortShares,
