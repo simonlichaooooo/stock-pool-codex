@@ -4568,7 +4568,8 @@
     html[data-theme]:not([data-theme="glacier"]) .market-insight-table.portfolio-table thead th { border-top:0 !important; border-bottom:0 !important; box-shadow:none !important; }
     .market-insight-table th.sticky-col { background:#e1e9f3; }
     .market-insight-table th, .market-insight-table th * { text-decoration:none !important; }
-    .market-insight-table .stock-name { display:flex; align-items:center; gap:6px; font-weight:700; white-space:nowrap; }
+    .market-insight-table .stock-name { font-weight:700; white-space:nowrap; }
+    .market-insight-table .stock-code { display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .market-insight-table .sticky-col { min-width:170px; }
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
@@ -4625,6 +4626,7 @@
     .market-insight-chart .grid { stroke:var(--line); stroke-width:1; }
     .market-insight-chart .axis-label { fill:var(--muted); font-size:11px; }
     .market-insight-chart .series-line { fill:none; stroke-width:2.25; vector-effect:non-scaling-stroke; }
+    .market-insight-chart .series-line.dashed { stroke-dasharray:7 5; }
     .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
     .market-insight-chart-hit { cursor:crosshair; }
     .market-insight-chart-tooltip { position:absolute; z-index:5; display:none; min-width:190px; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:rgba(255,255,255,.96); color:var(--text); box-shadow:0 8px 20px rgba(16,24,40,.16); pointer-events:none; font-size:11px; }
@@ -6174,14 +6176,14 @@
       if (Number.isFinite(storedRatio)) return storedRatio;
       if (row.shortShares === null || row.shortShares === undefined || row.shortShares === "") return null;
       const shortShares = Number(row.shortShares);
-      const marketCapCny = Number(row.latestMarketCapCny);
-      const latestPrice = Number(row.latestPrice);
-      const hkdRate = Number(currencies.HKD?.rateToCny) || 1;
-      const issuedShares = Number(row.shortIssuedShares) > 0 ? Number(row.shortIssuedShares) : marketCapCny > 0 && latestPrice > 0 ? marketCapCny * 100000000 / hkdRate / latestPrice : 0;
+      const issuedShares = Number(row.shortIssuedShares) > 0 ? Number(row.shortIssuedShares) : marketInsightIssuedShares(row);
       return shortShares >= 0 && issuedShares > 0 ? shortShares / issuedShares * 100 : null;
     }
 
     function marketInsightIssuedShares(row) {
+      const connectShares = Number(row?.stockConnectShares);
+      const connectRatio = Number(row?.stockConnectRatio);
+      if (connectShares > 0 && connectRatio > 0) return connectShares / connectRatio * 100;
       const marketCapCny = Number(row?.latestMarketCapCny);
       const latestPrice = Number(row?.latestPrice);
       const hkdRate = Number(currencies.HKD?.rateToCny) || 1;
@@ -6304,13 +6306,13 @@
       }).join("");
       const paths = validSeries.map((item) => {
         const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value)).toFixed(2)}`).join(" ");
-        return `<path class="series-line" d="${d}" stroke="${item.color}"><title>${escapeHtml(item.label)}</title></path>`;
+        return `<path class="series-line ${item.dashed ? "dashed" : ""}" d="${d}" stroke="${item.color}"><title>${escapeHtml(item.label)}</title></path>`;
       }).join("");
       const effectiveTooltips = tooltipRows.length ? tooltipRows : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); return point ? [{ label:item.label, value:`${Number(point.value).toFixed(2)}%` }] : []; }) }));
       const hitWidth = Math.max(6, (width - left - right) / Math.max(1, effectiveTooltips.length));
       const hitAreas = effectiveTooltips.map((item) => `<rect class="market-insight-chart-hit" data-market-chart-point="${escapeHtml(JSON.stringify(item))}" x="${(x(item.date) - hitWidth / 2).toFixed(2)}" y="${top}" width="${hitWidth.toFixed(2)}" height="${height - top - bottom}" fill="transparent"></rect>`).join("");
       const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
-      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${grids}${paths}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
+      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${grids}${paths}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
     }
 
     function marketInsightRangeValues(values) {
@@ -6328,7 +6330,7 @@
       const bias = detail.biasHistory || {};
       const periods = [5, 30, 40, 50];
       const palette = { 5:"#7c5ce0", 30:"#0f9f8f", 40:"#3b82f6", 50:"#d68b16" };
-      const biasSeries = periods.map((period) => ({ label:`${period}周乖离率`, color:palette[period], values:marketInsightRangeValues(bias[`ma${period}`] || []) }));
+      const biasSeries = periods.map((period) => ({ label:`${period}周乖离率`, color:palette[period], dashed:period === 5, values:marketInsightRangeValues(bias[`ma${period}`] || []) }));
       const biasMaps = Object.fromEntries(periods.flatMap((period) => [[`ma${period}`, new Map((bias[`ma${period}`] || []).map((item) => [item.date, item.value]))], [`p${period}`, new Map((bias[`p${period}`] || []).map((item) => [item.date, item.value]))]]));
       const biasDates = [...new Set(biasSeries.flatMap((item) => item.values.map((point) => point.date)))].sort();
       const biasTooltips = biasDates.map((day) => ({ date:day, entries:periods.flatMap((period) => {
@@ -6374,10 +6376,14 @@
           persistedBiasHistory[`p${period}`] = metricsResult.value.flatMap((row) => row[`percentile_${period}w_2y`] === null ? [] : [{ date:row.week_date, value:Number(row[`percentile_${period}w_2y`]) }]).filter((row) => Number.isFinite(row.value));
         });
       }
+      const shortHistory = shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:ratioValue(row.short_ratio_pct, row.short_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [];
+      const connectHistory = connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [];
+      const currentConnectRatio = marketInsightConnectRatio(stock);
+      if (!connectHistory.length && Number.isFinite(currentConnectRatio)) connectHistory.push({ date:state.marketInsightSnapshot?.stockConnect?.asOf || new Date().toISOString().slice(0, 10), value:currentConnectRatio });
       state.marketInsightDetail = {
         biasHistory: Object.keys(persistedBiasHistory).length ? persistedBiasHistory : weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
-        shortHistory: shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:ratioValue(row.short_ratio_pct, row.short_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [],
-        connectHistory: connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : []
+        shortHistory,
+        connectHistory
       };
       const errors = [weeklyResult, quoteResult, metricsResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
       state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
@@ -6514,7 +6520,7 @@
                 <th class="num">${marketInsightSortHeader("30周乖离率", "ma30", "2年分位值")}</th>
                 <th class="num">${marketInsightSortHeader("40周乖离率", "ma40", "2年分位值")}</th>
                 <th class="num">${marketInsightSortHeader("50周乖离率", "ma50", "2年分位值")}</th>
-                <th class="num">${marketInsightSortHeader("当前空头持仓比例", "shortRatio", "SFC 可申报空仓")}</th>
+                <th class="num">${marketInsightSortHeader("空头持仓比例", "shortRatio", "SFC")}</th>
                 <th class="num">${marketInsightSortHeader("港股通持仓比例", "connectRatio", "HKEX 日终数据")}</th>
                 <th>操作</th>
               </tr></thead>
@@ -6523,13 +6529,13 @@
                 const connectRatio = marketInsightConnectRatio(row);
                 const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr>
-                  <td data-label="股票名称" class="sticky-col"><div class="stock-name"><span class="market-insight-rating-badge">★ ${rating.score}</span>${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}</div></td>
+                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}<span class="market-insight-rating-badge">★ ${rating.score}</span></div></td>
                   ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40, Number(row.biasMetrics?.ma40?.bias) > 0, "40周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
-                  <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span></td>
+                  <td data-label="空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span></td>
                   <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span></td>
                   <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
