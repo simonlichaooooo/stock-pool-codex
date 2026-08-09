@@ -208,7 +208,9 @@ def parse_next_day(text: str, code: str) -> dict:
     code_match = re.search(r"(?<!Multi-counter )Stock code(?: \(if listed(?: on SEHK)?\))?[^\n\d]{0,80}" + re.escape(code) + r"\b", text, re.I)
     if not code_match:
         raise LookupError("listed share class not found")
-    following = text[code_match.end():code_match.end() + 5000]
+    # WVR issuers can have long event tables between the stock-code header and
+    # closing balance. 12k covers those forms while remaining inside Part A.
+    following = text[code_match.end():code_match.end() + 12000]
     balance = re.search(r"Closing balance as at(?:\s*\([^)]*\))?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s+([\d,]+)(?:\s+([\d,]+)\s+([\d,]+))?", following, re.I)
     if not balance:
         raise ValueError("next-day closing balance not found")

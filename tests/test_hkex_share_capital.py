@@ -70,6 +70,18 @@ class ParseOfficialShareCapitalTest(unittest.TestCase):
         self.assertEqual(row["effective_date"].isoformat(), "2026-07-06")
         self.assertEqual(row["issued_shares_ex_treasury"], 9092370719)
 
+    def test_wvr_next_day_disclosure_with_long_event_table(self):
+        text = """
+        Class of shares WVR ordinary shares Type of shares B Listed on the Exchange Yes
+        Stock code (if listed) 01024 Description
+        """ + ("event details\n" * 450) + """
+        Closing balance as at (Notes 5 and 6) 19 January 2026 3,658,873,609 0 3,658,873,609
+        """
+        row = MODULE.parse_next_day(text, "01024")
+        self.assertEqual(row["effective_date"].isoformat(), "2026-01-19")
+        self.assertEqual(row["issued_shares"], 3658873609)
+        self.assertEqual(row["share_class"], "WVR ordinary shares")
+
     def test_rejects_inconsistent_totals(self):
         text = """
         For the month ended: 31 July 2026
