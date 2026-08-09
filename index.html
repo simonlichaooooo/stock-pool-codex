@@ -4543,7 +4543,7 @@
     }
     .market-insight-title h2 { margin:0; color:var(--text); font-size:18px; line-height:1.25; }
     .market-insight-title p { margin:5px 0 0; color:var(--muted); font-size:12px; line-height:1.55; }
-    .market-insight-actions { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+    .market-insight-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .market-insight-actions label { display:grid; gap:4px; color:var(--muted); font-size:11px; font-weight:700; }
     .market-insight-actions select { min-width:190px; }
     .market-insight-meta {
@@ -4563,7 +4563,9 @@
     .market-insight-meta a { color:var(--brand-strong); text-decoration:none; }
     .market-insight-meta a:hover { text-decoration:underline; }
     .market-insight-table table { min-width:1380px; }
-    .market-insight-table th { white-space:nowrap; }
+    .market-insight-table th { white-space:nowrap; border-bottom:0 !important; background:#eaf0f7; color:#0b2342; }
+    .market-insight-table th.sticky-col { background:#e1e9f3; }
+    .market-insight-table th, .market-insight-table th * { text-decoration:none !important; }
     .market-insight-table .stock-name { font-weight:700; }
     .market-insight-table .sticky-col { min-width:170px; }
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
@@ -4572,24 +4574,31 @@
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
-    .market-insight-detail-link { padding:0; border:0; background:transparent; color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
-    .market-insight-detail-link:hover { text-decoration:underline; }
+    .market-insight-detail-link { min-height:30px; padding:0 12px; border:1px solid color-mix(in srgb,var(--brand) 34%,transparent); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 44%,#fff); color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
+    .market-insight-detail-link:hover { border-color:var(--brand); background:var(--brand-soft); box-shadow:0 2px 6px rgba(16,24,40,.10); }
     .market-insight-index-tabs { display:inline-flex; gap:3px; flex-wrap:wrap; padding:3px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); }
-    .market-insight-index-tabs button { min-height:30px; padding:0 12px; border-color:transparent; background:transparent; color:var(--muted); }
+    .market-insight-index-tabs button { min-height:34px; padding:0 12px; border-color:transparent; background:transparent; color:var(--muted); }
     .market-insight-index-tabs button:hover { color:var(--brand); background:var(--panel); }
     .market-insight-index-tabs button.active { color:var(--brand-strong); background:var(--panel); border-color:#a9c9c4; box-shadow:0 1px 3px rgba(16,24,40,.08); font-weight:750; }
+    .market-insight-refresh { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:0 13px; }
+    .market-insight-refresh-icon { font-size:17px; line-height:1; }
+    .market-insight-search { position:relative; display:flex; align-items:center; }
+    .market-insight-search::before { content:"⌕"; position:absolute; left:10px; color:var(--muted); font-size:16px; pointer-events:none; }
+    .market-insight-search input { width:180px; min-height:40px; padding-left:31px; }
     .market-insight-sort { display:inline-flex; align-items:center; justify-content:flex-end; gap:5px; width:100%; padding:0; border:0; background:transparent; color:inherit; font:inherit; font-weight:inherit; white-space:nowrap; cursor:pointer; }
     .market-insight-sort::after { content:"↕"; color:var(--muted); font-size:10px; }
     .market-insight-sort.active::after { content:attr(data-sort-arrow); color:var(--brand-strong); }
     .market-insight-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
-    .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow); }
+    .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:10px; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow); }
     .market-insight-rating-copy { min-width:0; }
     .market-insight-rating-copy strong { display:block; margin-bottom:4px; color:var(--text); font-size:13px; }
     .market-insight-rating-copy span { color:var(--muted); font-size:10.5px; line-height:1.55; }
-    .market-insight-rating-filters { display:flex; gap:7px; flex-wrap:wrap; }
-    .market-insight-rating-filters button { min-height:32px; padding:0 12px; background:var(--panel-2); }
-    .market-insight-rating-filters button.active { color:#8a5b00; border-color:#e0b64e; background:#fff8dc; font-weight:750; }
+    .market-insight-rating-filters { display:flex; justify-content:flex-end; gap:4px; flex-wrap:wrap; margin-left:auto; }
+    .market-insight-rating-filters button { min-height:28px; padding:0 8px; border-color:transparent; background:transparent; color:#bc8600; font-size:12px; letter-spacing:1px; }
+    .market-insight-rating-filters button:hover { border-color:#ead79f; background:#fffaf0; }
+    .market-insight-rating-filters button.active { color:#8a5b00; border-color:#e0b64e; background:#fff8dc; box-shadow:none; font-weight:800; }
+    .market-insight-rating-filters .rating-all { color:var(--muted); letter-spacing:0; }
     .market-insight-rating-badge { display:inline-flex; align-items:center; gap:3px; margin-left:7px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; }
     .market-insight-rule-star { margin-left:5px; color:#d79a00; font-size:12px; text-shadow:0 1px 0 #fff; }
     .market-insight-detail-head { align-items:center; }
@@ -4600,11 +4609,22 @@
     .market-insight-chart-card h3 { margin:0; color:var(--text); font-size:15px; }
     .market-insight-chart-card > p { margin:5px 0 12px; color:var(--muted); font-size:11px; line-height:1.55; }
     .market-insight-chart-wrap { overflow-x:auto; }
+    .market-insight-chart-stage { position:relative; min-width:720px; }
     .market-insight-chart { display:block; width:100%; min-width:720px; height:320px; }
     .market-insight-chart .grid { stroke:var(--line); stroke-width:1; }
     .market-insight-chart .axis-label { fill:var(--muted); font-size:11px; }
     .market-insight-chart .series-line { fill:none; stroke-width:2.25; vector-effect:non-scaling-stroke; }
     .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
+    .market-insight-chart-hit { cursor:crosshair; }
+    .market-insight-chart-tooltip { position:absolute; z-index:5; display:none; min-width:190px; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:rgba(255,255,255,.96); color:var(--text); box-shadow:0 8px 20px rgba(16,24,40,.16); pointer-events:none; font-size:11px; }
+    .market-insight-chart-tooltip.visible { display:block; }
+    .market-insight-chart-tooltip strong { display:block; margin-bottom:6px; }
+    .market-insight-chart-tooltip-row { display:flex; justify-content:space-between; gap:14px; padding:2px 0; }
+    .market-insight-chart-tooltip-row span { color:var(--muted); }
+    .market-insight-chart-tooltip-row b { font-variant-numeric:tabular-nums; }
+    .market-insight-range { display:flex; gap:4px; padding:3px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); }
+    .market-insight-range button { min-height:28px; padding:0 11px; border-color:transparent; background:transparent; color:var(--muted); }
+    .market-insight-range button.active { border-color:#a9c9c4; background:var(--panel); color:var(--brand-strong); font-weight:750; }
     .market-insight-chart-legend { display:flex; gap:8px 16px; flex-wrap:wrap; margin-bottom:8px; color:var(--muted); font-size:11px; }
     .market-insight-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
     .market-insight-chart-legend i { width:18px; height:0; border-top:2px solid var(--legend-color); }
@@ -4616,8 +4636,9 @@
       .market-insight-actions { align-items:stretch; }
       .market-insight-actions label, .market-insight-actions select, .market-insight-actions button { width:100%; }
       .market-insight-index-tabs { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .market-insight-search, .market-insight-search input { width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
-      .market-insight-rating-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .market-insight-rating-filters { display:flex; justify-content:flex-start; margin-left:0; }
       .market-insight-table table { width:100%; min-width:0; }
       .market-insight-table .sticky-col, .market-insight-table .market-insight-metric { min-width:0; }
       .market-insight-table td { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -4739,11 +4760,13 @@
       marketInsightDetail: null,
       marketInsightDetailLoading: false,
       marketInsightDetailError: "",
+      marketInsightDetailRange: "2Y",
       marketInsightSort: { key: "indexWeight", dir: "desc" },
       marketInsightPage: 1,
       marketInsightPageSize: 50,
       marketInsightCache: {},
       marketInsightRatingFilter: "all",
+      marketInsightSearch: "",
       portfolios: [],
       activePortfolioId: "",
       portfolioModal: null,
@@ -6230,7 +6253,7 @@
     function calculateMarketInsightBiasHistory(weeklySeries) {
       const rows = (weeklySeries || []).filter((item) => item?.date && Number(item.close) > 0);
       const result = {};
-      [30, 40, 50].forEach((period) => {
+      [5, 30, 40, 50].forEach((period) => {
         const biases = rows.map((item, index) => {
           if (index < period - 1) return null;
           const window = rows.slice(index - period + 1, index + 1);
@@ -6249,44 +6272,61 @@
       return result;
     }
 
-    function renderMarketInsightChart(series, { dualAxis = false, includeZero = true } = {}) {
+    function renderMarketInsightChart(series, { includeZero = true, tooltipRows = [] } = {}) {
       const validSeries = (series || []).map((item) => ({ ...item, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
       if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>请确认该股票已有对应的历史持仓记录。</div>`;
       const timestamps = validSeries.flatMap((item) => item.values.map((point) => new Date(`${point.date}T00:00:00`).getTime())).filter(Number.isFinite);
-      const leftValues = validSeries.filter((item) => item.axis !== "right").flatMap((item) => item.values.map((point) => Number(point.value)));
-      const width = 1200, height = 320, left = 62, right = dualAxis ? 58 : 24, top = 18, bottom = 38;
+      const leftValues = validSeries.flatMap((item) => item.values.map((point) => Number(point.value)));
+      const width = 1200, height = 320, left = 62, right = 24, top = 18, bottom = 38;
       const minTime = Math.min(...timestamps), maxTime = Math.max(...timestamps);
       let minValue = Math.min(...leftValues), maxValue = Math.max(...leftValues);
       if (includeZero) { minValue = Math.min(0, minValue); maxValue = Math.max(0, maxValue); }
       const padding = Math.max((maxValue - minValue) * 0.12, 0.2);
       minValue -= padding; maxValue += padding;
       const x = (date) => left + ((new Date(`${date}T00:00:00`).getTime() - minTime) / Math.max(1, maxTime - minTime)) * (width - left - right);
-      const y = (value, axis) => top + (axis === "right" ? (100 - value) / 100 : (maxValue - value) / Math.max(0.0001, maxValue - minValue)) * (height - top - bottom);
+      const y = (value) => top + (maxValue - value) / Math.max(0.0001, maxValue - minValue) * (height - top - bottom);
       const grids = Array.from({ length: 5 }, (_, index) => {
         const ratio = index / 4, py = top + ratio * (height - top - bottom);
         const leftLabel = maxValue - ratio * (maxValue - minValue);
-        return `<line class="grid" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="axis-label" x="${left - 8}" y="${py + 4}" text-anchor="end">${leftLabel.toFixed(1)}%</text>${dualAxis ? `<text class="axis-label" x="${width - right + 8}" y="${py + 4}">${(100 - ratio * 100).toFixed(0)}%</text>` : ""}`;
+        return `<line class="grid" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="axis-label" x="${left - 8}" y="${py + 4}" text-anchor="end">${leftLabel.toFixed(1)}%</text>`;
       }).join("");
       const paths = validSeries.map((item) => {
-        const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value), item.axis).toFixed(2)}`).join(" ");
-        return `<path class="series-line ${item.axis === "right" ? "percentile" : ""}" d="${d}" stroke="${item.color}"><title>${escapeHtml(item.label)}</title></path>`;
+        const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value)).toFixed(2)}`).join(" ");
+        return `<path class="series-line" d="${d}" stroke="${item.color}"><title>${escapeHtml(item.label)}</title></path>`;
       }).join("");
+      const effectiveTooltips = tooltipRows.length ? tooltipRows : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); return point ? [{ label:item.label, value:`${Number(point.value).toFixed(2)}%` }] : []; }) }));
+      const hitWidth = Math.max(6, (width - left - right) / Math.max(1, effectiveTooltips.length));
+      const hitAreas = effectiveTooltips.map((item) => `<rect class="market-insight-chart-hit" data-market-chart-point="${escapeHtml(JSON.stringify(item))}" x="${(x(item.date) - hitWidth / 2).toFixed(2)}" y="${top}" width="${hitWidth.toFixed(2)}" height="${height - top - bottom}" fill="transparent"></rect>`).join("");
       const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
-      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.axis === "right" ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${grids}${paths}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg></div>`;
+      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${grids}${paths}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
+    }
+
+    function marketInsightRangeValues(values) {
+      const now = new Date();
+      const cutoff = new Date(now);
+      if (state.marketInsightDetailRange === "YTD") cutoff.setMonth(0, 1);
+      else cutoff.setFullYear(now.getFullYear() - (state.marketInsightDetailRange === "1Y" ? 1 : 2));
+      const cutoffText = cutoff.toISOString().slice(0, 10);
+      return (values || []).filter((item) => item.date >= cutoffText);
     }
 
     function renderMarketInsightDetailView() {
       const stock = state.marketInsightRows.find((item) => item.rawCode === state.marketInsightDetailCode) || HSTECH_CONSTITUENTS.find((item) => item.rawCode === state.marketInsightDetailCode);
       const detail = state.marketInsightDetail || {};
       const bias = detail.biasHistory || {};
-      const palette = { 30:"#0f9f8f", 40:"#3b82f6", 50:"#d68b16" };
-      const biasSeries = [30, 40, 50].flatMap((period) => [
-        { label:`${period}周乖离率`, color:palette[period], values:bias[`ma${period}`] || [] },
-        { label:`${period}周2年分位值`, color:palette[period], axis:"right", values:bias[`p${period}`] || [] }
-      ]);
-      const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:detail.shortHistory || [] }];
-      const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:detail.connectHistory || [] }];
-      return `<section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><button class="secondary market-insight-back" data-action="closeMarketInsightDetail">← 返回列表</button><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div>${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}</section>${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>实线为30周、40周、50周乖离率（左轴），虚线为各自滚动2年分位值（右轴）。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { dualAxis:true })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries)}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries)}</section></div>`;
+      const periods = [5, 30, 40, 50];
+      const palette = { 5:"#7c5ce0", 30:"#0f9f8f", 40:"#3b82f6", 50:"#d68b16" };
+      const biasSeries = periods.map((period) => ({ label:`${period}周乖离率`, color:palette[period], values:marketInsightRangeValues(bias[`ma${period}`] || []) }));
+      const biasMaps = Object.fromEntries(periods.flatMap((period) => [[`ma${period}`, new Map((bias[`ma${period}`] || []).map((item) => [item.date, item.value]))], [`p${period}`, new Map((bias[`p${period}`] || []).map((item) => [item.date, item.value]))]]));
+      const biasDates = [...new Set(biasSeries.flatMap((item) => item.values.map((point) => point.date)))].sort();
+      const biasTooltips = biasDates.map((day) => ({ date:day, entries:periods.flatMap((period) => {
+        const value = biasMaps[`ma${period}`].get(day), percentile = biasMaps[`p${period}`].get(day);
+        return Number.isFinite(value) ? [{ label:`${period}周`, value:`${value > 0 ? "+" : ""}${Number(value).toFixed(2)}% · 2年分位值 ${Number.isFinite(percentile) ? `${Number(percentile).toFixed(0)}%` : "--"}` }] : [];
+      }) }));
+      const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:marketInsightRangeValues(detail.shortHistory || []) }];
+      const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:marketInsightRangeValues(detail.connectHistory || []) }];
+      const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
+      return `<section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><button class="secondary market-insight-back" data-action="closeMarketInsightDetail">← 返回列表</button><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}</div></section>${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>曲线展示5周、30周、40周、50周乖离率；移动鼠标可查看各周期数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries)}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries)}</section></div>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
@@ -6296,13 +6336,14 @@
       state.marketInsightDetail = null;
       state.marketInsightDetailLoading = true;
       state.marketInsightDetailError = "";
+      state.marketInsightDetailRange = "2Y";
       render();
       const stockCode = String(rawCode).padStart(5, "0");
       const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
       const quotePromise = fetchQuote(stock).catch(() => stock);
       const canLoadDatabase = state.session?.access_token && state.session.access_token !== "local-demo";
       const selectedIndex = MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0];
-      const metricsPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=eq.${encodeURIComponent(selectedIndex.code)}&stock_code=eq.${encodeURIComponent(stockCode)}&select=week_date,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y&order=week_date.asc&limit=2000`) : Promise.resolve([]);
+      const metricsPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=eq.${encodeURIComponent(selectedIndex.code)}&stock_code=eq.${encodeURIComponent(stockCode)}&select=week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y&order=week_date.asc&limit=2000`) : Promise.resolve([]);
       const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&select=report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
       const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
       const [weeklyResult, quoteResult, metricsResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, quotePromise, metricsPromise, shortPromise, connectPromise]);
@@ -6316,7 +6357,7 @@
       };
       const persistedBiasHistory = {};
       if (metricsResult.status === "fulfilled" && metricsResult.value.length) {
-        [30, 40, 50].forEach((period) => {
+        [5, 30, 40, 50].forEach((period) => {
           persistedBiasHistory[`ma${period}`] = metricsResult.value.flatMap((row) => row[`bias_${period}w_pct`] === null ? [] : [{ date:row.week_date, value:Number(row[`bias_${period}w_pct`]) }]).filter((row) => Number.isFinite(row.value));
           persistedBiasHistory[`p${period}`] = metricsResult.value.flatMap((row) => row[`percentile_${period}w_2y`] === null ? [] : [{ date:row.week_date, value:Number(row[`percentile_${period}w_2y`]) }]).filter((row) => Number.isFinite(row.value));
         });
@@ -6403,8 +6444,10 @@
       const snapshot = state.marketInsightSnapshot || {};
       const rows = state.marketInsightRows || [];
       const ratings = new Map(rows.map((row) => [row.id, marketInsightRating(row)]));
-      const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, rows.filter((row) => ratings.get(row.id)?.score === score).length]));
-      const filteredRows = state.marketInsightRatingFilter === "all" ? rows : rows.filter((row) => ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
+      const query = state.marketInsightSearch.trim().toLowerCase();
+      const searchedRows = query ? rows.filter((row) => `${row.name} ${row.code} ${row.rawCode}`.toLowerCase().includes(query)) : rows;
+      const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, searchedRows.filter((row) => ratings.get(row.id)?.score === score).length]));
+      const filteredRows = state.marketInsightRatingFilter === "all" ? searchedRows : searchedRows.filter((row) => ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
       const sortedRows = sortedMarketInsightRows(filteredRows);
       const pageCount = Math.max(1, Math.ceil(sortedRows.length / state.marketInsightPageSize));
       const currentPage = Math.min(state.marketInsightPage, pageCount);
@@ -6419,14 +6462,15 @@
           </div>
           <div class="market-insight-actions">
             <div class="market-insight-index-tabs" role="tablist" aria-label="选择指数">${MARKET_INSIGHT_INDEXES.map((item) => `<button class="${item.id === index.id ? "active" : ""}" data-action="selectMarketInsightIndex" data-index-id="${item.id}" ${state.marketInsightLoading ? "disabled" : ""}>${escapeHtml(item.name)}</button>`).join("")}</div>
-            <button class="secondary" data-action="refreshMarketInsight" ${state.marketInsightLoading ? "disabled" : ""}>${state.marketInsightLoading ? "刷新中…" : "刷新数据"}</button>
+            <label class="market-insight-search"><input type="search" data-input="marketInsightSearch" value="${escapeHtml(state.marketInsightSearch)}" placeholder="搜索股票名称或代码" aria-label="搜索股票名称或代码"></label>
+            <button class="secondary market-insight-refresh" data-action="refreshMarketInsight" ${state.marketInsightLoading ? "disabled" : ""}><span class="market-insight-refresh-icon" aria-hidden="true">↻</span>${state.marketInsightLoading ? "刷新中…" : "刷新数据"}</button>
           </div>
         </section>
         <section class="market-insight-rating-panel">
           <div class="market-insight-rating-copy"><strong>星级评选</strong><span>5周超额收益为正 · 5周乖离率为正 · 30/40/50周乖离率均为正 · 5周空头持仓下降 · 5周港股通持仓增加；每符合一项得1星。</span></div>
           <div class="market-insight-rating-filters" role="group" aria-label="星级筛选">
-            <button class="${state.marketInsightRatingFilter === "all" ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="all">全部 ${rows.length}</button>
-            ${[5, 4, 3].map((score) => `<button class="${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}">${score}星 ${ratingCounts[score]}</button>`).join("")}
+            <button class="rating-all ${state.marketInsightRatingFilter === "all" ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="all">全部 ${searchedRows.length}</button>
+            ${[5, 4, 3].map((score) => `<button class="${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}" title="${score}星股票">${"★".repeat(score)} <span>${ratingCounts[score]}</span></button>`).join("")}
           </div>
         </section>
         <div class="market-insight-meta">
@@ -6437,12 +6481,12 @@
           ${state.marketInsightLoading ? `<span class="market-insight-loading">正在计算周线指标</span>` : ""}
           ${state.marketInsightError ? `<span class="loss">${escapeHtml(state.marketInsightError)}</span>` : ""}
         </div>
-        <section class="table-panel horizontal-data-table market-insight-table">
+        <section class="table-panel horizontal-data-table market-insight-table portfolio-table">
           <div class="table-scroll">
             <table>
               <thead><tr>
                 <th class="sticky-col">股票名称</th>
-                <th class="num">${marketInsightSortHeader("5周超额收益", "excess5w", "相对所选指数")}</th>
+                <th class="num">${marketInsightSortHeader("5周超额收益", "excess5w")}</th>
                 <th class="num">${marketInsightSortHeader("5周乖离率", "ma5", "2年分位值")}</th>
                 <th class="num">${marketInsightSortHeader("30周乖离率", "ma30", "2年分位值")}</th>
                 <th class="num">${marketInsightSortHeader("40周乖离率", "ma40", "2年分位值")}</th>
@@ -9617,6 +9661,27 @@
         target.addEventListener("focus", showTooltip);
         target.addEventListener("blur", hideTooltip);
       });
+      document.querySelectorAll("[data-market-chart-point]").forEach((target) => {
+        const showTooltip = () => {
+          const chart = target.closest("[data-market-chart]");
+          const tooltip = chart?.querySelector("[data-market-chart-tooltip]");
+          if (!chart || !tooltip) return;
+          const data = JSON.parse(target.dataset.marketChartPoint || "{}");
+          tooltip.innerHTML = `<strong>${escapeHtml(data.date || "")}</strong>${(data.entries || []).map((entry) => `<div class="market-insight-chart-tooltip-row"><span>${escapeHtml(entry.label || "")}</span><b>${escapeHtml(entry.value || "--")}</b></div>`).join("")}`;
+          const chartRect = chart.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const left = Math.min(chart.clientWidth - 210, Math.max(8, targetRect.left - chartRect.left + targetRect.width / 2 + 10));
+          const top = Math.max(8, targetRect.top - chartRect.top + 18);
+          tooltip.style.left = `${left}px`;
+          tooltip.style.top = `${top}px`;
+          tooltip.classList.add("visible");
+        };
+        const hideTooltip = () => target.closest("[data-market-chart]")?.querySelector("[data-market-chart-tooltip]")?.classList.remove("visible");
+        target.addEventListener("mouseenter", showTooltip);
+        target.addEventListener("mouseleave", hideTooltip);
+        target.addEventListener("focus", showTooltip);
+        target.addEventListener("blur", hideTooltip);
+      });
       document.querySelectorAll("[data-filter]").forEach((el) => {
         el.addEventListener("click", () => { state.filter = el.dataset.filter; render(); });
       });
@@ -9689,6 +9754,28 @@
           state.query = input.value;
           if (event.isComposing || input.dataset.composing === "true") return;
           applyListSearch(input);
+        });
+      }
+      const marketInsightSearch = document.querySelector("[data-input='marketInsightSearch']");
+      if (marketInsightSearch) {
+        const applyMarketInsightSearch = (input) => {
+          state.marketInsightSearch = input.value;
+          state.marketInsightPage = 1;
+          const selectionStart = input.selectionStart;
+          const selectionEnd = input.selectionEnd;
+          render();
+          const nextInput = document.querySelector("[data-input='marketInsightSearch']");
+          if (!nextInput) return;
+          nextInput.focus({ preventScroll:true });
+          if (Number.isInteger(selectionStart) && Number.isInteger(selectionEnd)) nextInput.setSelectionRange(selectionStart, selectionEnd);
+        };
+        marketInsightSearch.addEventListener("compositionstart", () => { marketInsightSearch.dataset.composing = "true"; });
+        marketInsightSearch.addEventListener("compositionend", (event) => {
+          delete event.currentTarget.dataset.composing;
+          applyMarketInsightSearch(event.currentTarget);
+        });
+        marketInsightSearch.addEventListener("input", (event) => {
+          if (event.currentTarget.dataset.composing !== "true") applyMarketInsightSearch(event.currentTarget);
         });
       }
       const viewPublisher = document.querySelector("[data-input='viewPublisher']");
@@ -9934,6 +10021,7 @@
           state.marketInsightPage = 1;
           state.marketInsightSort = { key:"indexWeight", dir:"desc" };
           state.marketInsightRatingFilter = "all";
+          state.marketInsightSearch = "";
           state.marketInsightLoaded = false;
           state.marketInsightRows = state.marketInsightCache[indexId] || [];
           await refreshMarketInsight();
@@ -9947,6 +10035,7 @@
       }
       if (action === "filterMarketInsightRating") { state.marketInsightRatingFilter = event.currentTarget.dataset.rating || "all"; state.marketInsightPage = 1; render(); }
       if (action === "marketInsightPage") { state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1); render(); }
+      if (action === "marketInsightDetailRange") { state.marketInsightDetailRange = event.currentTarget.dataset.range || "2Y"; render(); }
       if (action === "openMarketInsightDetail") await openMarketInsightDetail(event.currentTarget.dataset.code || "");
       if (action === "closeMarketInsightDetail") { state.marketInsightDetailCode = ""; state.marketInsightDetail = null; state.marketInsightDetailError = ""; render(); }
       if (action === "newJournal") openJournal();
