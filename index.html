@@ -4585,6 +4585,10 @@
     .market-insight-search { position:relative; display:flex; align-items:center; }
     .market-insight-search::before { content:"⌕"; position:absolute; left:10px; color:var(--muted); font-size:16px; pointer-events:none; }
     .market-insight-search input { width:180px; min-height:40px; padding-left:31px; }
+    .market-insight-search-results { position:absolute; z-index:20; top:calc(100% + 5px); right:0; width:280px; padding:5px; border:1px solid var(--line); border-radius:6px; background:var(--panel); box-shadow:0 10px 24px rgba(16,24,40,.16); }
+    .market-insight-search-results button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:36px; padding:6px 9px; border:0; background:transparent; color:var(--text); text-align:left; }
+    .market-insight-search-results button:hover { background:var(--panel-2); }
+    .market-insight-search-results small { color:var(--muted); white-space:nowrap; }
     .market-insight-sort { display:inline-flex; align-items:center; justify-content:flex-end; gap:5px; width:100%; padding:0; border:0; background:transparent; color:inherit; font:inherit; font-weight:inherit; white-space:nowrap; cursor:pointer; }
     .market-insight-sort::after { content:"↕"; color:var(--muted); font-size:10px; }
     .market-insight-sort.active::after { content:attr(data-sort-arrow); color:var(--brand-strong); }
@@ -4637,6 +4641,7 @@
       .market-insight-actions label, .market-insight-actions select, .market-insight-actions button { width:100%; }
       .market-insight-index-tabs { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
       .market-insight-search, .market-insight-search input { width:100%; }
+      .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
       .market-insight-rating-filters { display:flex; justify-content:flex-start; margin-left:0; }
       .market-insight-table table { width:100%; min-width:0; }
@@ -6378,8 +6383,18 @@
       const members = official?.members?.length ? official.members : indexId === "hstech" ? HSTECH_CONSTITUENTS.map((item) => ({ code:item.rawCode, name:item.name })) : [];
       return members.map((member, order) => {
         const rawCode = String(member.code || "").padStart(4, "0");
-        return { id:`${indexId}-${rawCode}`, order, rawCode, name:member.name, code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
+        const canonical = STOCKS.find((stock) => stock.market === "HK" && stock.code.replace(/\.HK$/i, "").padStart(4, "0") === rawCode);
+        return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
       });
+    }
+
+    function marketInsightGlobalSearch(query) {
+      if (!query) return [];
+      const found = [];
+      MARKET_INSIGHT_INDEXES.forEach((index) => marketInsightConstituents(index.id).forEach((row) => {
+        if (`${row.name} ${row.aliases} ${row.code} ${row.rawCode}`.toLowerCase().includes(query) && !found.some((item) => item.indexId === index.id && item.rawCode === row.rawCode)) found.push({ ...row, indexId:index.id, indexName:index.name });
+      }));
+      return found.slice(0, 8);
     }
 
     function marketInsightIndexMeta(index) {
@@ -6445,6 +6460,7 @@
       const rows = state.marketInsightRows || [];
       const ratings = new Map(rows.map((row) => [row.id, marketInsightRating(row)]));
       const query = state.marketInsightSearch.trim().toLowerCase();
+      const globalMatches = marketInsightGlobalSearch(query);
       const searchedRows = query ? rows.filter((row) => `${row.name} ${row.code} ${row.rawCode}`.toLowerCase().includes(query)) : rows;
       const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, searchedRows.filter((row) => ratings.get(row.id)?.score === score).length]));
       const filteredRows = state.marketInsightRatingFilter === "all" ? searchedRows : searchedRows.filter((row) => ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
@@ -6462,7 +6478,7 @@
           </div>
           <div class="market-insight-actions">
             <div class="market-insight-index-tabs" role="tablist" aria-label="选择指数">${MARKET_INSIGHT_INDEXES.map((item) => `<button class="${item.id === index.id ? "active" : ""}" data-action="selectMarketInsightIndex" data-index-id="${item.id}" ${state.marketInsightLoading ? "disabled" : ""}>${escapeHtml(item.name)}</button>`).join("")}</div>
-            <label class="market-insight-search"><input type="search" data-input="marketInsightSearch" value="${escapeHtml(state.marketInsightSearch)}" placeholder="搜索股票名称或代码" aria-label="搜索股票名称或代码"></label>
+            <label class="market-insight-search"><input type="search" data-input="marketInsightSearch" value="${escapeHtml(state.marketInsightSearch)}" placeholder="搜索股票名称或代码" aria-label="搜索股票名称或代码">${query && !searchedRows.length && globalMatches.length ? `<div class="market-insight-search-results">${globalMatches.map((item) => `<button data-action="selectMarketInsightSearchResult" data-index-id="${item.indexId}" data-query="${escapeHtml(item.rawCode)}"><span>${escapeHtml(item.name)} · ${escapeHtml(item.code)}</span><small>${escapeHtml(item.indexName)}</small></button>`).join("")}</div>` : ""}</label>
             <button class="secondary market-insight-refresh" data-action="refreshMarketInsight" ${state.marketInsightLoading ? "disabled" : ""}><span class="market-insight-refresh-icon" aria-hidden="true">↻</span>${state.marketInsightLoading ? "刷新中…" : "刷新数据"}</button>
           </div>
         </section>
@@ -10026,6 +10042,16 @@
           state.marketInsightRows = state.marketInsightCache[indexId] || [];
           await refreshMarketInsight();
         }
+      }
+      if (action === "selectMarketInsightSearchResult") {
+        const indexId = event.currentTarget.dataset.indexId || "hstech";
+        state.marketInsightIndexId = indexId;
+        state.marketInsightSearch = event.currentTarget.dataset.query || "";
+        state.marketInsightPage = 1;
+        state.marketInsightRatingFilter = "all";
+        state.marketInsightLoaded = false;
+        state.marketInsightRows = state.marketInsightCache[indexId] || [];
+        await refreshMarketInsight();
       }
       if (action === "sortMarketInsight") {
         const key = event.currentTarget.dataset.sortKey || "excess5w";
