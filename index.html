@@ -4583,6 +4583,15 @@
     .market-insight-sort.active::after { content:attr(data-sort-arrow); color:var(--brand-strong); }
     .market-insight-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
+    .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow); }
+    .market-insight-rating-copy { min-width:0; }
+    .market-insight-rating-copy strong { display:block; margin-bottom:4px; color:var(--text); font-size:13px; }
+    .market-insight-rating-copy span { color:var(--muted); font-size:10.5px; line-height:1.55; }
+    .market-insight-rating-filters { display:flex; gap:7px; flex-wrap:wrap; }
+    .market-insight-rating-filters button { min-height:32px; padding:0 12px; background:var(--panel-2); }
+    .market-insight-rating-filters button.active { color:#8a5b00; border-color:#e0b64e; background:#fff8dc; font-weight:750; }
+    .market-insight-rating-badge { display:inline-flex; align-items:center; gap:3px; margin-left:7px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; }
+    .market-insight-rule-star { margin-left:5px; color:#d79a00; font-size:12px; text-shadow:0 1px 0 #fff; }
     .market-insight-detail-head { align-items:center; }
     .market-insight-detail-title { display:flex; align-items:center; gap:12px; }
     .market-insight-back { white-space:nowrap; }
@@ -4607,6 +4616,8 @@
       .market-insight-actions { align-items:stretch; }
       .market-insight-actions label, .market-insight-actions select, .market-insight-actions button { width:100%; }
       .market-insight-index-tabs { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
+      .market-insight-rating-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
       .market-insight-table table { width:100%; min-width:0; }
       .market-insight-table .sticky-col, .market-insight-table .market-insight-metric { min-width:0; }
       .market-insight-table td { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -4732,6 +4743,7 @@
       marketInsightPage: 1,
       marketInsightPageSize: 50,
       marketInsightCache: {},
+      marketInsightRatingFilter: "all",
       portfolios: [],
       activePortfolioId: "",
       portfolioModal: null,
@@ -5689,6 +5701,7 @@
       const quotedChangePercent = String(parts[32] || "").trim() === "" ? NaN : Number(parts[32]);
       return {
         ...stock,
+        name: parts[1] || stock.name,
         latestPrice,
         previousClose,
         dayHigh,
@@ -6082,14 +6095,18 @@
       `;
     }
 
-    function marketInsightMetricCell(metric, period) {
+    function marketInsightRuleStar(show, label) {
+      return show && state.marketInsightRatingFilter !== "all" ? `<span class="market-insight-rule-star" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">★</span>` : "";
+    }
+
+    function marketInsightMetricCell(metric, period, star = false, starLabel = "符合星级条件") {
       const bias = metric?.bias === null || metric?.bias === undefined ? NaN : Number(metric.bias);
       const percentile = metric?.percentile === null || metric?.percentile === undefined ? NaN : Number(metric.percentile);
       if (!Number.isFinite(bias) || !Number.isFinite(percentile)) {
         return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
-      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
+      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${bias > 0 ? "+" : ""}${bias.toFixed(2)}%${marketInsightRuleStar(star, starLabel)}</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
@@ -6147,20 +6164,30 @@
     async function loadLatestMarketInsightRatios(rows) {
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
       const chunks = [];
-      for (let index = 0; index < rows.length; index += 80) chunks.push(rows.slice(index, index + 80));
+      for (let index = 0; index < rows.length; index += 40) chunks.push(rows.slice(index, index + 40));
+      const historyStart = new Date();
+      historyStart.setDate(historyStart.getDate() - 60);
+      const historyStartText = historyStart.toISOString().slice(0, 10);
       const shortByCode = new Map(), connectByCode = new Map();
       await Promise.all(chunks.map(async (chunk) => {
         const codes = chunk.map((row) => String(row.rawCode).padStart(5, "0")).join(",");
         const [shortResult, connectResult] = await Promise.allSettled([
-          supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=in.(${codes})&select=stock_code,report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.desc&limit=2000`),
-          supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=in.(${codes})&select=stock_code,holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.desc&limit=2000`)
+          supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=in.(${codes})&report_date=gte.${historyStartText}&select=stock_code,report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.desc&limit=2000`),
+          supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=in.(${codes})&holding_date=gte.${historyStartText}&select=stock_code,holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.desc&limit=2000`)
         ]);
-        if (shortResult.status === "fulfilled") shortResult.value.forEach((item) => { if (!shortByCode.has(item.stock_code)) shortByCode.set(item.stock_code, item); });
-        if (connectResult.status === "fulfilled") connectResult.value.forEach((item) => { if (!connectByCode.has(item.stock_code)) connectByCode.set(item.stock_code, item); });
+        if (shortResult.status === "fulfilled") shortResult.value.forEach((item) => { if (!shortByCode.has(item.stock_code)) shortByCode.set(item.stock_code, []); shortByCode.get(item.stock_code).push(item); });
+        if (connectResult.status === "fulfilled") connectResult.value.forEach((item) => { if (!connectByCode.has(item.stock_code)) connectByCode.set(item.stock_code, []); connectByCode.get(item.stock_code).push(item); });
       }));
       return rows.map((row) => {
         const code = String(row.rawCode).padStart(5, "0");
-        const short = shortByCode.get(code), connect = connectByCode.get(code);
+        const shortRows = shortByCode.get(code) || [], connectRows = connectByCode.get(code) || [];
+        const short = shortRows[0], shortFiveWeeksAgo = shortRows.length >= 6 ? shortRows[5] : null;
+        const connect = connectRows[0];
+        const connectTarget = connect ? new Date(`${connect.holding_date}T00:00:00`) : null;
+        if (connectTarget) connectTarget.setDate(connectTarget.getDate() - 35);
+        const connectFiveWeeksAgo = connectTarget ? connectRows.find((item) => new Date(`${item.holding_date}T00:00:00`) <= connectTarget) : null;
+        const shortDecline5wShares = short && shortFiveWeeksAgo ? Number(shortFiveWeeksAgo.short_shares) - Number(short.short_shares) : null;
+        const connectIncrease5wShares = connect && connectFiveWeeksAgo && connect.total_holding_shares !== null && connectFiveWeeksAgo.total_holding_shares !== null ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
         return {
           ...row,
           shortShares:short?.short_shares ?? row.shortShares,
@@ -6168,7 +6195,9 @@
           shortRatioStored:short?.short_ratio_pct ?? null,
           stockConnectShares:connect?.total_holding_shares ?? row.stockConnectShares,
           stockConnectIssuedShares:connect?.issued_shares ?? null,
-          stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio
+          stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio,
+          shortDecline5wShares,
+          connectIncrease5wShares
         };
       });
     }
@@ -6350,10 +6379,22 @@
       return `<button class="market-insight-sort ${active ? "active" : ""}" data-action="sortMarketInsight" data-sort-key="${key}" data-sort-arrow="${arrow}"><span>${escapeHtml(label)}${sublabel ? `<br><span class="stock-code">${escapeHtml(sublabel)}</span>` : ""}</span></button>`;
     }
 
-    function marketInsightExcessCell(value) {
+    function marketInsightRating(row) {
+      const number = (value) => value === null || value === undefined || value === "" ? NaN : Number(value);
+      const rules = [
+        number(row.excess5w) > 0,
+        number(row.biasMetrics?.ma5?.bias) > 0,
+        [30, 40, 50].every((period) => number(row.biasMetrics?.[`ma${period}`]?.bias) > 0),
+        number(row.shortDecline5wShares) > 0,
+        number(row.connectIncrease5wShares) > 0
+      ];
+      return { rules, score:rules.filter(Boolean).length };
+    }
+
+    function marketInsightExcessCell(value, star = false) {
       const excess = value === null || value === undefined || value === "" ? NaN : Number(value);
       const cls = excess > 0 ? "gain" : excess < 0 ? "loss" : "";
-      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span></td>`;
+      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${excess > 0 ? "+" : ""}${excess.toFixed(2)}%${marketInsightRuleStar(star, "5周超额收益为正")}` : "--"}</span></td>`;
     }
 
     function renderMarketInsightView() {
@@ -6361,7 +6402,10 @@
       const index = marketInsightIndexMeta(MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0]);
       const snapshot = state.marketInsightSnapshot || {};
       const rows = state.marketInsightRows || [];
-      const sortedRows = sortedMarketInsightRows(rows);
+      const ratings = new Map(rows.map((row) => [row.id, marketInsightRating(row)]));
+      const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, rows.filter((row) => ratings.get(row.id)?.score === score).length]));
+      const filteredRows = state.marketInsightRatingFilter === "all" ? rows : rows.filter((row) => ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
+      const sortedRows = sortedMarketInsightRows(filteredRows);
       const pageCount = Math.max(1, Math.ceil(sortedRows.length / state.marketInsightPageSize));
       const currentPage = Math.min(state.marketInsightPage, pageCount);
       const visibleRows = sortedRows.slice((currentPage - 1) * state.marketInsightPageSize, currentPage * state.marketInsightPageSize);
@@ -6376,6 +6420,13 @@
           <div class="market-insight-actions">
             <div class="market-insight-index-tabs" role="tablist" aria-label="选择指数">${MARKET_INSIGHT_INDEXES.map((item) => `<button class="${item.id === index.id ? "active" : ""}" data-action="selectMarketInsightIndex" data-index-id="${item.id}" ${state.marketInsightLoading ? "disabled" : ""}>${escapeHtml(item.name)}</button>`).join("")}</div>
             <button class="secondary" data-action="refreshMarketInsight" ${state.marketInsightLoading ? "disabled" : ""}>${state.marketInsightLoading ? "刷新中…" : "刷新数据"}</button>
+          </div>
+        </section>
+        <section class="market-insight-rating-panel">
+          <div class="market-insight-rating-copy"><strong>星级评选</strong><span>5周超额收益为正 · 5周乖离率为正 · 30/40/50周乖离率均为正 · 5周空头持仓下降 · 5周港股通持仓增加；每符合一项得1星。</span></div>
+          <div class="market-insight-rating-filters" role="group" aria-label="星级筛选">
+            <button class="${state.marketInsightRatingFilter === "all" ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="all">全部 ${rows.length}</button>
+            ${[5, 4, 3].map((score) => `<button class="${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}">${score}星 ${ratingCounts[score]}</button>`).join("")}
           </div>
         </section>
         <div class="market-insight-meta">
@@ -6403,21 +6454,22 @@
               <tbody>${visibleRows.map((row) => {
                 const shortRatio = marketInsightShortRatio(row);
                 const connectRatio = marketInsightConnectRatio(row);
+                const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr>
-                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}</div></td>
-                  ${marketInsightExcessCell(row.excess5w)}
-                  ${marketInsightMetricCell(row.biasMetrics?.ma5, 5)}
-                  ${marketInsightMetricCell(row.biasMetrics?.ma30, 30)}
+                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}<span class="market-insight-rating-badge">★ ${rating.score}</span></div><div class="stock-code">${escapeHtml(row.code)}</div></td>
+                  ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
+                  ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
+                  ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, rating.rules[2], "30/40/50周乖离率均为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40)}
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50)}
-                  <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${shortRatio.toFixed(2)}%` : "--"}</span></td>
-                  <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${connectRatio.toFixed(2)}%` : "--"}</span></td>
+                  <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${shortRatio.toFixed(2)}%${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}` : "--"}</span></td>
+                  <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${connectRatio.toFixed(2)}%${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}` : "--"}</span></td>
                   <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
               }).join("")}</tbody>
             </table>
           </div>
-          <div class="market-insight-pagination"><span>共 ${rows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
+          <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
           列表默认按指数权重顺序排列；公开成分接口未提供完整权重时，以最新总市值作为排序依据。
@@ -9881,6 +9933,7 @@
           state.marketInsightIndexId = indexId;
           state.marketInsightPage = 1;
           state.marketInsightSort = { key:"indexWeight", dir:"desc" };
+          state.marketInsightRatingFilter = "all";
           state.marketInsightLoaded = false;
           state.marketInsightRows = state.marketInsightCache[indexId] || [];
           await refreshMarketInsight();
@@ -9892,6 +9945,7 @@
         state.marketInsightPage = 1;
         render();
       }
+      if (action === "filterMarketInsightRating") { state.marketInsightRatingFilter = event.currentTarget.dataset.rating || "all"; state.marketInsightPage = 1; render(); }
       if (action === "marketInsightPage") { state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1); render(); }
       if (action === "openMarketInsightDetail") await openMarketInsightDetail(event.currentTarget.dataset.code || "");
       if (action === "closeMarketInsightDetail") { state.marketInsightDetailCode = ""; state.marketInsightDetail = null; state.marketInsightDetailError = ""; render(); }
