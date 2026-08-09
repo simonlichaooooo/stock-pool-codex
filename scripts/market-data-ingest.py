@@ -16,6 +16,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import http.cookiejar
 import zipfile
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -29,6 +30,7 @@ SSE_PAGE_URL = "https://star.sse.com.cn/services/hkexsc/ggtscsj/ggtzqcysl/"
 SSE_API_URL = "https://query.sse.com.cn/sseQuery/commonSoaQuery.do"
 SZSE_PAGE_URL = "https://www.szse.cn/szhk/szhkshareholding/hkholdamount/index.html"
 SZSE_XLSX_URL = "https://www.szse.cn/api/report/ShowReport"
+HKEX_SOUTHBOUND_URL = "https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk"
 SSE_PUBLIC_START = date(2024, 8, 19)
 USER_AGENT = "Mozilla/5.0 (compatible; stock-pool-market-data/1.0)"
 XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -201,7 +203,6 @@ def parse_sfc_csv(content: bytes, fallback_date: date, source_url: str) -> tuple
             "report_date": report_date.isoformat(),
             "short_shares": integer(values[3]),
             "short_value_hkd": str(Decimal(values[4].replace(",", "").strip() or "0")),
-            "ratio_quality": "missing_denominator",
             "source_url": source_url,
         })
     return positions, list(securities.values())
@@ -312,6 +313,93 @@ def fetch_sse(day: date) -> dict[str, dict]:
     return result
 
 
+def hidden_input(page: str, name: str) -> str:
+    match = re.search(r'name="' + re.escape(name) + r'"[^>]*value="([^"]*)"', page, re.I)
+    return html.unescape(match.group(1)) if match else ""
+
+
+def parse_hkex_southbound_page(page: str) -> tuple[date, dict[str, dict]]:
+    alert = hidden_input(page, "alertMsg")
+    if alert:
+        raise ValueError(f"HKEX Southbound date unavailable: {alert}")
+    shown = hidden_input(page, "originalShareholdingDate")
+    if not shown:
+        raise ValueError("HKEX Southbound response date not found")
+    actual_date = datetime.strptime(shown, "%Y/%m/%d").date()
+    result: dict[str, dict] = {}
+    for block in re.findall(r"<tr>(.*?)</tr>", page, re.I | re.S):
+        def cell(class_name: str) -> str:
+            match = re.search(
+                r'<td[^>]*class="[^"]*' + re.escape(class_name) + r'[^"]*"[^>]*>.*?'
+                r'<div[^>]*class="mobile-list-body"[^>]*>(.*?)</div>', block, re.I | re.S,
+            )
+            return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html.unescape(match.group(1)))).strip() if match else ""
+        raw_code = cell("col-stock-code")
+        raw_shares = cell("col-shareholding")
+        if not raw_code or not raw_shares:
+            continue
+        code = normalize_code(raw_code)
+        raw_ratio = cell("col-shareholding-percent").rstrip("%").strip()
+        result[code] = {
+            "shares": integer(raw_shares),
+            "name_en": cell("col-stock-name") or None,
+            "source_ratio_pct": float(raw_ratio) if raw_ratio else None,
+        }
+    if len(result) < 500:
+        raise ValueError(f"HKEX Southbound returned too few securities: {len(result)}")
+    return actual_date, result
+
+
+class HkexSouthboundSession:
+    def __init__(self):
+        jar = http.cookiejar.CookieJar()
+        self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+        self.page = self._open()
+
+    def _open(self, payload: bytes | None = None) -> str:
+        headers = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9"}
+        if payload is not None:
+            headers.update({"Content-Type": "application/x-www-form-urlencoded", "Referer": HKEX_SOUTHBOUND_URL})
+        for attempt in range(5):
+            request = urllib.request.Request(HKEX_SOUTHBOUND_URL, data=payload, headers=headers)
+            try:
+                with self.opener.open(request, timeout=90) as response:
+                    return response.read().decode("utf-8", errors="replace")
+            except (urllib.error.URLError, TimeoutError, ConnectionError):
+                if attempt == 4:
+                    raise
+                time.sleep(min(20, 2 ** attempt))
+        raise RuntimeError("HKEX Southbound retry loop ended unexpectedly")
+
+    def fetch(self, day: date) -> tuple[date, dict[str, dict]]:
+        payload = urllib.parse.urlencode({
+            "__EVENTTARGET": "btnSearch", "__EVENTARGUMENT": "",
+            "__VIEWSTATE": hidden_input(self.page, "__VIEWSTATE"),
+            "__VIEWSTATEGENERATOR": hidden_input(self.page, "__VIEWSTATEGENERATOR"),
+            "today": hidden_input(self.page, "today"), "sortBy": "stockcode", "sortDirection": "asc",
+            "originalShareholdingDate": hidden_input(self.page, "originalShareholdingDate"),
+            "alertMsg": "", "txtShareholdingDate": day.strftime("%Y/%m/%d"),
+        }).encode()
+        self.page = self._open(payload)
+        return parse_hkex_southbound_page(self.page)
+
+
+def hkex_stock_connect_rows(day: date, source: dict[str, dict]) -> tuple[list[dict], list[dict], str]:
+    securities, holdings = [], []
+    for code, item in source.items():
+        securities.append({key: value for key, value in {
+            "stock_code": code, "name_en": item.get("name_en"),
+        }.items() if value is not None})
+        holdings.append({
+            "stock_code": code, "holding_date": day.isoformat(),
+            "sh_holding_shares": None, "sz_holding_shares": None,
+            "total_holding_shares": item["shares"], "completeness": "official_aggregate",
+            "aggregate_source_url": HKEX_SOUTHBOUND_URL,
+            "source_reported_ratio_pct": item.get("source_ratio_pct"),
+        })
+    return holdings, securities, "official_aggregate"
+
+
 def stock_connect_rows(day: date, sh: dict[str, dict], sz: dict[str, dict]) -> tuple[list[dict], list[dict], str | None]:
     sh_available = len(sh) >= 100
     sz_available = len(sz) >= 100
@@ -344,7 +432,6 @@ def stock_connect_rows(day: date, sh: dict[str, dict], sz: dict[str, dict]) -> t
             "sz_holding_shares": sz_row.get("shares") if sz_available else None,
             "total_holding_shares": None,
             "completeness": completeness,
-            "ratio_quality": "missing_denominator",
             "sh_source_url": SSE_PAGE_URL if sh_available else None,
             "sz_source_url": SZSE_PAGE_URL if sz_available else None,
         }
@@ -364,15 +451,21 @@ def ingest_stock_connect(client: SupabaseRest, start: date, end: date, *, pause:
     partial_days = 0
     missing_days = 0
     weekdays = [day for day in date_range(start, end) if day.weekday() < 5]
+    hkex_online_start = date.today() - timedelta(days=364)
+    hkex_session = HkexSouthboundSession() if any(day >= hkex_online_start for day in weekdays) else None
     for index, day in enumerate(weekdays, 1):
         try:
-            sz = fetch_szse(day)
-            sh = fetch_sse(day)
-        except (urllib.error.HTTPError, urllib.error.URLError, zipfile.BadZipFile, json.JSONDecodeError) as error:
+            if day >= hkex_online_start and hkex_session:
+                actual_date, aggregate = hkex_session.fetch(day)
+                holdings, securities, completeness = hkex_stock_connect_rows(actual_date, aggregate)
+            else:
+                sz = fetch_szse(day)
+                sh = fetch_sse(day)
+                holdings, securities, completeness = stock_connect_rows(day, sh, sz)
+        except (urllib.error.HTTPError, urllib.error.URLError, zipfile.BadZipFile, json.JSONDecodeError, ValueError) as error:
             print(f"WARN {day}: source fetch failed: {error}", file=sys.stderr)
             missing_days += 1
             continue
-        holdings, securities, completeness = stock_connect_rows(day, sh, sz)
         if not holdings:
             missing_days += 1
             print(f"Stock Connect {day}: no published data ({index}/{len(weekdays)})")
@@ -396,6 +489,8 @@ def ingest_stock_connect(client: SupabaseRest, start: date, end: date, *, pause:
             "partial_days": partial_days,
             "missing_days": missing_days,
             "sse_public_start": SSE_PUBLIC_START.isoformat(),
+            "hkex_online_start": hkex_online_start.isoformat(),
+            "hkex_aggregate_source_url": HKEX_SOUTHBOUND_URL,
             "sse_source_url": SSE_PAGE_URL,
             "szse_source_url": SZSE_PAGE_URL,
         })

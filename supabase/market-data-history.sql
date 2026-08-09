@@ -47,11 +47,13 @@ create table if not exists public.hk_stock_connect_holdings_daily (
   issued_shares bigint check (issued_shares > 0),
   holding_ratio_pct numeric(14, 8) check (holding_ratio_pct >= 0),
   completeness text not null
-    check (completeness in ('complete', 'partial_sh', 'partial_sz')),
+    check (completeness in ('complete', 'partial_sh', 'partial_sz', 'official_aggregate')),
   ratio_quality text not null default 'missing_denominator'
     check (ratio_quality in ('official', 'licensed_vendor', 'missing_denominator')),
   sh_source_url text,
   sz_source_url text,
+  aggregate_source_url text,
+  source_reported_ratio_pct numeric(14, 8) check (source_reported_ratio_pct >= 0),
   ingested_at timestamptz not null default now(),
   primary key (stock_code, holding_date),
   check (
@@ -60,6 +62,9 @@ create table if not exists public.hk_stock_connect_holdings_daily (
     (completeness = 'partial_sh' and sh_holding_shares is not null and sz_holding_shares is null and total_holding_shares is null)
     or
     (completeness = 'partial_sz' and sh_holding_shares is null and sz_holding_shares is not null and total_holding_shares is null)
+    or
+    (completeness = 'official_aggregate' and sh_holding_shares is null and sz_holding_shares is null
+      and total_holding_shares is not null and aggregate_source_url is not null)
   ),
   check (
     (issued_shares is null and holding_ratio_pct is null and ratio_quality = 'missing_denominator')
@@ -193,7 +198,8 @@ as
 select h.stock_code, q.name_zh, q.name_en, h.holding_date,
        h.sh_holding_shares, h.sz_holding_shares, h.total_holding_shares,
        h.issued_shares, h.holding_ratio_pct, h.completeness, h.ratio_quality,
-       h.sh_source_url, h.sz_source_url, h.ingested_at
+       h.sh_source_url, h.sz_source_url, h.aggregate_source_url,
+       h.source_reported_ratio_pct, h.ingested_at
 from public.hk_stock_connect_holdings_daily h
 join public.market_securities q on q.stock_code = h.stock_code
 join public.current_market_index_constituents c

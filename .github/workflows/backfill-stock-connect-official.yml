@@ -1,0 +1,43 @@
+name: Backfill official Stock Connect holdings
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: Start date within HKEX free 12-month window
+        required: true
+        default: "2025-08-11"
+      end_date:
+        description: End date (blank means today)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backfill-official-stock-connect
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      START_DATE: ${{ inputs.start_date }}
+      END_DATE: ${{ inputs.end_date }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install market-data dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-market-data.txt
+      - name: Backfill official aggregate holdings
+        run: |
+          END_ARGS=()
+          if [ -n "$END_DATE" ]; then END_ARGS=(--end "$END_DATE"); fi
+          python scripts/market-data-ingest.py stock-connect --start "$START_DATE" "${END_ARGS[@]}" --pause 0.4
+      - name: Refresh holding ratios
+        run: python scripts/hkex-share-capital.py --batch-size 0 --refresh-only
