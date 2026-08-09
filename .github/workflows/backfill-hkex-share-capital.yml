@@ -1,0 +1,49 @@
+name: Backfill official HKEX share capital
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Year to backfill (run once for each year)
+        required: true
+        type: choice
+        default: "2023"
+        options: ["2023", "2024", "2025", "2026"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backfill-hkex-share-capital-${{ inputs.year }}
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        batch_start: [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install market-data dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-market-data.txt
+      - name: Check database secrets
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+      - name: Backfill official HKEX filings
+        run: >-
+          python scripts/hkex-share-capital.py
+          --start "${{ inputs.year }}-01-01"
+          --end "${{ inputs.year }}-12-31"
+          --batch-start "${{ matrix.batch_start }}"
+          --batch-size 50
