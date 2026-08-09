@@ -6604,28 +6604,30 @@
           console.warn("指数周线不可用，超额收益暂不展示。", index.code, error);
         }
       }
-      for (let start = 0; start < rows.length; start += 10) {
-        const batch = rows.slice(start, start + 10);
-        const settled = await Promise.allSettled(batch.map(async (row) => {
+      const fallbackRowIndexes = rows.flatMap((row, rowIndex) => row.metricStored ? [] : [rowIndex]);
+      for (let start = 0; start < fallbackRowIndexes.length; start += 10) {
+        const batchIndexes = fallbackRowIndexes.slice(start, start + 10);
+        const settled = await Promise.allSettled(batchIndexes.map(async (rowIndex) => {
+          const row = rows[rowIndex];
           const [weeklyResult, quoteResult] = await Promise.allSettled([
-            row.metricStored ? Promise.resolve([]) : fetchTencentWeeklyCloses(row).catch(() => fetchEastmoneyWeeklyCloses(row)),
+            fetchTencentWeeklyCloses(row).catch(() => fetchEastmoneyWeeklyCloses(row)),
             fetchQuote(row)
           ]);
           const weeklyCloses = weeklyResult.status === "fulfilled" ? weeklyResult.value : [];
           const quote = quoteResult.status === "fulfilled" ? quoteResult.value : {};
-          const fiveWeekReturn = row.metricStored ? row.fiveWeekReturn : calculateFiveWeekReturn(weeklyCloses);
+          const fiveWeekReturn = calculateFiveWeekReturn(weeklyCloses);
           return {
             ...row,
             ...quote,
-            biasMetrics: row.metricStored ? row.biasMetrics : calculateMarketInsightBiases(weeklyCloses),
+            biasMetrics: calculateMarketInsightBiases(weeklyCloses),
             fiveWeekReturn,
-            excess5w: row.metricStored ? row.excess5w : Number.isFinite(indexFiveWeekReturn) && Number.isFinite(fiveWeekReturn) ? fiveWeekReturn - indexFiveWeekReturn : null,
+            excess5w:Number.isFinite(indexFiveWeekReturn) && Number.isFinite(fiveWeekReturn) ? fiveWeekReturn - indexFiveWeekReturn : null,
             insightUpdatedAt: new Date().toISOString()
           };
         }));
         settled.forEach((result, indexInBatch) => {
           if (result.status !== "fulfilled") return;
-          const rowIndex = start + indexInBatch;
+          const rowIndex = batchIndexes[indexInBatch];
           rows[rowIndex] = result.value;
         });
         state.marketInsightRows = [...rows];
