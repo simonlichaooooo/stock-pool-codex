@@ -4,7 +4,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
 const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MARKET_INSIGHT_MODEL") || "deepseek-v4-pro";
-const PROMPT_VERSION = "market-insight-deepseek-thinking-v1";
+const PROMPT_VERSION = "market-insight-deepseek-thinking-v2";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -160,13 +160,13 @@ function validateAnalysis(value: any) {
 async function requestDeepSeek(evidence: unknown) {
   const schema = analysisSchema();
   const messages = [
-    { role: "system", content: `你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，分析股价、空头持仓比例与港股通持仓比例的关系。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。只输出一个合法 JSON 对象，不要输出 Markdown 或额外文字。JSON 必须严格符合以下结构：${JSON.stringify(schema)}` },
+    { role: "system", content: `你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，分析股价、空头持仓比例与港股通持仓比例的关系。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。只输出一个合法 JSON 对象，不要输出 Markdown 或额外文字。每个交易方最多给出2个假设，每组证据最多3条，每条尽量控制在80个汉字以内，最终 JSON 控制在3000个汉字以内。JSON 必须严格符合以下结构：${JSON.stringify(schema)}` },
     { role: "user", content: `请分析以下数据。重点判断空头更接近高位建仓后下跌平仓、顺势追空，还是对冲/事件驱动；港股通更接近逆势承接、趋势增持、反弹减持或持续撤离。不要套用固定分类，若数据支持其他解释请提出。请输出 JSON。\n\n${JSON.stringify(evidence)}` },
   ];
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000);
+    const timeoutId = setTimeout(() => controller.abort(), 240000);
     try {
       const modelResponse = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
@@ -178,7 +178,7 @@ async function requestDeepSeek(evidence: unknown) {
           thinking: { type: "enabled" },
           reasoning_effort: "high",
           response_format: { type: "json_object" },
-          max_tokens: 6000,
+          max_tokens: 24000,
           stream: false,
         }),
       });
@@ -191,8 +191,8 @@ async function requestDeepSeek(evidence: unknown) {
       return validateAnalysis(JSON.parse(content));
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      if (lastError.name === "AbortError") throw new Error("DeepSeek 思考超过 180 秒，请稍后重试");
-      const canRetry = /JSON|格式|字段|截断|未返回/.test(lastError.message);
+      if (lastError.name === "AbortError") throw new Error("DeepSeek 思考超过 240 秒，请稍后重试");
+      const canRetry = /JSON|格式|字段|未返回/.test(lastError.message);
       if (!canRetry || attempt > 0) throw lastError;
     } finally {
       clearTimeout(timeoutId);

@@ -6595,7 +6595,7 @@
       state.marketInsightAiError = "";
       render();
       const aiRequestController = new AbortController();
-      const aiRequestTimeout = setTimeout(() => aiRequestController.abort(), 210000);
+      const aiRequestTimeout = setTimeout(() => aiRequestController.abort(), 270000);
       try {
         const response = state.session?.access_token === "local-demo"
           ? { analysis:marketInsightAiDemo(), meta:{ model:"本地演示", cached:false, generated_at:new Date().toISOString() } }
@@ -6606,8 +6606,9 @@
         state.marketInsightAiMeta = response.meta || {};
       } catch (error) {
         if (state.marketInsightDetailCode !== rawCode || state.marketInsightDetailRange !== rangeKey) return;
-        const message = error?.message || String(error);
-        state.marketInsightAiError = error?.name === "AbortError" ? "AI 深度思考超过 210 秒，请稍后重新生成。" : (/FunctionsHttpError|404/i.test(message) ? "AI 解读服务尚未部署，请先完成 Supabase Edge Function 配置。" : `AI 解读生成失败：${message}`);
+        let message = error?.message || String(error);
+        try { message = JSON.parse(message)?.error || message; } catch {}
+        state.marketInsightAiError = error?.name === "AbortError" ? "AI 深度思考超过 270 秒，请稍后重新生成。" : (/FunctionsHttpError|404/i.test(message) ? "AI 解读服务尚未部署，请先完成 Supabase Edge Function 配置。" : `AI 解读生成失败：${message}`);
       } finally {
         clearTimeout(aiRequestTimeout);
         if (state.marketInsightDetailCode === rawCode && state.marketInsightDetailRange === rangeKey) {
