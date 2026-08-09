@@ -4574,8 +4574,8 @@
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
-    .market-insight-short-change.increase { color:var(--loss); }
-    .market-insight-short-change.decrease { color:var(--gain); }
+    .market-insight-holding-change.increase { color:var(--loss); }
+    .market-insight-holding-change.decrease { color:var(--gain); }
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
@@ -6266,7 +6266,19 @@
         else if (change < 0) { changeText = `5周减持 ${formatted}`; changeClass = "decrease"; }
         else changeText = "5周持平 0.00%";
       }
-      return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-short-change ${changeClass}">${changeText}</small></div></td>`;
+      return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change ${changeClass}">${changeText}</small></div></td>`;
+    }
+
+    function marketInsightConnectChangeCell(row, connectRatio, star = false) {
+      const change = row.connectChange5wPct === null || row.connectChange5wPct === undefined || row.connectChange5wPct === "" ? NaN : Number(row.connectChange5wPct);
+      let changeText = "5周变化 --", changeClass = "";
+      if (Number.isFinite(change)) {
+        const formatted = `${Math.abs(change).toFixed(2)}%`;
+        if (change > 0) { changeText = `5周增持 ${formatted}`; changeClass = "increase"; }
+        else if (change < 0) { changeText = `5周减持 ${formatted}`; changeClass = "decrease"; }
+        else changeText = "5周持平 0.00%";
+      }
+      return `<td data-label="港股通持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(star, "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change ${changeClass}">${changeText}</small></div></td>`;
     }
 
     function marketInsightIssuedShares(row) {
@@ -6331,6 +6343,15 @@
         const latestShortRatio = shortRatioForRecord(short), previousShortRatio = shortRatioForRecord(shortFiveWeeksAgo);
         const shortChange5wPct = Number.isFinite(latestShortRatio) && Number.isFinite(previousShortRatio) ? latestShortRatio - previousShortRatio : null;
         const connectIncrease5wShares = connect && connectFiveWeeksAgo ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
+        const connectRatioForRecord = (item) => {
+          if (!item) return NaN;
+          const stored = item.holding_ratio_pct === null || item.holding_ratio_pct === undefined || item.holding_ratio_pct === "" ? NaN : Number(item.holding_ratio_pct);
+          if (Number.isFinite(stored)) return stored;
+          const shares = Number(item.total_holding_shares), issuedShares = Number(item.issued_shares);
+          return Number.isFinite(shares) && shares >= 0 && issuedShares > 0 ? shares / issuedShares * 100 : NaN;
+        };
+        const latestConnectRatio = connectRatioForRecord(connect), previousConnectRatio = connectRatioForRecord(connectFiveWeeksAgo);
+        const connectChange5wPct = Number.isFinite(latestConnectRatio) && Number.isFinite(previousConnectRatio) ? latestConnectRatio - previousConnectRatio : null;
         return {
           ...row,
           shortShares:short?.short_shares ?? row.shortShares,
@@ -6341,7 +6362,8 @@
           stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio,
           shortDecline5wShares,
           shortChange5wPct,
-          connectIncrease5wShares
+          connectIncrease5wShares,
+          connectChange5wPct
         };
       });
     }
@@ -6792,7 +6814,7 @@
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40, Number(row.biasMetrics?.ma40?.bias) > 0, "40周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
                   ${marketInsightShortChangeCell(row, shortRatio, rating.rules[3])}
-                  <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span></td>
+                  ${marketInsightConnectChangeCell(row, connectRatio, rating.rules[4])}
                   <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
               }).join("")}</tbody>
