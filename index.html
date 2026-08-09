@@ -4638,6 +4638,9 @@
     .market-insight-chart .axis-label { fill:var(--muted); font-size:11px; }
     .market-insight-chart .series-line { fill:none; stroke-width:2.25; vector-effect:non-scaling-stroke; }
     .market-insight-chart .series-line.dashed { stroke-dasharray:7 5; }
+    .market-insight-chart .right-axis-series { stroke-width:1.9; stroke-dasharray:6 4; }
+    .market-insight-chart .right-axis-label { fill:#64748b; }
+    .market-insight-chart .right-axis-title { fill:#64748b; font-weight:750; }
     .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
     .market-insight-chart-hit { cursor:crosshair; }
     .market-insight-chart-tooltip { position:absolute; z-index:5; display:none; min-width:190px; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:rgba(255,255,255,.96); color:var(--text); box-shadow:0 8px 20px rgba(16,24,40,.16); pointer-events:none; font-size:11px; }
@@ -6428,26 +6431,38 @@
       const validSeries = (series || []).map((item) => ({ ...item, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
       if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>请确认该股票已有对应的历史持仓记录。</div>`;
       const timestamps = validSeries.flatMap((item) => item.values.map((point) => new Date(`${point.date}T00:00:00`).getTime())).filter(Number.isFinite);
-      const leftValues = validSeries.flatMap((item) => item.values.map((point) => Number(point.value)));
-      const width = 1200, height = 320, left = 62, right = 24, top = 18, bottom = 38;
+      const leftSeries = validSeries.filter((item) => item.axis !== "right"), rightSeries = validSeries.filter((item) => item.axis === "right");
+      const leftValues = leftSeries.flatMap((item) => item.values.map((point) => Number(point.value)));
+      const rightValues = rightSeries.flatMap((item) => item.values.map((point) => Number(point.value)));
+      const width = 1200, height = 320, left = 62, right = rightValues.length ? 68 : 24, top = 18, bottom = 38;
       const minTime = Math.min(...timestamps), maxTime = Math.max(...timestamps);
       let minValue = Math.min(...leftValues), maxValue = Math.max(...leftValues);
       if (includeZero) { minValue = Math.min(0, minValue); maxValue = Math.max(0, maxValue); }
       const rawRange = maxValue - minValue;
       const padding = rawRange > 0 ? rawRange * 0.12 : Math.max(Math.abs(maxValue) * 0.05, 0.02);
       minValue -= padding; maxValue += padding;
+      let rightMinValue = rightValues.length ? Math.min(...rightValues) : 0, rightMaxValue = rightValues.length ? Math.max(...rightValues) : 1;
+      const rightRawRange = rightMaxValue - rightMinValue;
+      const rightValuePadding = rightRawRange > 0 ? rightRawRange * 0.12 : Math.max(Math.abs(rightMaxValue) * 0.05, 0.02);
+      rightMinValue -= rightValuePadding; rightMaxValue += rightValuePadding;
       const x = (date) => left + ((new Date(`${date}T00:00:00`).getTime() - minTime) / Math.max(1, maxTime - minTime)) * (width - left - right);
       const y = (value) => top + (maxValue - value) / Math.max(0.0001, maxValue - minValue) * (height - top - bottom);
+      const yRight = (value) => top + (rightMaxValue - value) / Math.max(0.0001, rightMaxValue - rightMinValue) * (height - top - bottom);
       const axisRange = maxValue - minValue;
       const axisDigits = axisRange < 0.2 ? 3 : axisRange < 2 ? 2 : 1;
+      const rightAxisRange = rightMaxValue - rightMinValue;
+      const rightAxisDigits = rightAxisRange < 2 ? 2 : rightAxisRange < 20 ? 1 : 0;
       const grids = Array.from({ length: 5 }, (_, index) => {
         const ratio = index / 4, py = top + ratio * (height - top - bottom);
         const leftLabel = maxValue - ratio * (maxValue - minValue);
-        return `<line class="grid" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="axis-label" x="${left - 8}" y="${py + 4}" text-anchor="end">${leftLabel.toFixed(axisDigits)}%</text>`;
+        const rightLabel = rightMaxValue - ratio * (rightMaxValue - rightMinValue);
+        return `<line class="grid" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="axis-label" x="${left - 8}" y="${py + 4}" text-anchor="end">${leftLabel.toFixed(axisDigits)}%</text>${rightValues.length ? `<text class="axis-label right-axis-label" x="${width - right + 8}" y="${py + 4}">${rightLabel.toFixed(rightAxisDigits)}</text>` : ""}`;
       }).join("");
       const paths = validSeries.map((item) => {
-        const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value)).toFixed(2)}`).join(" ");
-        return `<path class="series-line ${item.dashed ? "dashed" : ""}" d="${d}" stroke="${item.color}" ${trendStages.length ? `opacity=".34"` : ""}><title>${escapeHtml(item.label)}</title></path>`;
+        const scaleY = item.axis === "right" ? yRight : y;
+        const d = item.values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${scaleY(Number(point.value)).toFixed(2)}`).join(" ");
+        const opacity = trendStages.length && item.axis !== "right" ? `.34` : item.axis === "right" ? `.82` : "";
+        return `<path class="series-line ${item.dashed ? "dashed" : ""} ${item.axis === "right" ? "right-axis-series" : ""}" d="${d}" stroke="${item.color}" ${opacity ? `opacity="${opacity}"` : ""}><title>${escapeHtml(item.label)}</title></path>`;
       }).join("");
       const trendBands = trendStages.map((stage, index) => {
         const startX = x(stage.start.date), endX = x(stage.end.date);
@@ -6460,7 +6475,7 @@
         const d = values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value)).toFixed(2)}`).join(" ");
         return values.length > 1 ? `<path class="trend-stage-line" d="${d}" stroke="${stage.color}"></path>` : "";
       }).join("");
-      const effectiveTooltips = tooltipRows.length ? tooltipRows : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); return point ? [{ label:item.label, value:`${Number(point.value).toFixed(2)}%` }] : []; }) }));
+      const effectiveTooltips = tooltipRows.length ? tooltipRows : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); if (!point) return []; const suffix = item.unit ? ` ${item.unit}` : "%"; return [{ label:item.label, value:`${Number(point.value).toFixed(2)}${suffix}` }]; }) }));
       const hitWidth = Math.max(6, (width - left - right) / Math.max(1, effectiveTooltips.length));
       const hitAreas = effectiveTooltips.map((item) => `<rect class="market-insight-chart-hit" data-market-chart-point="${escapeHtml(JSON.stringify(item))}" x="${(x(item.date) - hitWidth / 2).toFixed(2)}" y="${top}" width="${hitWidth.toFixed(2)}" height="${height - top - bottom}" fill="transparent"></rect>`).join("");
       const extremaMarkers = extrema.length ? validSeries.slice(0, 1).flatMap((item) => {
@@ -6473,7 +6488,7 @@
         });
       }).join("") : "";
       const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
-      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text></svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
+      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text>${rightValues.length ? `<text class="axis-label right-axis-title" x="${width - 4}" y="${top + 4}" text-anchor="end">${escapeHtml(rightSeries[0]?.unit || "价格")}</text>` : ""}</svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
     }
 
     function marketInsightRangeValues(values) {
@@ -6488,25 +6503,22 @@
     function marketInsightTrendAnalysis(values) {
       const points = (values || []).filter((item) => item?.date && Number.isFinite(Number(item.value))).map((item) => ({ date:item.date, value:Number(item.value) })).sort((a, b) => a.date.localeCompare(b.date));
       if (points.length < 2) return { points, stages:[], extrema:[] };
-      const smoothingWindow = points.length >= 60 ? 9 : points.length >= 24 ? 5 : points.length >= 10 ? 3 : 1;
-      const halfWindow = Math.floor(smoothingWindow / 2);
-      const smoothed = points.map((point, index) => {
-        const windowPoints = points.slice(Math.max(0, index - halfWindow), Math.min(points.length, index + halfWindow + 1));
-        return { ...point, smooth:windowPoints.reduce((sum, item) => sum + item.value, 0) / windowPoints.length, index };
-      });
-      const lowPivot = smoothed.reduce((best, point) => point.smooth < best.smooth ? point : best);
-      const highPivot = smoothed.reduce((best, point) => point.smooth > best.smooth ? point : best);
-      const decisiveRange = highPivot.smooth - lowPivot.smooth;
+      // 阶段边界必须落在用户实际看到的原始极值上。此前以居中移动平均的
+      // 峰值索引回指原始数据，急涨急跌后会把“高点”错标到峰值之后的低位。
+      const indexed = points.map((point, index) => ({ ...point, index }));
+      const lowPivot = indexed.reduce((best, point) => point.value < best.value ? point : best);
+      const highPivot = indexed.reduce((best, point) => point.value > best.value ? point : best);
+      const decisiveRange = highPivot.value - lowPivot.value;
       const colors = ["#2563eb", "#d97706", "#7c3aed"];
       if (decisiveRange < 0.000001) return { points, stages:[{ start:points[0], end:points.at(-1), delta:points.at(-1).value - points[0].value, color:colors[0] }], extrema:[] };
       const pivots = [lowPivot, highPivot].sort((a, b) => a.index - b.index);
       const minimumSpan = Math.max(2, Math.floor((points.length - 1) * 0.08));
       const minimumMove = decisiveRange * 0.28;
-      const meaningful = (start, end) => end.index - start.index >= minimumSpan && Math.abs(end.smooth - start.smooth) >= minimumMove;
+      const meaningful = (start, end) => end.index - start.index >= minimumSpan && Math.abs(end.value - start.value) >= minimumMove;
       const candidates = [];
-      if (meaningful(smoothed[0], pivots[0])) candidates.push([smoothed[0], pivots[0]]);
+      if (meaningful(indexed[0], pivots[0])) candidates.push([indexed[0], pivots[0]]);
       candidates.push([pivots[0], pivots[1]]);
-      if (meaningful(pivots[1], smoothed.at(-1))) candidates.push([pivots[1], smoothed.at(-1)]);
+      if (meaningful(pivots[1], indexed.at(-1))) candidates.push([pivots[1], indexed.at(-1)]);
       const stages = candidates.map(([start, end], index) => ({ start:points[start.index], end:points[end.index], delta:points[end.index].value - points[start.index].value, color:colors[index] }));
       const low = points[lowPivot.index], high = points[highPivot.index];
       return { points, stages, extrema:[{ ...low, label:"主要低点", color:"#0f9f8f" }, { ...high, label:"主要高点", color:"#d97706" }] };
@@ -6620,10 +6632,13 @@
       }) }));
       const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:marketInsightRangeValues(detail.shortHistory || []) }];
       const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:marketInsightRangeValues(detail.connectHistory || []) }];
+      const priceSeries = { label:"股价", color:"#64748b", dashed:true, axis:"right", unit:stock?.currency || "HKD", values:marketInsightRangeValues(detail.priceHistory || []) };
+      const shortChartSeries = priceSeries.values.length ? [...shortSeries, priceSeries] : shortSeries;
+      const connectChartSeries = priceSeries.values.length ? [...connectSeries, priceSeries] : connectSeries;
       const shortTrend = marketInsightTrendAnalysis(shortSeries[0].values);
       const connectTrend = marketInsightTrendAnalysis(connectSeries[0].values);
       const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
-      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；彩色分段仅标示数据中的主要波段。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；彩色分段仅标示数据中的主要波段。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
+      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
@@ -6667,10 +6682,12 @@
       const connectHistory = connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [];
       const currentConnectRatio = marketInsightConnectRatio(stock);
       if (!connectHistory.length && Number.isFinite(currentConnectRatio)) connectHistory.push({ date:state.marketInsightSnapshot?.stockConnect?.asOf || new Date().toISOString().slice(0, 10), value:currentConnectRatio });
+      const priceHistory = weeklyResult.status === "fulfilled" ? weeklyResult.value.map((row) => ({ date:row.date, value:Number(row.close) })).filter((row) => row.date && Number.isFinite(row.value) && row.value > 0) : [];
       state.marketInsightDetail = {
         biasHistory: Object.keys(persistedBiasHistory).length ? persistedBiasHistory : weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
         shortHistory,
-        connectHistory
+        connectHistory,
+        priceHistory
       };
       const errors = [weeklyResult, quoteResult, metricsResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
       state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
