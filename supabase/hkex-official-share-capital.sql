@@ -91,7 +91,10 @@ alter table public.market_data_ingestion_runs
     'hkex_share_capital'
   ));
 
-create or replace function public.refresh_hk_holding_ratios()
+drop function if exists public.refresh_hk_holding_ratios();
+drop function if exists public.refresh_hk_holding_ratios(text[]);
+
+create function public.refresh_hk_holding_ratios(p_stock_codes text[] default null)
 returns jsonb
 language plpgsql
 security definer
@@ -102,21 +105,25 @@ declare
   connect_updated integer := 0;
 begin
   with resolved as (
-    select s.stock_code, s.report_date,
+    select s.stock_code, s.report_date
+    from public.hk_short_positions_weekly s
+    where p_stock_codes is null or s.stock_code = any(p_stock_codes)
+  ), resolved_with_shares as (
+    select r.stock_code, r.report_date,
       coalesce(official.issued_shares, fallback.issued_shares) as issued_shares,
       case when official.issued_shares is not null then 'official' else 'licensed_vendor' end as quality
-    from public.hk_short_positions_weekly s
+    from resolved r
     left join lateral (
       select h.issued_shares_ex_treasury as issued_shares
       from public.hk_issued_shares_official h
-      where h.stock_code = s.stock_code and h.effective_date <= s.report_date
+      where h.stock_code = r.stock_code and h.effective_date <= r.report_date
       order by h.effective_date desc, h.source_priority desc
       limit 1
     ) official on true
     left join lateral (
       select h.issued_shares
       from public.hk_issued_shares_monthly h
-      where h.stock_code = s.stock_code and h.period_end <= s.report_date
+      where h.stock_code = r.stock_code and h.period_end <= r.report_date
       order by h.period_end desc
       limit 1
     ) fallback on official.issued_shares is null
@@ -125,7 +132,7 @@ begin
   set issued_shares = resolved.issued_shares,
       short_ratio_pct = s.short_shares::numeric / resolved.issued_shares * 100,
       ratio_quality = resolved.quality
-  from resolved
+  from resolved_with_shares resolved
   where resolved.stock_code = s.stock_code and resolved.report_date = s.report_date
     and resolved.issued_shares is not null
     and (
@@ -136,31 +143,35 @@ begin
   get diagnostics short_updated = row_count;
 
   with resolved as (
-    select h.stock_code, h.holding_date,
+    select h.stock_code, h.holding_date
+    from public.hk_stock_connect_holdings_daily h
+    where h.total_holding_shares is not null
+      and (p_stock_codes is null or h.stock_code = any(p_stock_codes))
+  ), resolved_with_shares as (
+    select r.stock_code, r.holding_date,
       coalesce(official.issued_shares, fallback.issued_shares) as issued_shares,
       case when official.issued_shares is not null then 'official' else 'licensed_vendor' end as quality
-    from public.hk_stock_connect_holdings_daily h
+    from resolved r
     left join lateral (
       select s.issued_shares_ex_treasury as issued_shares
       from public.hk_issued_shares_official s
-      where s.stock_code = h.stock_code and s.effective_date <= h.holding_date
+      where s.stock_code = r.stock_code and s.effective_date <= r.holding_date
       order by s.effective_date desc, s.source_priority desc
       limit 1
     ) official on true
     left join lateral (
       select s.issued_shares
       from public.hk_issued_shares_monthly s
-      where s.stock_code = h.stock_code and s.period_end <= h.holding_date
+      where s.stock_code = r.stock_code and s.period_end <= r.holding_date
       order by s.period_end desc
       limit 1
     ) fallback on official.issued_shares is null
-    where h.total_holding_shares is not null
   )
   update public.hk_stock_connect_holdings_daily h
   set issued_shares = resolved.issued_shares,
       holding_ratio_pct = h.total_holding_shares::numeric / resolved.issued_shares * 100,
       ratio_quality = resolved.quality
-  from resolved
+  from resolved_with_shares resolved
   where resolved.stock_code = h.stock_code and resolved.holding_date = h.holding_date
     and resolved.issued_shares is not null
     and (
@@ -174,8 +185,8 @@ begin
 end;
 $$;
 
-revoke all on function public.refresh_hk_holding_ratios() from public, anon, authenticated;
-grant execute on function public.refresh_hk_holding_ratios() to service_role;
+revoke all on function public.refresh_hk_holding_ratios(text[]) from public, anon, authenticated;
+grant execute on function public.refresh_hk_holding_ratios(text[]) to service_role;
 
 create or replace view public.hk_official_share_capital_coverage
 with (security_invoker = true)

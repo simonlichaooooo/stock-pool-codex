@@ -85,8 +85,8 @@ class SupabaseRest:
         rows = self.request("GET", f"hkex_share_capital_filings?{query}") or []
         return {row["document_id"] for row in rows}
 
-    def rpc(self, name: str):
-        return self.request("POST", f"rpc/{name}", {}, "return=representation")
+    def rpc(self, name: str, payload: dict | None = None):
+        return self.request("POST", f"rpc/{name}", payload or {}, "return=representation")
 
     def insert_run(self, started_at: str, start: date, end: date, status: str, rows: int, details: dict):
         self.request("POST", "market_data_ingestion_runs", [{
@@ -274,6 +274,7 @@ def main() -> int:
     parser.add_argument("--codes", help="comma-separated HK codes (testing/repair)")
     parser.add_argument("--pause", type=float, default=0.4)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--refresh-only", action="store_true", help="only recalculate holding ratios for selected stocks")
     args = parser.parse_args()
     start, end = date.fromisoformat(args.start), date.fromisoformat(args.end)
     codes = [normalize_code(code) for code in args.codes.split(",")] if args.codes else universe_codes()
@@ -282,6 +283,15 @@ def main() -> int:
     client = SupabaseRest(required=not args.dry_run)
     started = datetime.now(timezone.utc).isoformat()
     written = failed = stock_failures = 0
+    if args.refresh_only:
+        if args.dry_run:
+            print(json.dumps({"stocks": len(codes), "ratio_groups": (len(codes) + 9) // 10}))
+            return 0
+        for offset in range(0, len(codes), 10):
+            group = codes[offset:offset + 10]
+            result = client.rpc("refresh_hk_holding_ratios", {"p_stock_codes": group})
+            print(f"Ratios {offset + 1}-{offset + len(group)}/{len(codes)}: {result}", flush=True)
+        return 0
     try:
         for position, code in enumerate(codes, 1):
             print(f"[{position}/{len(codes)}] {code}", flush=True)
@@ -291,7 +301,12 @@ def main() -> int:
             except Exception as error:
                 stock_failures += 1
                 print(f"WARN {code}: stock processing failed after retries: {error}", flush=True)
-        ratios = None if args.dry_run else client.rpc("refresh_hk_holding_ratios")
+        ratios = []
+        if not args.dry_run:
+            # Recalculate only this runner's stocks. Small groups keep each database
+            # statement below Supabase's timeout even after years of history accrue.
+            for offset in range(0, len(codes), 10):
+                ratios.append(client.rpc("refresh_hk_holding_ratios", {"p_stock_codes": codes[offset:offset + 10]}))
         if not args.dry_run:
             client.insert_run(started, start, end, "success" if failed == 0 and stock_failures == 0 else "partial", written,
                               {"stocks": len(codes), "documents_failed": failed, "stocks_failed": stock_failures,
