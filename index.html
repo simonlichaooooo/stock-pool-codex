@@ -6083,8 +6083,8 @@
     }
 
     function marketInsightMetricCell(metric, period) {
-      const bias = Number(metric?.bias);
-      const percentile = Number(metric?.percentile);
+      const bias = metric?.bias === null || metric?.bias === undefined ? NaN : Number(metric.bias);
+      const percentile = metric?.percentile === null || metric?.percentile === undefined ? NaN : Number(metric.percentile);
       if (!Number.isFinite(bias) || !Number.isFinite(percentile)) {
         return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
       }
@@ -6173,6 +6173,31 @@
       });
     }
 
+    async function loadPersistedMarketInsightMetrics(rows, indexCode) {
+      if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
+      const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=eq.${encodeURIComponent(indexCode)}&select=stock_code,week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=1000`);
+      const byCode = new Map((metrics || []).map((item) => [item.stock_code, item]));
+      return rows.map((row) => {
+        const metric = byCode.get(String(row.rawCode).padStart(5, "0"));
+        if (!metric) return row;
+        const value = (field) => metric[field] === null || metric[field] === undefined ? null : Number(metric[field]);
+        return {
+          ...row,
+          biasMetrics: {
+            ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y") },
+            ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y") },
+            ma40:{ bias:value("bias_40w_pct"), percentile:value("percentile_40w_2y") },
+            ma50:{ bias:value("bias_50w_pct"), percentile:value("percentile_50w_2y") }
+          },
+          fiveWeekReturn:value("five_week_return_pct"),
+          indexFiveWeekReturn:value("index_five_week_return_pct"),
+          excess5w:value("excess_five_week_return_pct"),
+          metricWeekDate:metric.week_date,
+          metricStored:true
+        };
+      });
+    }
+
     function calculateMarketInsightBiasHistory(weeklySeries) {
       const rows = (weeklySeries || []).filter((item) => item?.date && Number(item.close) > 0);
       const result = {};
@@ -6247,9 +6272,11 @@
       const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
       const quotePromise = fetchQuote(stock).catch(() => stock);
       const canLoadDatabase = state.session?.access_token && state.session.access_token !== "local-demo";
+      const selectedIndex = MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0];
+      const metricsPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=eq.${encodeURIComponent(selectedIndex.code)}&stock_code=eq.${encodeURIComponent(stockCode)}&select=week_date,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y&order=week_date.asc&limit=2000`) : Promise.resolve([]);
       const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&select=report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
       const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
-      const [weeklyResult, quoteResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, quotePromise, shortPromise, connectPromise]);
+      const [weeklyResult, quoteResult, metricsResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, quotePromise, metricsPromise, shortPromise, connectPromise]);
       const issuedShares = quoteResult.status === "fulfilled" ? marketInsightIssuedShares({ ...stock, ...quoteResult.value }) : marketInsightIssuedShares(stock);
       const ratioValue = (storedRatio, shares, storedIssuedShares) => {
         const ratio = storedRatio === null || storedRatio === undefined || storedRatio === "" ? NaN : Number(storedRatio);
@@ -6258,12 +6285,19 @@
         const numerator = shares === null || shares === undefined || shares === "" ? NaN : Number(shares);
         return Number.isFinite(numerator) && numerator >= 0 && Number(denominator) > 0 ? numerator / Number(denominator) * 100 : NaN;
       };
+      const persistedBiasHistory = {};
+      if (metricsResult.status === "fulfilled" && metricsResult.value.length) {
+        [30, 40, 50].forEach((period) => {
+          persistedBiasHistory[`ma${period}`] = metricsResult.value.flatMap((row) => row[`bias_${period}w_pct`] === null ? [] : [{ date:row.week_date, value:Number(row[`bias_${period}w_pct`]) }]).filter((row) => Number.isFinite(row.value));
+          persistedBiasHistory[`p${period}`] = metricsResult.value.flatMap((row) => row[`percentile_${period}w_2y`] === null ? [] : [{ date:row.week_date, value:Number(row[`percentile_${period}w_2y`]) }]).filter((row) => Number.isFinite(row.value));
+        });
+      }
       state.marketInsightDetail = {
-        biasHistory: weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
+        biasHistory: Object.keys(persistedBiasHistory).length ? persistedBiasHistory : weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
         shortHistory: shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:ratioValue(row.short_ratio_pct, row.short_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [],
         connectHistory: connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : []
       };
-      const errors = [weeklyResult, quoteResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
+      const errors = [weeklyResult, quoteResult, metricsResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
       state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
       state.marketInsightDetailLoading = false;
       render();
@@ -6437,29 +6471,38 @@
         console.warn("数据库最新持仓比例加载失败，保留快照数据。", error);
       }
       const index = MARKET_INSIGHT_INDEXES.find((item) => item.id === indexId) || MARKET_INSIGHT_INDEXES[0];
-      let indexFiveWeekReturn = null;
       try {
-        const indexCloses = await fetchEastmoneyWeeklyCloses({ quoteId:index.quoteId, market:"INDEX", code:index.code });
-        indexFiveWeekReturn = calculateFiveWeekReturn(indexCloses);
+        rows = await loadPersistedMarketInsightMetrics(rows, index.code);
+        state.marketInsightRows = [...rows];
+        render();
       } catch (error) {
-        console.warn("指数周线不可用，超额收益暂不展示。", index.code, error);
+        console.warn("持久化周线指标尚不可用，临时使用页面计算。", error);
+      }
+      let indexFiveWeekReturn = rows.find((row) => Number.isFinite(row.indexFiveWeekReturn))?.indexFiveWeekReturn ?? null;
+      if (!Number.isFinite(indexFiveWeekReturn)) {
+        try {
+          const indexCloses = await fetchEastmoneyWeeklyCloses({ quoteId:index.quoteId, market:"INDEX", code:index.code });
+          indexFiveWeekReturn = calculateFiveWeekReturn(indexCloses);
+        } catch (error) {
+          console.warn("指数周线不可用，超额收益暂不展示。", index.code, error);
+        }
       }
       for (let start = 0; start < rows.length; start += 10) {
         const batch = rows.slice(start, start + 10);
         const settled = await Promise.allSettled(batch.map(async (row) => {
           const [weeklyResult, quoteResult] = await Promise.allSettled([
-            fetchTencentWeeklyCloses(row).catch(() => fetchEastmoneyWeeklyCloses(row)),
+            row.metricStored ? Promise.resolve([]) : fetchTencentWeeklyCloses(row).catch(() => fetchEastmoneyWeeklyCloses(row)),
             fetchQuote(row)
           ]);
           const weeklyCloses = weeklyResult.status === "fulfilled" ? weeklyResult.value : [];
           const quote = quoteResult.status === "fulfilled" ? quoteResult.value : {};
-          const fiveWeekReturn = calculateFiveWeekReturn(weeklyCloses);
+          const fiveWeekReturn = row.metricStored ? row.fiveWeekReturn : calculateFiveWeekReturn(weeklyCloses);
           return {
             ...row,
             ...quote,
-            biasMetrics: calculateMarketInsightBiases(weeklyCloses),
+            biasMetrics: row.metricStored ? row.biasMetrics : calculateMarketInsightBiases(weeklyCloses),
             fiveWeekReturn,
-            excess5w: Number.isFinite(indexFiveWeekReturn) && Number.isFinite(fiveWeekReturn) ? fiveWeekReturn - indexFiveWeekReturn : null,
+            excess5w: row.metricStored ? row.excess5w : Number.isFinite(indexFiveWeekReturn) && Number.isFinite(fiveWeekReturn) ? fiveWeekReturn - indexFiveWeekReturn : null,
             insightUpdatedAt: new Date().toISOString()
           };
         }));

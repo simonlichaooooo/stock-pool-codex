@@ -68,6 +68,29 @@ create table if not exists public.hk_stock_connect_holdings_daily (
   )
 );
 
+create table if not exists public.hk_market_insight_metrics_weekly (
+  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')),
+  stock_code text not null references public.market_securities(stock_code) on delete cascade,
+  week_date date not null,
+  close_price numeric(20, 6) not null check (close_price > 0),
+  bias_5w_pct numeric(14, 8),
+  bias_30w_pct numeric(14, 8),
+  bias_40w_pct numeric(14, 8),
+  bias_50w_pct numeric(14, 8),
+  percentile_5w_2y numeric(14, 8) check (percentile_5w_2y between 0 and 100),
+  percentile_30w_2y numeric(14, 8) check (percentile_30w_2y between 0 and 100),
+  percentile_40w_2y numeric(14, 8) check (percentile_40w_2y between 0 and 100),
+  percentile_50w_2y numeric(14, 8) check (percentile_50w_2y between 0 and 100),
+  five_week_return_pct numeric(14, 8),
+  index_five_week_return_pct numeric(14, 8),
+  excess_five_week_return_pct numeric(14, 8),
+  index_return_quality text not null default 'official_index'
+    check (index_return_quality in ('official_index', 'constituent_equal_weight')),
+  price_source text not null default 'tencent_weekly',
+  calculated_at timestamptz not null default now(),
+  primary key (index_code, stock_code, week_date)
+);
+
 create table if not exists public.market_data_ingestion_runs (
   id uuid primary key default gen_random_uuid(),
   dataset text not null check (dataset in ('hsci_constituents', 'short_positions', 'stock_connect')),
@@ -80,12 +103,20 @@ create table if not exists public.market_data_ingestion_runs (
   finished_at timestamptz not null default now()
 );
 
+alter table public.market_data_ingestion_runs
+  drop constraint if exists market_data_ingestion_runs_dataset_check;
+alter table public.market_data_ingestion_runs
+  add constraint market_data_ingestion_runs_dataset_check
+  check (dataset in ('hsci_constituents', 'short_positions', 'stock_connect', 'weekly_metrics'));
+
 create index if not exists market_index_constituents_latest_idx
   on public.market_index_constituents(index_code, snapshot_date desc);
 create index if not exists hk_short_positions_date_idx
   on public.hk_short_positions_weekly(report_date desc, stock_code);
 create index if not exists hk_stock_connect_holdings_date_idx
   on public.hk_stock_connect_holdings_daily(holding_date desc, stock_code);
+create index if not exists hk_market_insight_metrics_latest_idx
+  on public.hk_market_insight_metrics_weekly(index_code, week_date desc, stock_code);
 create index if not exists market_data_ingestion_runs_dataset_idx
   on public.market_data_ingestion_runs(dataset, finished_at desc);
 
@@ -93,18 +124,21 @@ alter table public.market_securities enable row level security;
 alter table public.market_index_constituents enable row level security;
 alter table public.hk_short_positions_weekly enable row level security;
 alter table public.hk_stock_connect_holdings_daily enable row level security;
+alter table public.hk_market_insight_metrics_weekly enable row level security;
 alter table public.market_data_ingestion_runs enable row level security;
 
 grant select on public.market_securities to authenticated;
 grant select on public.market_index_constituents to authenticated;
 grant select on public.hk_short_positions_weekly to authenticated;
 grant select on public.hk_stock_connect_holdings_daily to authenticated;
+grant select on public.hk_market_insight_metrics_weekly to authenticated;
 grant select on public.market_data_ingestion_runs to authenticated;
 
 grant select, insert, update, delete on public.market_securities to service_role;
 grant select, insert, update, delete on public.market_index_constituents to service_role;
 grant select, insert, update, delete on public.hk_short_positions_weekly to service_role;
 grant select, insert, update, delete on public.hk_stock_connect_holdings_daily to service_role;
+grant select, insert, update, delete on public.hk_market_insight_metrics_weekly to service_role;
 grant select, insert, update, delete on public.market_data_ingestion_runs to service_role;
 
 drop policy if exists "Authenticated users read market securities" on public.market_securities;
@@ -122,6 +156,10 @@ on public.hk_short_positions_weekly for select to authenticated using (true);
 drop policy if exists "Authenticated users read stock connect holdings" on public.hk_stock_connect_holdings_daily;
 create policy "Authenticated users read stock connect holdings"
 on public.hk_stock_connect_holdings_daily for select to authenticated using (true);
+
+drop policy if exists "Authenticated users read weekly market insight metrics" on public.hk_market_insight_metrics_weekly;
+create policy "Authenticated users read weekly market insight metrics"
+on public.hk_market_insight_metrics_weekly for select to authenticated using (true);
 
 drop policy if exists "Authenticated users read ingestion runs" on public.market_data_ingestion_runs;
 create policy "Authenticated users read ingestion runs"
@@ -165,3 +203,17 @@ grant select on public.current_market_index_constituents to authenticated;
 grant select on public.hsci_current_short_history to authenticated;
 grant select on public.hsci_current_stock_connect_history to authenticated;
 
+create or replace view public.current_hk_market_insight_metrics
+with (security_invoker = true)
+as
+select distinct on (m.index_code, m.stock_code)
+       m.index_code, m.stock_code, m.week_date, m.close_price,
+       m.bias_5w_pct, m.bias_30w_pct, m.bias_40w_pct, m.bias_50w_pct,
+       m.percentile_5w_2y, m.percentile_30w_2y,
+       m.percentile_40w_2y, m.percentile_50w_2y,
+       m.five_week_return_pct, m.index_five_week_return_pct,
+       m.excess_five_week_return_pct, m.index_return_quality, m.calculated_at
+from public.hk_market_insight_metrics_weekly m
+order by m.index_code, m.stock_code, m.week_date desc;
+
+grant select on public.current_hk_market_insight_metrics to authenticated;

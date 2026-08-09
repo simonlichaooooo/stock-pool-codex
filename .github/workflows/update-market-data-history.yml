@@ -6,14 +6,18 @@ on:
     - cron: "0 10 * * 5"
     # 香港时间工作日 20:00：港股通数据；每次回看 10 天以修复节假日和迟到数据。
     - cron: "0 12 * * 1-5"
+    # 香港时间周五 19:00：周线收盘后计算并持久化市场洞察指标。
+    - cron: "0 11 * * 5"
   workflow_dispatch:
     inputs:
       dataset:
         description: Dataset to backfill
         required: true
         type: choice
-        default: both
+        default: metrics
         options:
+          - metrics
+          - all
           - both
           - short
           - stock-connect
@@ -35,7 +39,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -63,6 +67,9 @@ jobs:
       - name: Run scheduled Stock Connect update
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 12 * * 1-5'
         run: python scripts/market-data-ingest.py stock-connect --lookback-days 10
+      - name: Run scheduled weekly metrics update
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 11 * * 5'
+        run: python scripts/market-data-ingest.py metrics
       - name: Run manual backfill
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'workflow_dispatch'
         run: |
@@ -70,10 +77,12 @@ jobs:
           if [ -n "$DISPATCH_END" ]; then
             END_ARGS=(--end "$DISPATCH_END")
           fi
-          if [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "short" ]; then
+          if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "short" ]; then
             python scripts/market-data-ingest.py short --start "$DISPATCH_START" "${END_ARGS[@]}"
           fi
-          if [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "stock-connect" ]; then
+          if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "both" ] || [ "$DISPATCH_DATASET" = "stock-connect" ]; then
             python scripts/market-data-ingest.py stock-connect --start "$DISPATCH_START" "${END_ARGS[@]}"
           fi
-
+          if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "metrics" ]; then
+            python scripts/market-data-ingest.py metrics
+          fi

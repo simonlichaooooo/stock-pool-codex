@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import csv
 import html
 import io
@@ -30,6 +31,8 @@ SZSE_XLSX_URL = "https://www.szse.cn/api/report/ShowReport"
 SSE_PUBLIC_START = date(2024, 8, 19)
 USER_AGENT = "Mozilla/5.0 (compatible; stock-pool-market-data/1.0)"
 XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+MARKET_INSIGHTS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "market-insights.json")
+METRIC_START = date(2023, 1, 1)
 
 
 def http_request(url: str, *, headers: dict[str, str] | None = None, timeout: int = 45) -> bytes:
@@ -395,6 +398,164 @@ def ingest_stock_connect(client: SupabaseRest, start: date, end: date, *, pause:
     return total
 
 
+def fetch_weekly_prices(stock_code: str, count: int = 320) -> list[tuple[str, float]]:
+    symbol = f"hk{normalize_code(stock_code)}"
+    params = f"{symbol},week,,,{count}"
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            payload = json_request(f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={params}")
+            data = (payload.get("data") or {}).get(symbol) or {}
+            rows = data.get("qfqweek") or data.get("week") or []
+            result = []
+            for row in rows:
+                try:
+                    close = float(row[2])
+                except (IndexError, TypeError, ValueError):
+                    continue
+                if row[0] and close > 0:
+                    result.append((str(row[0]), close))
+            if len(result) >= 6:
+                return result
+            last_error = RuntimeError(f"Weekly prices returned too few rows for {stock_code}: {len(result)}")
+        except Exception as error:
+            last_error = error
+        time.sleep(0.6 * (attempt + 1))
+    raise RuntimeError(f"Weekly prices unavailable for {stock_code}: {last_error}")
+
+
+def fetch_index_weekly_prices(quote_id: str) -> list[tuple[str, float]]:
+    end = date.today().strftime("%Y%m%d")
+    params = urllib.parse.urlencode({
+        "secid": quote_id, "fields1": "f1,f2,f3,f4,f5,f6",
+        "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
+        "klt": "102", "fqt": "1", "beg": "20190101", "end": end,
+    })
+    payload = json_request(f"https://push2his.eastmoney.com/api/qt/stock/kline/get?{params}")
+    result = []
+    for line in ((payload.get("data") or {}).get("klines") or []):
+        parts = str(line).split(",")
+        if len(parts) >= 3 and float(parts[2]) > 0:
+            result.append((parts[0], float(parts[2])))
+    if len(result) < 6:
+        raise RuntimeError(f"Index weekly prices unavailable for {quote_id}")
+    return result
+
+
+def rolling_biases(prices: list[tuple[str, float]], period: int) -> list[float | None]:
+    values = [close for _, close in prices]
+    result: list[float | None] = []
+    rolling_sum = 0.0
+    for index, close in enumerate(values):
+        rolling_sum += close
+        if index >= period:
+            rolling_sum -= values[index - period]
+        result.append((close / (rolling_sum / period) - 1) * 100 if index >= period - 1 else None)
+    return result
+
+
+def rolling_percentiles(values: list[float | None], window: int = 104) -> list[float | None]:
+    result: list[float | None] = []
+    valid: list[float] = []
+    for value in values:
+        if value is None:
+            result.append(None)
+            continue
+        valid.append(value)
+        observations = valid[-window:]
+        if len(observations) < window:
+            result.append(None)
+            continue
+        lower = sum(item < value for item in observations)
+        equal = sum(item == value for item in observations)
+        result.append((lower + 0.5 * (equal - 1)) / (len(observations) - 1) * 100)
+    return result
+
+
+def five_week_returns(prices: list[tuple[str, float]]) -> dict[str, float]:
+    return {
+        day: (close / prices[index - 5][1] - 1) * 100
+        for index, (day, close) in enumerate(prices) if index >= 5
+    }
+
+
+def metric_rows(index_code: str, stock_code: str, prices: list[tuple[str, float]],
+                index_returns: dict[str, float], quality: str) -> list[dict]:
+    biases = {period: rolling_biases(prices, period) for period in (5, 30, 40, 50)}
+    percentiles = {period: rolling_percentiles(biases[period]) for period in (5, 30, 40, 50)}
+    stock_returns = five_week_returns(prices)
+    rows = []
+    for offset, (day, close) in enumerate(prices):
+        if day < METRIC_START.isoformat():
+            continue
+        stock_return = stock_returns.get(day)
+        index_return = index_returns.get(day)
+        rows.append({
+            "index_code": index_code, "stock_code": normalize_code(stock_code), "week_date": day,
+            "close_price": close,
+            "bias_5w_pct": biases[5][offset], "bias_30w_pct": biases[30][offset],
+            "bias_40w_pct": biases[40][offset], "bias_50w_pct": biases[50][offset],
+            "percentile_5w_2y": percentiles[5][offset], "percentile_30w_2y": percentiles[30][offset],
+            "percentile_40w_2y": percentiles[40][offset], "percentile_50w_2y": percentiles[50][offset],
+            "five_week_return_pct": stock_return, "index_five_week_return_pct": index_return,
+            "excess_five_week_return_pct": stock_return - index_return if stock_return is not None and index_return is not None else None,
+            "index_return_quality": quality, "price_source": "tencent_weekly",
+        })
+    return rows
+
+
+def ingest_weekly_metrics(client: SupabaseRest, *, dry_run: bool = False, workers: int = 10) -> int:
+    started = datetime.now(timezone.utc).isoformat()
+    with open(MARKET_INSIGHTS_FILE, encoding="utf-8") as handle:
+        indexes = json.load(handle)["constituents"]["indexes"]
+    codes = sorted({normalize_code(member["code"]) for item in indexes.values() for member in item["members"]})
+    prices_by_code: dict[str, list[tuple[str, float]]] = {}
+    failures = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(fetch_weekly_prices, code): code for code in codes}
+        for completed, future in enumerate(concurrent.futures.as_completed(futures), 1):
+            code = futures[future]
+            try:
+                prices_by_code[code] = future.result()
+            except Exception as error:  # individual source failures must not discard the whole weekly snapshot
+                failures[code] = str(error)
+            if completed % 50 == 0 or completed == len(futures):
+                print(f"Weekly prices: {completed}/{len(futures)}")
+    all_rows = []
+    for index_id, item in indexes.items():
+        index_code = item["code"]
+        quality = "official_index"
+        try:
+            index_returns = five_week_returns(fetch_index_weekly_prices(item["quoteId"]))
+        except Exception as error:
+            print(f"WARN {index_code}: official index prices unavailable, using equal-weight constituents: {error}", file=sys.stderr)
+            quality = "constituent_equal_weight"
+            grouped: dict[str, list[float]] = {}
+            for member in item["members"]:
+                prices = prices_by_code.get(normalize_code(member["code"]))
+                if not prices:
+                    continue
+                for day, value in five_week_returns(prices).items():
+                    grouped.setdefault(day, []).append(value)
+            index_returns = {day: sum(values) / len(values) for day, values in grouped.items() if values}
+        for member in item["members"]:
+            code = normalize_code(member["code"])
+            prices = prices_by_code.get(code)
+            if prices:
+                all_rows.extend(metric_rows(index_code, code, prices, index_returns, quality))
+    if not all_rows:
+        raise RuntimeError("No weekly metric rows were calculated")
+    written = len(all_rows) if dry_run else client.upsert(
+        "hk_market_insight_metrics_weekly", all_rows, "index_code,stock_code,week_date", chunk_size=500)
+    if not dry_run:
+        client.insert_run("weekly_metrics", started, METRIC_START, date.today(),
+                          "partial" if failures else "success", written,
+                          {"stocks_requested": len(codes), "stocks_loaded": len(prices_by_code),
+                           "failed_stocks": failures, "indexes": list(indexes)})
+    print(f"Stored weekly market insight metrics: {written} rows; failed stocks: {len(failures)}")
+    return written
+
+
 def parse_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
 
@@ -418,6 +579,9 @@ def main() -> int:
     connect.add_argument("--lookback-days", type=int, default=10)
     connect.add_argument("--pause", type=float, default=0.15)
 
+    metrics = subparsers.add_parser("metrics")
+    metrics.add_argument("--workers", type=int, default=10)
+
     args = parser.parse_args()
     client = SupabaseRest(required=not args.dry_run)
     if args.command == "sync-hsci":
@@ -428,6 +592,8 @@ def main() -> int:
     elif args.command == "stock-connect":
         start = args.start or (args.end - timedelta(days=max(0, args.lookback_days - 1)))
         ingest_stock_connect(client, start, args.end, pause=args.pause, dry_run=args.dry_run)
+    elif args.command == "metrics":
+        ingest_weekly_metrics(client, dry_run=args.dry_run, workers=args.workers)
     return 0
 
 
