@@ -4564,6 +4564,8 @@
     .market-insight-meta a:hover { text-decoration:underline; }
     .market-insight-table table { min-width:1380px; }
     .market-insight-table th { white-space:nowrap; border-bottom:0 !important; background:#eaf0f7; color:#0b2342; }
+    html .market-insight-table.portfolio-table thead th,
+    html[data-theme]:not([data-theme="glacier"]) .market-insight-table.portfolio-table thead th { border-top:0 !important; border-bottom:0 !important; box-shadow:none !important; }
     .market-insight-table th.sticky-col { background:#e1e9f3; }
     .market-insight-table th, .market-insight-table th * { text-decoration:none !important; }
     .market-insight-table .stock-name { font-weight:700; }
@@ -4589,7 +4591,10 @@
     .market-insight-search-results button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:36px; padding:6px 9px; border:0; background:transparent; color:var(--text); text-align:left; }
     .market-insight-search-results button:hover { background:var(--panel-2); }
     .market-insight-search-results small { color:var(--muted); white-space:nowrap; }
-    .market-insight-sort { display:inline-flex; align-items:center; justify-content:flex-end; gap:5px; width:100%; padding:0; border:0; background:transparent; color:inherit; font:inherit; font-weight:inherit; white-space:nowrap; cursor:pointer; }
+    .market-insight-sort,
+    .market-insight-sort:hover,
+    .market-insight-sort:focus,
+    .market-insight-sort:active { display:inline-flex; align-items:center; justify-content:flex-end; gap:5px; width:100%; padding:0; border:0 !important; border-radius:0; outline:0; box-shadow:none !important; background:transparent !important; color:inherit; font:inherit; font-weight:inherit; white-space:nowrap; text-decoration:none !important; cursor:pointer; }
     .market-insight-sort::after { content:"↕"; color:var(--muted); font-size:10px; }
     .market-insight-sort.active::after { content:attr(data-sort-arrow); color:var(--brand-strong); }
     .market-insight-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
@@ -4599,9 +4604,9 @@
     .market-insight-rating-copy strong { display:block; margin-bottom:4px; color:var(--text); font-size:13px; }
     .market-insight-rating-copy span { color:var(--muted); font-size:10.5px; line-height:1.55; }
     .market-insight-rating-filters { display:flex; justify-content:flex-end; gap:4px; flex-wrap:wrap; margin-left:auto; }
-    .market-insight-rating-filters button { min-height:28px; padding:0 8px; border-color:transparent; background:transparent; color:#bc8600; font-size:12px; letter-spacing:1px; }
-    .market-insight-rating-filters button:hover { border-color:#ead79f; background:#fffaf0; }
-    .market-insight-rating-filters button.active { color:#8a5b00; border-color:#e0b64e; background:#fff8dc; box-shadow:none; font-weight:800; }
+    .market-insight-rating-filters button { min-height:28px; padding:0 8px; border:0 !important; box-shadow:none !important; background:transparent; color:#bc8600; font-size:12px; letter-spacing:1px; text-decoration:none !important; }
+    .market-insight-rating-filters button:hover { border:0; background:#fffaf0; }
+    .market-insight-rating-filters button.active { color:#8a5b00; border:0; background:#fff8dc; box-shadow:none; font-weight:800; }
     .market-insight-rating-filters .rating-all { color:var(--muted); letter-spacing:0; }
     .market-insight-rating-badge { display:inline-flex; align-items:center; gap:3px; margin-left:7px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; }
     .market-insight-rule-star { margin-left:5px; color:#d79a00; font-size:12px; text-shadow:0 1px 0 #fff; }
