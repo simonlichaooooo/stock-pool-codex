@@ -1,6 +1,6 @@
 # 市场洞察 AI 解读部署
 
-前端发布到 GitHub Pages 后，还需要完成以下一次性配置，AI 解读才能在生产环境工作。
+前端发布到 GitHub Pages 后，还需要完成以下一次性配置，DeepSeek AI 解读才能在生产环境工作。
 
 ## 1. 执行数据库迁移
 
@@ -13,21 +13,33 @@
 
 ## 2. 配置服务端 Secret
 
-在 Supabase Dashboard 的 **Edge Functions → Secrets** 中新增：
+先登录 [DeepSeek 开放平台](https://platform.deepseek.com/)，在 **API keys** 中创建一个新的 API Key。Key 只会完整显示一次，请立即复制到 Supabase，不要写进代码、聊天记录或截图。
 
-- `OPENAI_API_KEY`：OpenAI 项目 API Key。
-- `OPENAI_MARKET_INSIGHT_MODEL`：可选，默认 `gpt-5.6-terra`。
+然后在 Supabase Dashboard 的 **Edge Functions → Secrets** 中新增：
 
-不要把 API Key 写入 `index.html`、SQL、GitHub Secrets 以外的代码文件或浏览器 Local Storage。
+- `DEEPSEEK_API_KEY`：刚刚创建的 DeepSeek API Key。
+- `DEEPSEEK_MARKET_INSIGHT_MODEL`：可选，默认 `deepseek-v4-pro`。
+
+不要再配置 `OPENAI_API_KEY`。如果之前已经添加，可以从 Supabase Secrets 中删除；不要把任何 API Key 写入 `index.html`、SQL 或浏览器 Local Storage。
 
 也可以在已登录并关联项目的 Supabase CLI 中执行：
 
 ```bash
-supabase secrets set OPENAI_API_KEY="你的 OpenAI API Key"
-supabase secrets set OPENAI_MARKET_INSIGHT_MODEL="gpt-5.6-terra"
+supabase secrets set DEEPSEEK_API_KEY="你的 DeepSeek API Key"
+supabase secrets set DEEPSEEK_MARKET_INSIGHT_MODEL="deepseek-v4-pro"
 ```
 
 ## 3. 部署 Edge Function
+
+### 方法 A：Supabase Dashboard
+
+1. 进入 **Edge Functions → Functions**。
+2. 点击 **Deploy a new function**，选择在 Dashboard 编辑器中创建。
+3. 函数名填写 `market-insight-ai`。
+4. 将 [`supabase/functions/market-insight-ai/index.ts`](../supabase/functions/market-insight-ai/index.ts) 的全部内容粘贴到编辑器。
+5. 保持 JWT 验证开启，点击 **Deploy function**。
+
+### 方法 B：Supabase CLI
 
 在仓库根目录执行：
 

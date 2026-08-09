@@ -2,9 +2,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
-const OPENAI_MODEL = Deno.env.get("OPENAI_MARKET_INSIGHT_MODEL") || "gpt-5.6-terra";
-const PROMPT_VERSION = "market-insight-v1";
+const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
+const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MARKET_INSIGHT_MODEL") || "deepseek-v4-pro";
+const PROMPT_VERSION = "market-insight-deepseek-v1";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -140,14 +140,57 @@ function analysisSchema() {
   };
 }
 
-function outputText(response: any) {
-  for (const item of response?.output || []) {
-    for (const content of item?.content || []) {
-      if (content?.type === "output_text" && content.text) return content.text;
-      if (content?.type === "refusal") throw new Error(content.refusal || "模型拒绝生成解读");
+function validateAnalysis(value: any) {
+  const stringFields = ["headline", "overall_assessment", "interaction", "confidence"];
+  const arrayFields = ["key_evidence", "counter_evidence", "watch_items", "data_limitations"];
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("模型返回的解读不是 JSON 对象");
+  for (const field of stringFields) if (typeof value[field] !== "string") throw new Error(`模型返回缺少字段 ${field}`);
+  for (const field of arrayFields) if (!Array.isArray(value[field]) || value[field].some((item: unknown) => typeof item !== "string")) throw new Error(`模型返回字段 ${field} 格式无效`);
+  if (!["低", "中", "高"].includes(value.confidence)) throw new Error("模型返回的综合置信度无效");
+  for (const partyName of ["short_position", "stock_connect"]) {
+    const party = value[partyName];
+    if (!party || typeof party.conclusion !== "string" || !Array.isArray(party.hypotheses)) throw new Error(`模型返回字段 ${partyName} 格式无效`);
+    for (const hypothesis of party.hypotheses) {
+      if (!hypothesis || typeof hypothesis.label !== "string" || typeof hypothesis.explanation !== "string" || !Array.isArray(hypothesis.supporting_evidence) || !Array.isArray(hypothesis.counter_evidence) || !["低", "中", "高"].includes(hypothesis.confidence)) throw new Error(`模型返回字段 ${partyName}.hypotheses 格式无效`);
     }
   }
-  throw new Error("模型未返回可解析的解读");
+  return value;
+}
+
+async function requestDeepSeek(evidence: unknown) {
+  const schema = analysisSchema();
+  const messages = [
+    { role: "system", content: `你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，分析股价、空头持仓比例与港股通持仓比例的关系。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。只输出一个合法 JSON 对象，不要输出 Markdown 或额外文字。JSON 必须严格符合以下结构：${JSON.stringify(schema)}` },
+    { role: "user", content: `请分析以下数据。重点判断空头更接近高位建仓后下跌平仓、顺势追空，还是对冲/事件驱动；港股通更接近逆势承接、趋势增持、反弹减持或持续撤离。不要套用固定分类，若数据支持其他解释请提出。请输出 JSON。\n\n${JSON.stringify(evidence)}` },
+  ];
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const modelResponse = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: DEEPSEEK_MODEL,
+          messages,
+          thinking: { type: "enabled" },
+          reasoning_effort: "high",
+          response_format: { type: "json_object" },
+          max_tokens: 8000,
+          stream: false,
+        }),
+      });
+      const responseJson = await modelResponse.json();
+      if (!modelResponse.ok) throw new Error(responseJson?.error?.message || `DeepSeek HTTP ${modelResponse.status}`);
+      const choice = responseJson?.choices?.[0];
+      if (choice?.finish_reason === "length") throw new Error("模型输出被截断");
+      const content = choice?.message?.content;
+      if (!content) throw new Error("模型未返回可解析的 JSON 解读");
+      return validateAnalysis(JSON.parse(content));
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+  throw lastError || new Error("DeepSeek 解读生成失败");
 }
 
 Deno.serve(async (request) => {
@@ -158,7 +201,7 @@ Deno.serve(async (request) => {
     const token = authorization.replace(/^Bearer\s+/i, "");
     const { data: authData, error: authError } = await supabase.auth.getUser(token);
     if (authError || !authData.user) return jsonResponse({ error: "Unauthorized" }, 401);
-    if (!OPENAI_API_KEY) return jsonResponse({ error: "OPENAI_API_KEY 尚未配置" }, 503);
+    if (!DEEPSEEK_API_KEY) return jsonResponse({ error: "DEEPSEEK_API_KEY 尚未配置" }, 503);
 
     const body = await request.json();
     const stockCode = String(body.stock_code || "").padStart(5, "0");
@@ -193,38 +236,19 @@ Deno.serve(async (request) => {
       },
     };
     const dataFingerprint = await fingerprint(evidence);
-    const { data: cached } = await supabase.from("market_insight_ai_analyses").select("analysis,evidence,model,prompt_version,price_as_of,short_as_of,connect_as_of,created_at").eq("index_code", indexCode).eq("stock_code", stockCode).eq("range_key", rangeKey).eq("data_fingerprint", dataFingerprint).maybeSingle();
+    const { data: cached } = await supabase.from("market_insight_ai_analyses").select("analysis,evidence,model,prompt_version,price_as_of,short_as_of,connect_as_of,created_at").eq("index_code", indexCode).eq("stock_code", stockCode).eq("range_key", rangeKey).eq("data_fingerprint", dataFingerprint).eq("model", DEEPSEEK_MODEL).eq("prompt_version", PROMPT_VERSION).maybeSingle();
     if (cached) return jsonResponse({ analysis: cached.analysis, meta: { ...cached, analysis: undefined, evidence: undefined, generated_at: cached.created_at, cached: true } });
 
-    const userHash = await fingerprint({ user: authData.user.id });
-    const modelResponse = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        store: false,
-        safety_identifier: userHash.slice(0, 32),
-        reasoning: { effort: "medium" },
-        max_output_tokens: 3200,
-        input: [
-          { role: "system", content: "你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，分析股价、空头持仓比例与港股通持仓比例的关系。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。" },
-          { role: "user", content: `请分析以下数据。重点判断空头更接近高位建仓后下跌平仓、顺势追空，还是对冲/事件驱动；港股通更接近逆势承接、趋势增持、反弹减持或持续撤离。不要套用固定分类，若数据支持其他解释请提出。\n\n${JSON.stringify(evidence)}` },
-        ],
-        text: { verbosity: "medium", format: { type: "json_schema", name: "market_insight_analysis", strict: true, schema: analysisSchema() } },
-      }),
-    });
-    const responseJson = await modelResponse.json();
-    if (!modelResponse.ok) throw new Error(responseJson?.error?.message || `OpenAI HTTP ${modelResponse.status}`);
-    const analysis = JSON.parse(outputText(responseJson));
+    const analysis = await requestDeepSeek(evidence);
     const row = {
       index_code: indexCode, stock_code: stockCode, range_key: rangeKey, data_fingerprint: dataFingerprint,
-      analysis, evidence, model: OPENAI_MODEL, prompt_version: PROMPT_VERSION,
+      analysis, evidence, model: DEEPSEEK_MODEL, prompt_version: PROMPT_VERSION,
       price_as_of: price.at(-1)?.date || null, short_as_of: short.at(-1)?.date || null, connect_as_of: connect.at(-1)?.date || null,
       updated_at: new Date().toISOString(),
     };
     const { error: cacheError } = await supabase.from("market_insight_ai_analyses").upsert(row, { onConflict: "index_code,stock_code,range_key,data_fingerprint" });
     if (cacheError) throw cacheError;
-    return jsonResponse({ analysis, meta: { model: OPENAI_MODEL, prompt_version: PROMPT_VERSION, price_as_of: row.price_as_of, short_as_of: row.short_as_of, connect_as_of: row.connect_as_of, generated_at: row.updated_at, cached: false } });
+    return jsonResponse({ analysis, meta: { model: DEEPSEEK_MODEL, prompt_version: PROMPT_VERSION, price_as_of: row.price_as_of, short_as_of: row.short_as_of, connect_as_of: row.connect_as_of, generated_at: row.updated_at, cached: false } });
   } catch (error) {
     console.error(error);
     return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 500);
