@@ -6389,7 +6389,7 @@
       return members.map((member, order) => {
         const rawCode = String(member.code || "").padStart(4, "0");
         const canonical = stockCatalog.find((stock) => stock.market === "HK" && stock.code.replace(/\.HK$/i, "").padStart(4, "0") === rawCode);
-        return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
+        return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", indexWeight:Number.isFinite(Number(member.weight)) ? Number(member.weight) : null, code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
       });
     }
 
@@ -6418,7 +6418,7 @@
       if (["ma5", "ma30", "ma40", "ma50"].includes(key)) return numeric(row.biasMetrics?.[key]?.bias);
       if (key === "shortRatio") return numeric(marketInsightShortRatio(row));
       if (key === "connectRatio") return numeric(marketInsightConnectRatio(row));
-      if (key === "indexWeight") return numeric(row.latestMarketCapCny);
+      if (key === "indexWeight") return numeric(row.indexWeight ?? row.latestMarketCapCny);
       return Number(row.order);
     }
 
@@ -6537,7 +6537,7 @@
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
-          列表默认按指数权重顺序排列；公开成分接口未提供完整权重时，以最新总市值作为排序依据。
+          列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。
           5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。

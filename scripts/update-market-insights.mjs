@@ -56,6 +56,7 @@ function parseCsvLine(line) {
 }
 
 async function updateConstituents(next) {
+  const previousIndexes = current.constituents?.indexes || {};
   const payloads = new Map();
   for (const source of HSI_CONSTITUENT_SOURCES) {
     if (!payloads.has(source.url)) payloads.set(source.url, JSON.parse(await fetchText(source.url)));
@@ -66,16 +67,25 @@ async function updateConstituents(next) {
     const series = payload?.indexSeriesList?.[0];
     const index = series?.indexList?.find((item) => item.indexName === source.officialName);
     if (!index?.constituentContent?.length) throw new Error(`HSI did not return constituents for ${source.code}`);
+    const previousIndex = previousIndexes[source.id] || {};
+    const previousMembers = new Map((previousIndex.members || []).map((item) => [String(item.code || "").padStart(4, "0"), item]));
     indexes[source.id] = {
       label: source.label,
       code: source.code,
       quoteId: source.quoteId,
       asOf: String(series.constituentsDate || payload.requestDate || "").slice(0, 10),
       sourceUrl: source.url,
-      members: index.constituentContent.map((item) => ({
-        code: String(item.code || "").padStart(4, "0"),
-        name: item.constituentName
-      })).filter((item) => item.code && item.name)
+      ...(previousIndex.weightAsOf ? { weightAsOf:previousIndex.weightAsOf } : {}),
+      ...(previousIndex.weightEffectiveDate ? { weightEffectiveDate:previousIndex.weightEffectiveDate } : {}),
+      members: index.constituentContent.map((item) => {
+        const code = String(item.code || "").padStart(4, "0");
+        const previous = previousMembers.get(code);
+        return {
+          code,
+          name:previous?.name || item.constituentName,
+          ...(Number.isFinite(Number(previous?.weight)) ? { weight:Number(previous.weight) } : {})
+        };
+      }).filter((item) => item.code && item.name)
     };
   }
   next.constituents = { indexes };
