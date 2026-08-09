@@ -6261,8 +6261,9 @@
       const change = row.shortChange5wPct === null || row.shortChange5wPct === undefined || row.shortChange5wPct === "" ? NaN : Number(row.shortChange5wPct);
       let changeText = "5周变化 --", changeClass = "";
       if (Number.isFinite(change)) {
-        if (change > 0) { changeText = `5周增持 ${change.toFixed(2)}%`; changeClass = "increase"; }
-        else if (change < 0) { changeText = `5周减持 ${Math.abs(change).toFixed(2)}%`; changeClass = "decrease"; }
+        const formatted = `${Math.abs(change).toFixed(2)}%`;
+        if (change > 0) { changeText = `5周增持 ${formatted}`; changeClass = "increase"; }
+        else if (change < 0) { changeText = `5周减持 ${formatted}`; changeClass = "decrease"; }
         else changeText = "5周持平 0.00%";
       }
       return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-short-change ${changeClass}">${changeText}</small></div></td>`;
@@ -6318,10 +6319,17 @@
         const connectFiveWeeksAgo = connectTarget ? connectRows.find((item) => new Date(`${item.holding_date}T00:00:00`) <= connectTarget) : null;
         const latestShortShares = short ? Number(short.short_shares) : NaN;
         const previousShortShares = shortFiveWeeksAgo ? Number(shortFiveWeeksAgo.short_shares) : NaN;
-        const shortDecline5wShares = Number.isFinite(latestShortShares) && Number.isFinite(previousShortShares) ? previousShortShares - latestShortShares : null;
-        const shortChange5wPct = Number.isFinite(latestShortShares) && Number.isFinite(previousShortShares) && previousShortShares > 0
-          ? (latestShortShares / previousShortShares - 1) * 100
-          : null;
+        const shortChange5wShares = Number.isFinite(latestShortShares) && Number.isFinite(previousShortShares) ? latestShortShares - previousShortShares : null;
+        const shortDecline5wShares = Number.isFinite(shortChange5wShares) ? -shortChange5wShares : null;
+        const shortRatioForRecord = (item) => {
+          if (!item) return NaN;
+          const stored = item.short_ratio_pct === null || item.short_ratio_pct === undefined || item.short_ratio_pct === "" ? NaN : Number(item.short_ratio_pct);
+          if (Number.isFinite(stored)) return stored;
+          const shares = Number(item.short_shares), issuedShares = Number(item.issued_shares);
+          return Number.isFinite(shares) && shares >= 0 && issuedShares > 0 ? shares / issuedShares * 100 : NaN;
+        };
+        const latestShortRatio = shortRatioForRecord(short), previousShortRatio = shortRatioForRecord(shortFiveWeeksAgo);
+        const shortChange5wPct = Number.isFinite(latestShortRatio) && Number.isFinite(previousShortRatio) ? latestShortRatio - previousShortRatio : null;
         const connectIncrease5wShares = connect && connectFiveWeeksAgo ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
         return {
           ...row,
