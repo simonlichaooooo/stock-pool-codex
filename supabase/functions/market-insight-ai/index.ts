@@ -4,7 +4,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
 const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MARKET_INSIGHT_MODEL") || "deepseek-v4-pro";
-const PROMPT_VERSION = "market-insight-deepseek-v1";
+const PROMPT_VERSION = "market-insight-deepseek-v2";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -165,17 +165,19 @@ async function requestDeepSeek(evidence: unknown) {
   ];
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55000);
     try {
       const modelResponse = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { "Authorization": `Bearer ${DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           model: DEEPSEEK_MODEL,
           messages,
-          thinking: { type: "enabled" },
-          reasoning_effort: "high",
+          thinking: { type: "disabled" },
           response_format: { type: "json_object" },
-          max_tokens: 8000,
+          max_tokens: 3600,
           stream: false,
         }),
       });
@@ -188,6 +190,11 @@ async function requestDeepSeek(evidence: unknown) {
       return validateAnalysis(JSON.parse(content));
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      if (lastError.name === "AbortError") throw new Error("DeepSeek 响应超过 55 秒，请稍后重试");
+      const canRetry = /JSON|格式|字段|截断|未返回/.test(lastError.message);
+      if (!canRetry || attempt > 0) throw lastError;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
   throw lastError || new Error("DeepSeek 解读生成失败");
