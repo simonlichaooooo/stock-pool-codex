@@ -4568,7 +4568,7 @@
     html[data-theme]:not([data-theme="glacier"]) .market-insight-table.portfolio-table thead th { border-top:0 !important; border-bottom:0 !important; box-shadow:none !important; }
     .market-insight-table th.sticky-col { background:#e1e9f3; }
     .market-insight-table th, .market-insight-table th * { text-decoration:none !important; }
-    .market-insight-table .stock-name { font-weight:700; }
+    .market-insight-table .stock-name { display:flex; align-items:center; gap:6px; font-weight:700; white-space:nowrap; }
     .market-insight-table .sticky-col { min-width:170px; }
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
@@ -4608,8 +4608,10 @@
     .market-insight-rating-filters button:hover { border:0; background:#fffaf0; }
     .market-insight-rating-filters button.active { color:#8a5b00; border:0; background:#fff8dc; box-shadow:none; font-weight:800; }
     .market-insight-rating-filters .rating-all { color:var(--muted); letter-spacing:0; }
-    .market-insight-rating-badge { display:inline-flex; align-items:center; gap:3px; margin-left:7px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; }
-    .market-insight-rule-star { margin-left:5px; color:#d79a00; font-size:12px; text-shadow:0 1px 0 #fff; }
+    .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; gap:3px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; white-space:nowrap; }
+    .market-insight-rule-star { display:inline-flex; flex:0 0 auto; margin-right:5px; color:#d79a00; font-size:12px; line-height:1; text-shadow:0 1px 0 #fff; }
+    .market-insight-table td.num > span,
+    .market-insight-metric > div > span { display:inline-flex; align-items:center; justify-content:flex-end; white-space:nowrap; }
     .market-insight-detail-head { align-items:center; }
     .market-insight-detail-title { display:flex; align-items:center; gap:12px; }
     .market-insight-back { white-space:nowrap; }
@@ -6139,7 +6141,7 @@
         return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
-      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${bias > 0 ? "+" : ""}${bias.toFixed(2)}%${marketInsightRuleStar(star, starLabel)}</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
+      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
@@ -6455,7 +6457,7 @@
     function marketInsightExcessCell(value, star = false) {
       const excess = value === null || value === undefined || value === "" ? NaN : Number(value);
       const cls = excess > 0 ? "gain" : excess < 0 ? "loss" : "";
-      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${excess > 0 ? "+" : ""}${excess.toFixed(2)}%${marketInsightRuleStar(star, "5周超额收益为正")}` : "--"}</span></td>`;
+      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${marketInsightRuleStar(star, "5周超额收益为正")}${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span></td>`;
     }
 
     function renderMarketInsightView() {
@@ -6521,14 +6523,14 @@
                 const connectRatio = marketInsightConnectRatio(row);
                 const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr>
-                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}<span class="market-insight-rating-badge">★ ${rating.score}</span></div><div class="stock-code">${escapeHtml(row.code)}</div></td>
+                  <td data-label="股票名称" class="sticky-col"><div class="stock-name"><span class="market-insight-rating-badge">★ ${rating.score}</span>${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}</div></td>
                   ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
-                  ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, rating.rules[2], "30/40/50周乖离率均为正")}
-                  ${marketInsightMetricCell(row.biasMetrics?.ma40, 40)}
-                  ${marketInsightMetricCell(row.biasMetrics?.ma50, 50)}
-                  <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${shortRatio.toFixed(2)}%${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}` : "--"}</span></td>
-                  <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${connectRatio.toFixed(2)}%${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}` : "--"}</span></td>
+                  ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
+                  ${marketInsightMetricCell(row.biasMetrics?.ma40, 40, Number(row.biasMetrics?.ma40?.bias) > 0, "40周乖离率为正")}
+                  ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
+                  <td data-label="当前空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span></td>
+                  <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span></td>
                   <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
               }).join("")}</tbody>
