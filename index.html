@@ -6096,7 +6096,7 @@
     }
 
     function marketInsightRuleStar(show, label) {
-      return show && state.marketInsightRatingFilter !== "all" ? `<span class="market-insight-rule-star" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">★</span>` : "";
+      return show ? `<span class="market-insight-rule-star" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">★</span>` : "";
     }
 
     function marketInsightMetricCell(metric, period, star = false, starLabel = "符合星级条件") {
