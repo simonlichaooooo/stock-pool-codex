@@ -4728,7 +4728,7 @@
       marketInsightDetail: null,
       marketInsightDetailLoading: false,
       marketInsightDetailError: "",
-      marketInsightSort: { key: "excess5w", dir: "desc" },
+      marketInsightSort: { key: "indexWeight", dir: "desc" },
       marketInsightPage: 1,
       marketInsightPageSize: 50,
       marketInsightCache: {},
@@ -6125,8 +6125,23 @@
       const marketCapCny = Number(row.latestMarketCapCny);
       const latestPrice = Number(row.latestPrice);
       const hkdRate = Number(currencies.HKD?.rateToCny) || 1;
-      const issuedShares = marketCapCny > 0 && latestPrice > 0 ? marketCapCny * 100000000 / hkdRate / latestPrice : 0;
+      const issuedShares = Number(row.shortIssuedShares) > 0 ? Number(row.shortIssuedShares) : marketCapCny > 0 && latestPrice > 0 ? marketCapCny * 100000000 / hkdRate / latestPrice : 0;
       return shortShares >= 0 && issuedShares > 0 ? shortShares / issuedShares * 100 : null;
+    }
+
+    function marketInsightIssuedShares(row) {
+      const marketCapCny = Number(row?.latestMarketCapCny);
+      const latestPrice = Number(row?.latestPrice);
+      const hkdRate = Number(currencies.HKD?.rateToCny) || 1;
+      return marketCapCny > 0 && latestPrice > 0 ? marketCapCny * 100000000 / hkdRate / latestPrice : null;
+    }
+
+    function marketInsightConnectRatio(row) {
+      const storedRatio = row.stockConnectRatio === null || row.stockConnectRatio === undefined || row.stockConnectRatio === "" ? NaN : Number(row.stockConnectRatio);
+      if (Number.isFinite(storedRatio)) return storedRatio;
+      const shares = row.stockConnectShares === null || row.stockConnectShares === undefined || row.stockConnectShares === "" ? NaN : Number(row.stockConnectShares);
+      const denominator = Number(row.stockConnectIssuedShares) > 0 ? Number(row.stockConnectIssuedShares) : marketInsightIssuedShares(row);
+      return Number.isFinite(shares) && shares >= 0 && denominator > 0 ? shares / denominator * 100 : null;
     }
 
     async function loadLatestMarketInsightRatios(rows) {
@@ -6137,17 +6152,24 @@
       await Promise.all(chunks.map(async (chunk) => {
         const codes = chunk.map((row) => String(row.rawCode).padStart(5, "0")).join(",");
         const [shortResult, connectResult] = await Promise.allSettled([
-          supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=in.(${codes})&short_ratio_pct=not.is.null&select=stock_code,report_date,short_ratio_pct&order=report_date.desc&limit=2000`),
-          supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=in.(${codes})&holding_ratio_pct=not.is.null&select=stock_code,holding_date,holding_ratio_pct&order=holding_date.desc&limit=2000`)
+          supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=in.(${codes})&select=stock_code,report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.desc&limit=2000`),
+          supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=in.(${codes})&select=stock_code,holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.desc&limit=2000`)
         ]);
-        if (shortResult.status === "fulfilled") shortResult.value.forEach((item) => { if (!shortByCode.has(item.stock_code)) shortByCode.set(item.stock_code, Number(item.short_ratio_pct)); });
-        if (connectResult.status === "fulfilled") connectResult.value.forEach((item) => { if (!connectByCode.has(item.stock_code)) connectByCode.set(item.stock_code, Number(item.holding_ratio_pct)); });
+        if (shortResult.status === "fulfilled") shortResult.value.forEach((item) => { if (!shortByCode.has(item.stock_code)) shortByCode.set(item.stock_code, item); });
+        if (connectResult.status === "fulfilled") connectResult.value.forEach((item) => { if (!connectByCode.has(item.stock_code)) connectByCode.set(item.stock_code, item); });
       }));
       return rows.map((row) => {
         const code = String(row.rawCode).padStart(5, "0");
-        const shortRatioStored = shortByCode.get(code);
-        const stockConnectRatio = connectByCode.has(code) ? connectByCode.get(code) : row.stockConnectRatio;
-        return { ...row, shortRatioStored:Number.isFinite(shortRatioStored) ? shortRatioStored : null, stockConnectRatio };
+        const short = shortByCode.get(code), connect = connectByCode.get(code);
+        return {
+          ...row,
+          shortShares:short?.short_shares ?? row.shortShares,
+          shortIssuedShares:short?.issued_shares ?? null,
+          shortRatioStored:short?.short_ratio_pct ?? null,
+          stockConnectShares:connect?.total_holding_shares ?? row.stockConnectShares,
+          stockConnectIssuedShares:connect?.issued_shares ?? null,
+          stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio
+        };
       });
     }
 
@@ -6175,7 +6197,7 @@
 
     function renderMarketInsightChart(series, { dualAxis = false, includeZero = true } = {}) {
       const validSeries = (series || []).map((item) => ({ ...item, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
-      if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>历史股本分母补齐后，这里会自动显示走势图。</div>`;
+      if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>请确认该股票已有对应的历史持仓记录。</div>`;
       const timestamps = validSeries.flatMap((item) => item.values.map((point) => new Date(`${point.date}T00:00:00`).getTime())).filter(Number.isFinite);
       const leftValues = validSeries.filter((item) => item.axis !== "right").flatMap((item) => item.values.map((point) => Number(point.value)));
       const width = 1200, height = 320, left = 62, right = dualAxis ? 58 : 24, top = 18, bottom = 38;
@@ -6210,7 +6232,7 @@
       ]);
       const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:detail.shortHistory || [] }];
       const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:detail.connectHistory || [] }];
-      return `<section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><button class="secondary market-insight-back" data-action="closeMarketInsightDetail">← 返回列表</button><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div>${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}</section>${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>实线为30周、40周、50周乖离率（左轴），虚线为各自滚动2年分位值（右轴）。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { dualAxis:true })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 对应时点已发行股份；通常按周披露。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries)}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>中国结算沪港通与深港通持仓合计 ÷ 对应时点已发行股份；按可取得的日终记录展示。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries)}</section></div>`;
+      return `<section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><button class="secondary market-insight-back" data-action="closeMarketInsightDetail">← 返回列表</button><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div>${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}</section>${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>实线为30周、40周、50周乖离率（左轴），虚线为各自滚动2年分位值（右轴）。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { dualAxis:true })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries)}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；历史分母缺失时使用当前已发行股份估算。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries)}</section></div>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
@@ -6223,16 +6245,25 @@
       render();
       const stockCode = String(rawCode).padStart(5, "0");
       const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
+      const quotePromise = fetchQuote(stock).catch(() => stock);
       const canLoadDatabase = state.session?.access_token && state.session.access_token !== "local-demo";
-      const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&short_ratio_pct=not.is.null&select=report_date,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
-      const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&holding_ratio_pct=not.is.null&select=holding_date,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
-      const [weeklyResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, shortPromise, connectPromise]);
+      const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&select=report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
+      const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
+      const [weeklyResult, quoteResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, quotePromise, shortPromise, connectPromise]);
+      const issuedShares = quoteResult.status === "fulfilled" ? marketInsightIssuedShares({ ...stock, ...quoteResult.value }) : marketInsightIssuedShares(stock);
+      const ratioValue = (storedRatio, shares, storedIssuedShares) => {
+        const ratio = storedRatio === null || storedRatio === undefined || storedRatio === "" ? NaN : Number(storedRatio);
+        if (Number.isFinite(ratio)) return ratio;
+        const denominator = Number(storedIssuedShares) > 0 ? Number(storedIssuedShares) : issuedShares;
+        const numerator = shares === null || shares === undefined || shares === "" ? NaN : Number(shares);
+        return Number.isFinite(numerator) && numerator >= 0 && Number(denominator) > 0 ? numerator / Number(denominator) * 100 : NaN;
+      };
       state.marketInsightDetail = {
         biasHistory: weeklyResult.status === "fulfilled" ? calculateMarketInsightBiasHistory(weeklyResult.value) : {},
-        shortHistory: shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:Number(row.short_ratio_pct) })).filter((row) => Number.isFinite(row.value)) : [],
-        connectHistory: connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:Number(row.holding_ratio_pct) })).filter((row) => Number.isFinite(row.value)) : []
+        shortHistory: shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:ratioValue(row.short_ratio_pct, row.short_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [],
+        connectHistory: connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : []
       };
-      const errors = [weeklyResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
+      const errors = [weeklyResult, quoteResult, shortResult, connectResult].filter((result) => result.status === "rejected").map((result) => result.reason?.message || String(result.reason));
       state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
       state.marketInsightDetailLoading = false;
       render();
@@ -6262,7 +6293,8 @@
       if (key === "excess5w") return numeric(row.excess5w);
       if (["ma5", "ma30", "ma40", "ma50"].includes(key)) return numeric(row.biasMetrics?.[key]?.bias);
       if (key === "shortRatio") return numeric(marketInsightShortRatio(row));
-      if (key === "connectRatio") return numeric(row.stockConnectRatio);
+      if (key === "connectRatio") return numeric(marketInsightConnectRatio(row));
+      if (key === "indexWeight") return numeric(row.latestMarketCapCny);
       return Number(row.order);
     }
 
@@ -6336,9 +6368,7 @@
               </tr></thead>
               <tbody>${visibleRows.map((row) => {
                 const shortRatio = marketInsightShortRatio(row);
-                const connectRatio = row.stockConnectRatio === null || row.stockConnectRatio === undefined || row.stockConnectRatio === ""
-                  ? null
-                  : Number(row.stockConnectRatio);
+                const connectRatio = marketInsightConnectRatio(row);
                 return `<tr>
                   <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}</div></td>
                   ${marketInsightExcessCell(row.excess5w)}
@@ -6356,6 +6386,7 @@
           <div class="market-insight-pagination"><span>共 ${rows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
+          列表默认按指数权重顺序排列；公开成分接口未提供完整权重时，以最新总市值作为排序依据。
           5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。
@@ -9806,6 +9837,7 @@
         if (indexId !== state.marketInsightIndexId) {
           state.marketInsightIndexId = indexId;
           state.marketInsightPage = 1;
+          state.marketInsightSort = { key:"indexWeight", dir:"desc" };
           state.marketInsightLoaded = false;
           state.marketInsightRows = state.marketInsightCache[indexId] || [];
           await refreshMarketInsight();
