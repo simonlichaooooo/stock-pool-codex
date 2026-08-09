@@ -4,7 +4,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
 const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MARKET_INSIGHT_MODEL") || "deepseek-v4-pro";
-const PROMPT_VERSION = "market-insight-deepseek-thinking-v2";
+const PROMPT_VERSION = "market-insight-deepseek-thinking-v3";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -141,20 +141,38 @@ function analysisSchema() {
 }
 
 function validateAnalysis(value: any) {
-  const stringFields = ["headline", "overall_assessment", "interaction", "confidence"];
-  const arrayFields = ["key_evidence", "counter_evidence", "watch_items", "data_limitations"];
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("模型返回的解读不是 JSON 对象");
-  for (const field of stringFields) if (typeof value[field] !== "string") throw new Error(`模型返回缺少字段 ${field}`);
-  for (const field of arrayFields) if (!Array.isArray(value[field]) || value[field].some((item: unknown) => typeof item !== "string")) throw new Error(`模型返回字段 ${field} 格式无效`);
-  if (!["低", "中", "高"].includes(value.confidence)) throw new Error("模型返回的综合置信度无效");
+  const normalized: any = { ...value };
+  const text = (input: unknown, fallback = "") => typeof input === "string" && input.trim() ? input.trim() : fallback;
+  const strings = (input: unknown) => Array.isArray(input) ? input.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).map((item) => item.trim()) : [];
+  const confidence = (input: unknown) => ["低", "中", "高"].includes(String(input)) ? String(input) : "中";
   for (const partyName of ["short_position", "stock_connect"]) {
     const party = value[partyName];
-    if (!party || typeof party.conclusion !== "string" || !Array.isArray(party.hypotheses)) throw new Error(`模型返回字段 ${partyName} 格式无效`);
-    for (const hypothesis of party.hypotheses) {
-      if (!hypothesis || typeof hypothesis.label !== "string" || typeof hypothesis.explanation !== "string" || !Array.isArray(hypothesis.supporting_evidence) || !Array.isArray(hypothesis.counter_evidence) || !["低", "中", "高"].includes(hypothesis.confidence)) throw new Error(`模型返回字段 ${partyName}.hypotheses 格式无效`);
-    }
+    if (!party || typeof party !== "object" || Array.isArray(party)) throw new Error(`模型返回缺少核心字段 ${partyName}`);
+    const hypotheses = Array.isArray(party.hypotheses) ? party.hypotheses.flatMap((hypothesis: any) => {
+      if (!hypothesis || typeof hypothesis !== "object" || Array.isArray(hypothesis)) return [];
+      const explanation = text(hypothesis.explanation);
+      if (!explanation) return [];
+      return [{
+        label: text(hypothesis.label, "可能解释"),
+        explanation,
+        supporting_evidence: strings(hypothesis.supporting_evidence),
+        counter_evidence: strings(hypothesis.counter_evidence),
+        confidence: confidence(hypothesis.confidence),
+      }];
+    }).slice(0, 2) : [];
+    const conclusion = text(party.conclusion, hypotheses[0]?.explanation || "模型未给出明确结论，请结合图表观察。");
+    normalized[partyName] = { conclusion, hypotheses };
   }
-  return value;
+  normalized.overall_assessment = text(value.overall_assessment, `${normalized.short_position.conclusion} ${normalized.stock_connect.conclusion}`);
+  normalized.headline = text(value.headline, normalized.overall_assessment.slice(0, 60));
+  normalized.interaction = text(value.interaction, "暂未发现足够证据判断两类持仓变化之间的联动关系。");
+  normalized.key_evidence = strings(value.key_evidence);
+  normalized.counter_evidence = strings(value.counter_evidence);
+  normalized.watch_items = strings(value.watch_items);
+  normalized.data_limitations = strings(value.data_limitations);
+  normalized.confidence = confidence(value.confidence);
+  return normalized;
 }
 
 async function requestDeepSeek(evidence: unknown) {
