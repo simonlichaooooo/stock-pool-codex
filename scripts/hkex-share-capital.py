@@ -184,6 +184,12 @@ def parse_monthly(text: str, code: str) -> dict:
     if not period_match:
         raise ValueError("monthly period end not found")
     section_match = re.search(r"II\.\s+Movements in Issued Shares.*?(?=\n\s*III\.)", text, re.I | re.S)
+    is_unit_filing = False
+    if not section_match:
+        # Listed REITs use the collective-investment-scheme form. Its economic
+        # denominator is issued units and the relevant section is numbered I.
+        section_match = re.search(r"I\.\s+Movements in Issued Units.*?(?=\n\s*II\.)", text, re.I | re.S)
+        is_unit_filing = section_match is not None
     if not section_match:
         raise ValueError("issued-shares section not found")
     section = section_match.group(0)
@@ -199,8 +205,9 @@ def parse_monthly(text: str, code: str) -> dict:
     else:
         total = ex_treasury = number(balance.group(1)); treasury = 0
     validate_shares(ex_treasury, treasury, total)
+    share_class = "listed units" if is_unit_filing else share_class_near(section, code_match.start())
     return {"effective_date": datetime.strptime(period_match.group(1), "%d %B %Y").date(),
-            "share_class": share_class_near(section, code_match.start()), "issued_shares": total,
+            "share_class": share_class, "issued_shares": total,
             "treasury_shares": treasury, "issued_shares_ex_treasury": ex_treasury}
 
 

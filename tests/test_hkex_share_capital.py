@@ -50,6 +50,22 @@ class ParseOfficialShareCapitalTest(unittest.TestCase):
         self.assertEqual(row["treasury_shares"], 12000)
         self.assertEqual(row["issued_shares"], 9082733689)
 
+    def test_reit_monthly_return_uses_issued_units(self):
+        text = """
+        Monthly Return for Collective Investment Scheme on Movements in Units
+        For the month ended: 31 January 2026
+        I. Movements in Issued Units and/or Treasury Units
+        1. Stock code 00823
+        Balance at close of preceding month 2,587,349,678 17,336,700 2,604,686,378
+        Balance at close of the month 2,598,939,023 17,336,700 2,616,275,723
+        II. Details of Movements in Issued Units and/or Treasury Units
+        """
+        row = MODULE.parse_monthly(text, "00823")
+        self.assertEqual(row["issued_shares_ex_treasury"], 2598939023)
+        self.assertEqual(row["treasury_shares"], 17336700)
+        self.assertEqual(row["issued_shares"], 2616275723)
+        self.assertEqual(row["share_class"], "listed units")
+
     def test_old_next_day_disclosure(self):
         text = """
         Type of shares Ordinary shares Class of shares Not applicable Listed on SEHK
