@@ -6388,7 +6388,7 @@
       const members = official?.members?.length ? official.members : indexId === "hstech" ? HSTECH_CONSTITUENTS.map((item) => ({ code:item.rawCode, name:item.name })) : [];
       return members.map((member, order) => {
         const rawCode = String(member.code || "").padStart(4, "0");
-        const canonical = STOCKS.find((stock) => stock.market === "HK" && stock.code.replace(/\.HK$/i, "").padStart(4, "0") === rawCode);
+        const canonical = stockCatalog.find((stock) => stock.market === "HK" && stock.code.replace(/\.HK$/i, "").padStart(4, "0") === rawCode);
         return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
       });
     }
