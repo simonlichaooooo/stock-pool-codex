@@ -2,9 +2,14 @@ import fs from "node:fs/promises";
 
 const DATA_FILE = new URL("../data/market-insights.json", import.meta.url);
 const SFC_PAGE = "https://www.sfc.hk/en/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares";
+const HSI_CONSTITUENT_SOURCES = [
+  { id: "hstech", label: "恒生科技", code: "HSTECH", quoteId: "124.HSTECH", url: "https://www.hsi.com.hk/data/chi/rt/index-series/hstech/constituents.do", officialName: "恒生科技指數" },
+  { id: "hsli", label: "大型股", code: "HSLI", quoteId: "124.HSLI", url: "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do", officialName: "恒生綜合大型股指數" },
+  { id: "hsmi", label: "中型股", code: "HSMI", quoteId: "124.HSMI", url: "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do", officialName: "恒生綜合中型股指數" },
+  { id: "hssi", label: "小型股", code: "HSSI", quoteId: "124.HSSI", url: "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do", officialName: "恒生綜合小型股指數" }
+];
 
 const current = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
-const trackedCodes = new Set(Object.keys(current.shortPositions.byCode));
 
 function decodeHtml(value) {
   return String(value || "")
@@ -50,7 +55,34 @@ function parseCsvLine(line) {
   return result;
 }
 
-async function updateShortPositions(next) {
+async function updateConstituents(next) {
+  const payloads = new Map();
+  for (const source of HSI_CONSTITUENT_SOURCES) {
+    if (!payloads.has(source.url)) payloads.set(source.url, JSON.parse(await fetchText(source.url)));
+  }
+  const indexes = {};
+  for (const source of HSI_CONSTITUENT_SOURCES) {
+    const payload = payloads.get(source.url);
+    const series = payload?.indexSeriesList?.[0];
+    const index = series?.indexList?.find((item) => item.indexName === source.officialName);
+    if (!index?.constituentContent?.length) throw new Error(`HSI did not return constituents for ${source.code}`);
+    indexes[source.id] = {
+      label: source.label,
+      code: source.code,
+      quoteId: source.quoteId,
+      asOf: String(series.constituentsDate || payload.requestDate || "").slice(0, 10),
+      sourceUrl: source.url,
+      members: index.constituentContent.map((item) => ({
+        code: String(item.code || "").padStart(4, "0"),
+        name: item.constituentName
+      })).filter((item) => item.code && item.name)
+    };
+  }
+  next.constituents = { indexes };
+  return new Set(Object.values(indexes).flatMap((index) => index.members.map((item) => item.code)));
+}
+
+async function updateShortPositions(next, trackedCodes) {
   const page = await fetchText(SFC_PAGE);
   const links = [...page.matchAll(/href=["']([^"']*\/spr\/(\d{4})\/(\d{2})\/(\d{2})\/[^"']+\.csv[^"']*)["']/gi)]
     .map((match) => ({ url: new URL(decodeHtml(match[1]), SFC_PAGE).href, date: `${match[2]}-${match[3]}-${match[4]}` }))
@@ -67,12 +99,13 @@ async function updateShortPositions(next) {
     byCode[normalizedCode] = { shares: Number(shares), valueHkd: Number(valueHkd), name };
     if (!next.shortPositions.asOf && date) next.shortPositions.asOf = date;
   }
-  if (Object.keys(byCode).length < trackedCodes.size * 0.8) throw new Error("SFC CSV returned too few tracked constituents");
+  if (Object.keys(byCode).length < 100) throw new Error("SFC CSV returned too few tracked constituents");
   next.shortPositions = { asOf: latest.date, sourceUrl: current.shortPositions.sourceUrl, reportUrl: latest.url, byCode };
 }
 
 const next = structuredClone(current);
-await updateShortPositions(next);
+const trackedCodes = await updateConstituents(next);
+await updateShortPositions(next, trackedCodes);
 
 const comparableCurrent = { ...current, generatedAt: undefined };
 const comparableNext = { ...next, generatedAt: undefined };
