@@ -21,6 +21,7 @@ on:
           - both
           - short
           - stock-connect
+          - issued-shares
       start_date:
         description: Backfill start date (YYYY-MM-DD)
         required: true
@@ -70,6 +71,9 @@ jobs:
       - name: Run scheduled weekly metrics update
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 11 * * 5'
         run: python scripts/market-data-ingest.py metrics
+      - name: Run scheduled issued-share update
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 10 * * 5'
+        run: python scripts/market-data-ingest.py issued-shares --start "$(date -u -d '45 days ago' +%F)"
       - name: Run manual backfill
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'workflow_dispatch'
         run: |
@@ -85,4 +89,7 @@ jobs:
           fi
           if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "metrics" ]; then
             python scripts/market-data-ingest.py metrics
+          fi
+          if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "issued-shares" ]; then
+            python scripts/market-data-ingest.py issued-shares --start "$DISPATCH_START" "${END_ARGS[@]}"
           fi

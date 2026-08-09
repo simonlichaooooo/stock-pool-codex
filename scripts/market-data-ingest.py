@@ -19,6 +19,7 @@ import urllib.request
 import zipfile
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from statistics import median
 from xml.etree import ElementTree
 
 
@@ -122,6 +123,9 @@ class SupabaseRest:
             "started_at": started_at,
         }]
         self._request("POST", "market_data_ingestion_runs", payload, prefer="return=minimal")
+
+    def rpc(self, function: str, payload: dict | None = None):
+        return self._request("POST", f"rpc/{function}", payload or {}, prefer="return=representation")
 
 
 def fetch_hsci() -> tuple[date, list[dict]]:
@@ -442,6 +446,84 @@ def fetch_index_weekly_prices(quote_id: str) -> list[tuple[str, float]]:
     return result
 
 
+def fetch_issued_shares_history(stock_code: str, start: date, end: date) -> list[dict]:
+    code = normalize_code(stock_code)
+    source_url = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
+    params = urllib.parse.urlencode({
+        "secid": f"116.{code}", "fields1": "f1,f2,f3,f4,f5,f6",
+        "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
+        "klt": "101", "fqt": "0", "beg": start.strftime("%Y%m%d"), "end": end.strftime("%Y%m%d"),
+    })
+    payload = None
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            payload = json_request(f"{source_url}?{params}", headers={"Referer": "https://quote.eastmoney.com/"})
+            break
+        except Exception as error:
+            last_error = error
+            time.sleep(0.8 * (attempt + 1))
+    if payload is None:
+        raise RuntimeError(f"Issued-share source unavailable for {code}: {last_error}")
+    monthly: dict[str, list[tuple[date, float]]] = {}
+    for line in ((payload.get("data") or {}).get("klines") or []):
+        parts = str(line).split(",")
+        if len(parts) < 11:
+            continue
+        try:
+            day = datetime.strptime(parts[0], "%Y-%m-%d").date()
+            volume = float(parts[5])
+            turnover_pct = float(parts[10])
+        except (TypeError, ValueError):
+            continue
+        if volume <= 0 or turnover_pct < 0.02:
+            continue
+        inferred = volume / (turnover_pct / 100)
+        if inferred > 0:
+            monthly.setdefault(day.strftime("%Y-%m"), []).append((day, inferred))
+    rows = []
+    for observations in monthly.values():
+        period_end = max(day for day, _ in observations)
+        values = [value for _, value in observations]
+        rows.append({
+            "stock_code": code,
+            "period_end": period_end.isoformat(),
+            "issued_shares": round(median(values)),
+            "source_quality": "vendor_estimate",
+            "source_url": source_url,
+            "observations": len(values),
+        })
+    return rows
+
+
+def ingest_issued_shares(client: SupabaseRest, start: date, end: date, *, dry_run: bool = False,
+                         workers: int = 10) -> int:
+    with open(MARKET_INSIGHTS_FILE, encoding="utf-8") as handle:
+        indexes = json.load(handle)["constituents"]["indexes"]
+    codes = sorted({normalize_code(member["code"]) for item in indexes.values() for member in item["members"]})
+    all_rows: list[dict] = []
+    failures = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        source_start = start - timedelta(days=45)
+        futures = {executor.submit(fetch_issued_shares_history, code, source_start, end): code for code in codes}
+        for completed, future in enumerate(concurrent.futures.as_completed(futures), 1):
+            code = futures[future]
+            try:
+                all_rows.extend(future.result())
+            except Exception as error:
+                failures[code] = str(error)
+            if completed % 50 == 0 or completed == len(futures):
+                print(f"Issued shares: {completed}/{len(futures)}")
+    if not all_rows:
+        raise RuntimeError("No issued-share history was calculated")
+    if not dry_run:
+        client.upsert("hk_issued_shares_monthly", all_rows, "stock_code,period_end", chunk_size=500)
+        result = client.rpc("refresh_hk_holding_ratios")
+        print(f"Ratio backfill: {result}")
+    print(f"Stored issued-share history: {len(all_rows)} rows; failed stocks: {len(failures)}")
+    return len(all_rows)
+
+
 def rolling_biases(prices: list[tuple[str, float]], period: int) -> list[float | None]:
     values = [close for _, close in prices]
     result: list[float | None] = []
@@ -582,6 +664,11 @@ def main() -> int:
     metrics = subparsers.add_parser("metrics")
     metrics.add_argument("--workers", type=int, default=10)
 
+    shares = subparsers.add_parser("issued-shares")
+    shares.add_argument("--start", type=parse_date, default=date(2023, 1, 1))
+    shares.add_argument("--end", type=parse_date, default=date.today())
+    shares.add_argument("--workers", type=int, default=10)
+
     args = parser.parse_args()
     client = SupabaseRest(required=not args.dry_run)
     if args.command == "sync-hsci":
@@ -594,6 +681,8 @@ def main() -> int:
         ingest_stock_connect(client, start, args.end, pause=args.pause, dry_run=args.dry_run)
     elif args.command == "metrics":
         ingest_weekly_metrics(client, dry_run=args.dry_run, workers=args.workers)
+    elif args.command == "issued-shares":
+        ingest_issued_shares(client, args.start, args.end, dry_run=args.dry_run, workers=args.workers)
     return 0
 
 
