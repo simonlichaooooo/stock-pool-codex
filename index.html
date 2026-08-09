@@ -4693,6 +4693,14 @@
     .market-insight-ai-skeleton i { display:block; height:12px; border-radius:999px; background:linear-gradient(90deg,#dfe9f4 25%,#f4f8fc 50%,#dfe9f4 75%); background-size:200% 100%; animation:pulse 1.4s ease-in-out infinite; }
     .market-insight-ai-skeleton i:nth-child(2) { width:84%; }
     .market-insight-ai-skeleton i:nth-child(3) { width:68%; }
+    .market-insight-chart-ai { margin-top:14px; padding:13px 14px; border:1px solid #c7d6e7; border-radius:7px; background:linear-gradient(135deg,#f8fbff,#eef5fd); }
+    .market-insight-chart-ai .market-insight-ai-head { margin-bottom:8px; }
+    .market-insight-chart-ai .market-insight-ai-title h3 { font-size:13px; }
+    .market-insight-chart-ai-conclusion { margin:0; color:#31465d; font-size:11.5px; line-height:1.7; }
+    .market-insight-chart-ai .market-insight-ai-hypothesis { padding:9px 10px; border:1px solid #d5e0ec; border-radius:6px; background:rgba(255,255,255,.72); }
+    .market-insight-chart-ai .market-insight-ai-hypothesis + .market-insight-ai-hypothesis { margin-top:8px; }
+    .market-insight-chart-ai-evidence { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:7px; }
+    .market-insight-chart-ai-evidence .market-insight-ai-list { padding:7px 9px; background:#f7fafe; }
     .market-insight-chart-empty { display:grid; place-items:center; min-height:220px; padding:24px; border:1px dashed var(--line); border-radius:5px; color:var(--muted); font-size:12px; text-align:center; line-height:1.7; }
     @media (max-width: 760px) {
       .market-insight-head { align-items:stretch; flex-direction:column; }
@@ -4721,6 +4729,7 @@
       .market-insight-chart { height:260px; }
       .market-insight-ai-card { padding:14px 12px; }
       .market-insight-ai-parties, .market-insight-ai-evidence-grid { grid-template-columns:1fr; }
+      .market-insight-chart-ai-evidence { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -6534,27 +6543,24 @@
       };
     }
 
-    function renderMarketInsightAiList(title, values) {
-      const rows = (values || []).filter(Boolean).slice(0, 4);
+    function renderMarketInsightAiList(title, values, limit = 4) {
+      const rows = (values || []).filter(Boolean).slice(0, limit);
       if (!rows.length) return "";
       return `<div class="market-insight-ai-list"><strong>${escapeHtml(title)}</strong><ul>${rows.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
     }
 
-    function renderMarketInsightAiParty(title, party) {
-      if (!party) return "";
-      const hypotheses = (party.hypotheses || []).slice(0, 2).map((item) => `<div class="market-insight-ai-hypothesis"><strong>${escapeHtml(item.label)} · 置信度${escapeHtml(item.confidence)}</strong><span>${escapeHtml(item.explanation)}</span></div>`).join("");
-      return `<div class="market-insight-ai-party"><h4>${escapeHtml(title)}</h4><p>${escapeHtml(party.conclusion || "")}</p>${hypotheses}</div>`;
-    }
-
-    function renderMarketInsightAiCard() {
+    function renderMarketInsightChartAi(title, partyKey) {
       const analysis = state.marketInsightAiAnalysis;
       const meta = state.marketInsightAiMeta || {};
-      const heading = `<div class="market-insight-ai-head"><div class="market-insight-ai-title"><i>AI</i><div><h3>股价与持仓行为解读</h3><p>模型提出竞争性假设，不代表交易者真实意图，也不构成投资建议。</p></div></div>${analysis ? `<span class="market-insight-ai-confidence">综合置信度 ${escapeHtml(analysis.confidence || "--")}</span>` : ""}</div>`;
-      if (state.marketInsightAiLoading) return `<section class="market-insight-ai-card">${heading}<div class="market-insight-ai-skeleton"><i></i><i></i><i></i></div></section>`;
-      if (state.marketInsightAiError) return `<section class="market-insight-ai-card">${heading}<div class="market-insight-ai-error">${escapeHtml(state.marketInsightAiError)}<button class="secondary" data-action="retryMarketInsightAi">重新生成</button></div></section>`;
-      if (!analysis) return `<section class="market-insight-ai-card">${heading}<div class="muted">正在等待历史数据，随后生成综合解读。</div></section>`;
+      const party = analysis?.[partyKey];
+      const primaryConfidence = party?.hypotheses?.[0]?.confidence || analysis?.confidence || "--";
+      const heading = `<div class="market-insight-ai-head"><div class="market-insight-ai-title"><i>AI</i><div><h3>${escapeHtml(title)}</h3><p>结合股价关系提出竞争性假设，不代表交易者真实意图。</p></div></div>${party ? `<span class="market-insight-ai-confidence">主要假设置信度 ${escapeHtml(primaryConfidence)}</span>` : ""}</div>`;
+      if (state.marketInsightAiLoading) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-skeleton"><i></i><i></i><i></i></div></div>`;
+      if (state.marketInsightAiError) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-error">${escapeHtml(state.marketInsightAiError)}<button class="secondary" data-action="retryMarketInsightAi">重新生成</button></div></div>`;
+      if (!party) return `<div class="market-insight-chart-ai">${heading}<div class="muted">正在等待历史数据，随后生成对应解读。</div></div>`;
+      const hypotheses = (party.hypotheses || []).slice(0, 2).map((item) => `<div class="market-insight-ai-hypothesis"><strong>${escapeHtml(item.label)} · 置信度${escapeHtml(item.confidence)}</strong><span>${escapeHtml(item.explanation)}</span><div class="market-insight-chart-ai-evidence">${renderMarketInsightAiList("支持依据", item.supporting_evidence, 3)}${renderMarketInsightAiList("反向证据", item.counter_evidence, 3)}</div></div>`).join("");
       const updated = meta.generated_at || meta.created_at || "";
-      return `<section class="market-insight-ai-card">${heading}<h3 class="market-insight-ai-headline">${escapeHtml(analysis.headline || "")}</h3><p class="market-insight-ai-overall">${escapeHtml(analysis.overall_assessment || "")}</p><div class="market-insight-ai-parties">${renderMarketInsightAiParty("空头持仓", analysis.short_position)}${renderMarketInsightAiParty("港股通持仓", analysis.stock_connect)}</div>${analysis.interaction ? `<div class="market-insight-ai-interaction"><strong>双方关系：</strong>${escapeHtml(analysis.interaction)}</div>` : ""}<div class="market-insight-ai-evidence-grid">${renderMarketInsightAiList("关键证据", analysis.key_evidence)}${renderMarketInsightAiList("反向证据", analysis.counter_evidence)}${renderMarketInsightAiList("后续观察", analysis.watch_items)}${renderMarketInsightAiList("数据限制", analysis.data_limitations)}</div><div class="market-insight-ai-foot"><span>模型 ${escapeHtml(meta.model || "--")} · ${meta.cached ? "读取缓存" : "新生成"}</span><span>${updated ? `生成于 ${escapeHtml(new Date(updated).toLocaleString("zh-CN"))}` : ""}</span></div></section>`;
+      return `<div class="market-insight-chart-ai">${heading}<p class="market-insight-chart-ai-conclusion">${escapeHtml(party.conclusion || "")}</p>${hypotheses}<div class="market-insight-ai-foot"><span>模型 ${escapeHtml(meta.model || "--")} · ${meta.cached ? "读取缓存" : "新生成"}</span><span>${updated ? `生成于 ${escapeHtml(new Date(updated).toLocaleString("zh-CN"))}` : ""}</span></div></div>`;
     }
 
     async function loadMarketInsightAiAnalysis() {
@@ -6617,7 +6623,7 @@
       const shortTrend = marketInsightTrendAnalysis(shortSeries[0].values);
       const connectTrend = marketInsightTrendAnalysis(connectSeries[0].values);
       const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
-      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts">${renderMarketInsightAiCard()}<section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；彩色分段仅标示数据中的主要波段，行为解释以 AI 综合解读为准。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；彩色分段仅标示数据中的主要波段，行为解释以 AI 综合解读为准。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}</section></div></div></div></aside>`;
+      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>香港证监会合计须申报淡仓股数 ÷ 已发行股份；彩色分段仅标示数据中的主要波段。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>沪港通与深港通持仓合计 ÷ 已发行股份；彩色分段仅标示数据中的主要波段。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
