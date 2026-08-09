@@ -4574,6 +4574,8 @@
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
+    .market-insight-short-change.increase { color:var(--loss); }
+    .market-insight-short-change.decrease { color:var(--gain); }
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
@@ -6255,6 +6257,17 @@
       return shortShares >= 0 && issuedShares > 0 ? shortShares / issuedShares * 100 : null;
     }
 
+    function marketInsightShortChangeCell(row, shortRatio, star = false) {
+      const change = row.shortChange5wPct === null || row.shortChange5wPct === undefined || row.shortChange5wPct === "" ? NaN : Number(row.shortChange5wPct);
+      let changeText = "5周变化 --", changeClass = "";
+      if (Number.isFinite(change)) {
+        if (change > 0) { changeText = `5周增持 ${change.toFixed(2)}%`; changeClass = "increase"; }
+        else if (change < 0) { changeText = `5周减持 ${Math.abs(change).toFixed(2)}%`; changeClass = "decrease"; }
+        else changeText = "5周持平 0.00%";
+      }
+      return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-short-change ${changeClass}">${changeText}</small></div></td>`;
+    }
+
     function marketInsightIssuedShares(row) {
       const connectShares = Number(row?.stockConnectShares);
       const connectRatio = Number(row?.stockConnectRatio);
@@ -6303,7 +6316,12 @@
         const connectTarget = connect ? new Date(`${connect.holding_date}T00:00:00`) : null;
         if (connectTarget) connectTarget.setDate(connectTarget.getDate() - 35);
         const connectFiveWeeksAgo = connectTarget ? connectRows.find((item) => new Date(`${item.holding_date}T00:00:00`) <= connectTarget) : null;
-        const shortDecline5wShares = short && shortFiveWeeksAgo ? Number(shortFiveWeeksAgo.short_shares) - Number(short.short_shares) : null;
+        const latestShortShares = short ? Number(short.short_shares) : NaN;
+        const previousShortShares = shortFiveWeeksAgo ? Number(shortFiveWeeksAgo.short_shares) : NaN;
+        const shortDecline5wShares = Number.isFinite(latestShortShares) && Number.isFinite(previousShortShares) ? previousShortShares - latestShortShares : null;
+        const shortChange5wPct = Number.isFinite(latestShortShares) && Number.isFinite(previousShortShares) && previousShortShares > 0
+          ? (latestShortShares / previousShortShares - 1) * 100
+          : null;
         const connectIncrease5wShares = connect && connectFiveWeeksAgo ? Number(connect.total_holding_shares) - Number(connectFiveWeeksAgo.total_holding_shares) : null;
         return {
           ...row,
@@ -6314,6 +6332,7 @@
           stockConnectIssuedShares:connect?.issued_shares ?? null,
           stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio,
           shortDecline5wShares,
+          shortChange5wPct,
           connectIncrease5wShares
         };
       });
@@ -6764,7 +6783,7 @@
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40, Number(row.biasMetrics?.ma40?.bias) > 0, "40周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
-                  <td data-label="空头持仓比例" class="num"><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(rating.rules[3], "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span></td>
+                  ${marketInsightShortChangeCell(row, shortRatio, rating.rules[3])}
                   <td data-label="港股通持仓比例" class="num"><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(rating.rules[4], "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span></td>
                   <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
                 </tr>`;
