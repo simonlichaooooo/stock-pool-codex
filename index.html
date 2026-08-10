@@ -1138,6 +1138,9 @@
     }
     .toolbar-filters { flex-wrap: wrap; }
     .toolbar-actions { justify-content: flex-end; flex-wrap: wrap; }
+    .pool-bias-toggle { display:inline-flex; align-items:center; gap:6px; }
+    .pool-bias-toggle svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    button.pool-bias-toggle.active { color:var(--brand-strong); border-color:color-mix(in srgb,var(--brand) 45%,var(--line)); background:var(--brand-soft); box-shadow:inset 0 -2px 0 currentColor; }
     .toolbar select { width: auto; min-width: 128px; }
     table { min-width: max(100%, 1460px); }
     th {
@@ -4606,11 +4609,16 @@
     .market-insight-rating-copy { min-width:0; }
     .market-insight-rating-copy strong { display:block; margin-bottom:4px; color:var(--text); font-size:13px; }
     .market-insight-rating-copy span { color:var(--muted); font-size:10.5px; line-height:1.55; }
-    .market-insight-rating-filters { display:flex; justify-content:flex-end; gap:4px; flex-wrap:wrap; margin-left:auto; }
+    .market-insight-rating-filter-groups { display:flex; flex:0 1 720px; flex-direction:column; align-items:flex-end; gap:5px; margin-left:auto; }
+    .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-end; gap:4px; flex-wrap:wrap; }
+    .market-insight-rating-filter-label { margin-right:3px; color:var(--muted); font-size:10px; white-space:nowrap; }
+    .market-insight-rating-filters { display:flex; justify-content:flex-end; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters button { min-height:28px; padding:0 8px; border:0 !important; box-shadow:none !important; background:transparent; color:#bc8600; font-size:12px; letter-spacing:1px; text-decoration:none !important; }
     .market-insight-rating-filters button:hover { border:0; background:#fffaf0; }
     .market-insight-rating-filters button.active { color:#8a5b00; border:0; background:#fff8dc; box-shadow:none; font-weight:800; }
     .market-insight-rating-filters .rating-all { color:var(--muted); letter-spacing:0; }
+    .market-insight-rating-filters .rating-rule { color:var(--muted); font-size:11px; letter-spacing:0; }
+    .market-insight-rating-filters .rating-rule.active { color:#8a5b00; }
     .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; gap:3px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; white-space:nowrap; }
     .market-insight-rule-star { display:inline-flex; flex:0 0 auto; margin-right:5px; color:#d79a00; font-size:12px; line-height:1; text-shadow:0 1px 0 #fff; }
     .market-insight-table td.num > span,
@@ -4714,7 +4722,8 @@
       .market-insight-search, .market-insight-search input { width:100%; }
       .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
-      .market-insight-rating-filters { display:flex; justify-content:flex-start; margin-left:0; }
+      .market-insight-rating-filter-groups { align-items:flex-start; margin-left:0; }
+      .market-insight-rating-filter-row, .market-insight-rating-filters { justify-content:flex-start; }
       .market-insight-table table { width:100%; min-width:0; }
       .market-insight-table .sticky-col, .market-insight-table .market-insight-metric { min-width:0; }
       .market-insight-table td { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -4836,6 +4845,7 @@
       publisherProfile: null,
       sourceUpdateCount: 0,
       mainView: "pool",
+      poolBiasExpanded: false,
       marketInsightIndexId: "hstech",
       marketInsightRows: HSTECH_CONSTITUENTS.map((item) => ({ ...item })),
       marketInsightSnapshot: null,
@@ -4858,6 +4868,7 @@
       marketInsightPageSize: 50,
       marketInsightCache: {},
       marketInsightRatingFilter: "all",
+      marketInsightRuleFilters: [],
       marketInsightSearch: "",
       portfolios: [],
       activePortfolioId: "",
@@ -4875,6 +4886,7 @@
       portfolioSummaryExpanded: false,
       portfolioTagsExpanded: false,
       portfolioAdviceExpanded: false,
+      portfolioBiasExpanded: false,
       portfolioPlansExpanded: false,
       journals: [],
       journalModal: null,
@@ -6216,7 +6228,7 @@
         ${renderUpdateBanner()}
         ${renderPublisherPanel()}
         ${renderToolbar()}
-        ${renderBiasAlertPanel(userStocks(), "股池")}
+        ${state.poolBiasExpanded ? renderBiasAlertPanel(userStocks(), "股池") : ""}
         ${renderTable()}
       `;
     }
@@ -6766,6 +6778,14 @@
       return { rules, score:rules.filter(Boolean).length };
     }
 
+    const MARKET_INSIGHT_RATING_RULES = [
+      { label:"超额收益", title:"5周超额收益为正" },
+      { label:"5周乖离", title:"5周乖离率为正" },
+      { label:"中长期乖离", title:"30、40、50周乖离率均为正" },
+      { label:"空头下降", title:"5周空头持仓下降" },
+      { label:"港股通增加", title:"5周港股通持仓增加" }
+    ];
+
     function marketInsightExcessCell(value, star = false) {
       const excess = value === null || value === undefined || value === "" ? NaN : Number(value);
       const cls = excess > 0 ? "gain" : excess < 0 ? "loss" : "";
@@ -6780,8 +6800,14 @@
       const query = state.marketInsightSearch.trim().toLowerCase();
       const globalMatches = marketInsightGlobalSearch(query);
       const searchedRows = query ? rows.filter((row) => `${row.name} ${row.code} ${row.rawCode}`.toLowerCase().includes(query)) : rows;
+      const selectedRuleFilters = Array.isArray(state.marketInsightRuleFilters) ? state.marketInsightRuleFilters : [];
       const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, searchedRows.filter((row) => ratings.get(row.id)?.score === score).length]));
-      const filteredRows = state.marketInsightRatingFilter === "all" ? searchedRows : searchedRows.filter((row) => ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
+      const ruleCounts = MARKET_INSIGHT_RATING_RULES.map((_, ruleIndex) => searchedRows.filter((row) => ratings.get(row.id)?.rules[ruleIndex]).length);
+      const filteredRows = searchedRows.filter((row) => {
+        const rating = ratings.get(row.id);
+        const matchesScore = state.marketInsightRatingFilter === "all" || rating?.score === Number(state.marketInsightRatingFilter);
+        return matchesScore && selectedRuleFilters.every((ruleIndex) => rating?.rules[ruleIndex]);
+      });
       const sortedRows = sortedMarketInsightRows(filteredRows);
       const pageCount = Math.max(1, Math.ceil(sortedRows.length / state.marketInsightPageSize));
       const currentPage = Math.min(state.marketInsightPage, pageCount);
@@ -6802,9 +6828,14 @@
         </section>
         <section class="market-insight-rating-panel">
           <div class="market-insight-rating-copy"><strong>星级评选</strong><span>5周超额收益为正 · 5周乖离率为正 · 30/40/50周乖离率均为正 · 5周空头持仓下降 · 5周港股通持仓增加；每符合一项得1星。</span></div>
-          <div class="market-insight-rating-filters" role="group" aria-label="星级筛选">
-            <button class="rating-all ${state.marketInsightRatingFilter === "all" ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="all">全部 ${searchedRows.length}</button>
-            ${[5, 4, 3].map((score) => `<button class="${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}" title="${score}星股票">${"★".repeat(score)} <span>${ratingCounts[score]}</span></button>`).join("")}
+          <div class="market-insight-rating-filter-groups">
+            <div class="market-insight-rating-filter-row"><span class="market-insight-rating-filter-label">总星级</span><div class="market-insight-rating-filters" role="group" aria-label="总星级筛选">
+              <button class="rating-all ${state.marketInsightRatingFilter === "all" && !selectedRuleFilters.length ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="all">全部 ${searchedRows.length}</button>
+              ${[5, 4, 3].map((score) => `<button class="${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}" aria-pressed="${state.marketInsightRatingFilter === String(score)}" title="${score}星股票">${"★".repeat(score)} <span>${ratingCounts[score]}</span></button>`).join("")}
+            </div></div>
+            <div class="market-insight-rating-filter-row"><span class="market-insight-rating-filter-label">单项条件（可多选）</span><div class="market-insight-rating-filters" role="group" aria-label="单项评定筛选，可多选">
+              ${MARKET_INSIGHT_RATING_RULES.map((rule, ruleIndex) => `<button class="rating-rule ${selectedRuleFilters.includes(ruleIndex) ? "active" : ""}" data-action="filterMarketInsightRule" data-rule-index="${ruleIndex}" aria-pressed="${selectedRuleFilters.includes(ruleIndex)}" title="${escapeHtml(rule.title)}">★ ${escapeHtml(rule.label)} <span>${ruleCounts[ruleIndex]}</span></button>`).join("")}
+            </div></div>
           </div>
         </section>
         <div class="market-insight-meta">
@@ -7665,6 +7696,7 @@
         plan: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10"/><path d="M7 9h10"/><path d="M7 14h6"/><path d="M5 4h.01"/><path d="M5 9h.01"/><path d="M5 14h.01"/><path d="M15 18h6"/><path d="M18 15v6"/></svg>`,
         rebalance: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/><path d="M8 7h8"/><path d="M8 17h8"/></svg>`,
         advice: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h7"/><path d="M15 6h5"/><circle cx="13" cy="6" r="2"/><path d="M4 12h3"/><path d="M11 12h9"/><circle cx="9" cy="12" r="2"/><path d="M4 18h10"/><path d="M18 18h2"/><circle cx="16" cy="18" r="2"/></svg>`,
+        insight: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/><path d="M16 6h4v4"/></svg>`,
         summary: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/><path d="M8 14h3"/><path d="M14 14h2"/></svg>`,
         tags: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5V4h3.5L20 16.5 16.5 20 4 7.5z"/><circle cx="8" cy="8" r="1"/></svg>`,
         expand: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
@@ -7835,6 +7867,7 @@
             <button class="portfolio-action-btn portfolio-action-open" data-action="openPosition">${portfolioActionIcon("open")}<span>开仓</span></button>
             <button class="portfolio-action-btn portfolio-action-rebalance" data-action="rebalancePortfolio">${portfolioActionIcon("rebalance")}<span>换仓</span></button>
             <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-advice ${state.portfolioAdviceExpanded ? "active" : ""}" data-action="togglePortfolioAdvice">${portfolioActionIcon("advice")}<span>调仓建议</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioAdviceExpanded ? "collapse" : "expand")}</span></button>
+            <button class="portfolio-action-btn portfolio-expand-toggle ${state.portfolioBiasExpanded ? "active" : ""}" data-action="togglePortfolioBias" aria-expanded="${Boolean(state.portfolioBiasExpanded)}">${portfolioActionIcon("insight")}<span>乖离率洞察</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioBiasExpanded ? "collapse" : "expand")}</span></button>
             <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-plan ${state.portfolioPlansExpanded?"active":""}" data-action="togglePortfolioPlans">${portfolioActionIcon("plan")}<span>${state.portfolioPlansExpanded ? "收起计划" : "展开计划"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.portfolioPlansExpanded ? "collapse" : "expand")}</span></button>
             <button class="portfolio-action-btn portfolio-expand-toggle portfolio-action-summary portfolio-summary-toggle ${summaryExpanded ? "active" : ""}" data-action="togglePortfolioSummary">
               ${portfolioActionIcon("summary")}<span>${summaryExpanded ? "收起组合" : "展开组合"}</span><span class="portfolio-action-chevron">${portfolioActionIcon(summaryExpanded ? "collapse" : "expand")}</span>
@@ -7868,7 +7901,7 @@
           </div>
           <div class="portfolio-metric"><div class="portfolio-metric-label">盘中估算净值</div><div class="portfolio-metric-value">${portfolioPrivate(metrics.nav.toFixed(4))}</div><div class="portfolio-metric-sub">${renderPortfolioNavChange(metrics.nav, portfolio)}${renderIntradayBenchmarks(portfolio)}</div></div>
         </section>` : ""}
-        ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : `${renderBiasAlertPanel(portfolio.positions || [], "组合")}${renderPortfolioTable(portfolio, metrics)}`}
+        ${state.portfolioPage === "performance" ? renderPortfolioPerformance(portfolio) : `${state.portfolioBiasExpanded ? renderBiasAlertPanel(portfolio.positions || [], "组合") : ""}${renderPortfolioTable(portfolio, metrics)}`}
       `;
     }
 
@@ -9156,6 +9189,7 @@
             ` : ""}
           </div>
           <div class="toolbar-actions">
+            <button class="secondary pool-bias-toggle ${state.poolBiasExpanded ? "active" : ""}" data-action="togglePoolBias" aria-expanded="${Boolean(state.poolBiasExpanded)}">${portfolioActionIcon("insight")}<span>乖离率洞察</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.poolBiasExpanded ? "collapse" : "expand")}</span></button>
             ${viewingOwn ? `
               <button class="primary stock-add-button" data-action="newStock">+添加股票</button>
             ` : ""}
@@ -9244,8 +9278,9 @@
         const key = `${item.market || ""}:${item.code || item.id || ""}`;
         if (!unique.has(key)) unique.set(key, item);
       });
+      const panelTitle = "乖离率洞察";
       const rows = [...unique.values()].filter((item) => Number.isFinite(item.bias30w) && Number.isFinite(item.bias2yPercentile));
-      if (!rows.length) return "";
+      if (!rows.length) return `<section class="bias-alert-panel" aria-label="${escapeHtml(scopeLabel)}${panelTitle}"><div class="bias-alert-head"><strong>${panelTitle}</strong><span>暂无可用乖离率数据</span></div></section>`;
       const categories = [
         {
           key: "weak", title: "弱周期极端位置", guide: "观察基本面转折信号", condition: (item) => item.bias30w < -30 || item.bias2yPercentile < 10
@@ -9267,8 +9302,8 @@
           : `${item.bias30w > 0 ? "+" : ""}${item.bias30w.toFixed(1)}% · P${item.bias2yPercentile.toFixed(0)}`;
         return `<span class="bias-alert-stock" title="${escapeHtml(`${item.name || item.code} ${metric}`)}"><b>${escapeHtml(item.name || item.code || "--")}</b><em>${escapeHtml(metric)}</em></span>`;
       };
-      return `<section class="bias-alert-panel" aria-label="${escapeHtml(scopeLabel)}乖离值提醒">
-        <div class="bias-alert-head"><strong>乖离值提醒</strong><span>极端位置看30周乖离率或2年分位；趋势按最近3个周度乖离值判断</span></div>
+      return `<section class="bias-alert-panel" aria-label="${escapeHtml(scopeLabel)}${panelTitle}">
+        <div class="bias-alert-head"><strong>${panelTitle}</strong><span>极端位置看30周乖离率或2年分位；趋势按最近3个周度乖离值判断</span></div>
         <div class="bias-alert-grid">${categories.map((category) => {
           const matched = rows.filter(category.condition);
           return `<article class="bias-alert-card ${category.key}"><div class="bias-alert-card-title"><span>${category.title}</span><span class="bias-alert-count">${matched.length}</span></div><div class="bias-alert-guide">${category.guide}</div><div class="bias-alert-stocks">${matched.length ? matched.map((item) => renderStock(item, category.key)).join("") : `<span class="bias-alert-empty">暂无命中</span>`}</div></article>`;
@@ -10329,6 +10364,7 @@
           state.marketInsightPage = 1;
           state.marketInsightSort = { key:"indexWeight", dir:"desc" };
           state.marketInsightRatingFilter = "all";
+          state.marketInsightRuleFilters = [];
           state.marketInsightSearch = "";
           state.marketInsightLoaded = false;
           state.marketInsightRows = state.marketInsightCache[indexId]?.length ? state.marketInsightCache[indexId] : marketInsightConstituents(indexId, state.marketInsightSnapshot);
@@ -10342,6 +10378,7 @@
         state.marketInsightSearch = event.currentTarget.dataset.query || "";
         state.marketInsightPage = 1;
         state.marketInsightRatingFilter = "all";
+        state.marketInsightRuleFilters = [];
         state.marketInsightLoaded = false;
         state.marketInsightRows = state.marketInsightCache[indexId]?.length ? state.marketInsightCache[indexId] : marketInsightConstituents(indexId, state.marketInsightSnapshot);
         render();
@@ -10353,7 +10390,22 @@
         state.marketInsightPage = 1;
         render();
       }
-      if (action === "filterMarketInsightRating") { state.marketInsightRatingFilter = event.currentTarget.dataset.rating || "all"; state.marketInsightPage = 1; render(); }
+      if (action === "filterMarketInsightRating") {
+        const rating = event.currentTarget.dataset.rating || "all";
+        state.marketInsightRatingFilter = rating;
+        if (rating === "all") state.marketInsightRuleFilters = [];
+        state.marketInsightPage = 1;
+        render();
+      }
+      if (action === "filterMarketInsightRule") {
+        const ruleIndex = Number(event.currentTarget.dataset.ruleIndex);
+        const selected = new Set(Array.isArray(state.marketInsightRuleFilters) ? state.marketInsightRuleFilters : []);
+        if (selected.has(ruleIndex)) selected.delete(ruleIndex);
+        else selected.add(ruleIndex);
+        state.marketInsightRuleFilters = [...selected].sort((a, b) => a - b);
+        state.marketInsightPage = 1;
+        render();
+      }
       if (action === "marketInsightPage") { state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1); render(); }
       if (action === "marketInsightDetailRange") {
         const nextRange = event.currentTarget.dataset.range || "2Y";
@@ -10433,6 +10485,11 @@
           state.portfolioTagsExpanded = true;
           state.portfolioPage = "positions";
         }
+        render();
+      }
+      if (action === "togglePortfolioBias") {
+        state.portfolioBiasExpanded = !state.portfolioBiasExpanded;
+        if (state.portfolioBiasExpanded) state.portfolioPage = "positions";
         render();
       }
       if (action === "closePortfolioAdvice") {
@@ -10518,6 +10575,10 @@
       if (action === "confirmDeleteStock") confirmDeleteStock();
       if (action === "toggleSharedFilter") {
         state.shareFilter = state.shareFilter === "SHARED" ? "ALL" : "SHARED";
+        render();
+      }
+      if (action === "togglePoolBias") {
+        state.poolBiasExpanded = !state.poolBiasExpanded;
         render();
       }
       if (action === "copyShareLink") copyShareLink();
