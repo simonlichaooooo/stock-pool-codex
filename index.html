@@ -4224,16 +4224,20 @@
     .market-insight-detail-scrim,
     .market-insight-detail-scrim:hover,
     .market-insight-detail-scrim:focus,
-    .market-insight-detail-scrim:active { position:relative; flex:1 1 auto; align-self:stretch; min-width:0; height:100%; border:0 !important; border-radius:0; outline:0; background:rgba(7,27,51,.28) !important; box-shadow:none !important; cursor:pointer; }
-    .market-insight-detail-panel { position:relative; display:flex; flex:0 0 auto; flex-direction:column; width:min(1080px,calc(100vw - 56px)); height:100%; background:#eef2f7; box-shadow:-8px 0 30px rgba(7,27,51,.22); }
-    .market-insight-detail-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex:0 0 auto; margin:0; padding:16px 20px; border:0; border-bottom:1px solid var(--line); border-radius:0; box-shadow:none; }
-    .market-insight-detail-title { display:flex; align-items:center; gap:12px; min-width:0; }
-    .market-insight-detail-head .market-insight-actions { flex:0 0 auto; align-items:center; justify-content:flex-end; gap:8px; margin:0 0 0 auto; flex-wrap:nowrap; }
+    .market-insight-detail-scrim:active { position:relative; flex:1 1 auto; align-self:stretch; min-width:0; height:100%; border:0 !important; border-radius:0; outline:0; background:color-mix(in srgb,var(--brand-strong) 25%,transparent) !important; box-shadow:none !important; cursor:pointer; }
+    .market-insight-detail-panel { position:relative; display:flex; flex:0 0 auto; flex-direction:column; width:min(1080px,calc(100vw - 56px)); height:100%; background:linear-gradient(180deg,color-mix(in srgb,var(--brand-soft) 24%,var(--panel-2)),color-mix(in srgb,var(--bg) 72%,var(--panel))); box-shadow:-10px 0 34px color-mix(in srgb,var(--brand-strong) 20%,transparent); }
+    .market-insight-detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex:0 0 auto; margin:0; padding:11px 16px; border:0; border-bottom:1px solid color-mix(in srgb,var(--brand) 18%,var(--line)); border-radius:0; background:linear-gradient(110deg,color-mix(in srgb,var(--panel) 88%,var(--brand-soft)),color-mix(in srgb,var(--brand-soft) 22%,var(--panel-2))); box-shadow:0 5px 16px color-mix(in srgb,var(--brand) 6%,transparent); }
+    .market-insight-detail-title { display:flex; flex:1 1 auto; align-items:flex-start; min-width:0; }
+    .market-insight-detail-name-row { display:flex; align-items:baseline; gap:9px; min-width:0; }
+    .market-insight-detail-name-row h2 { min-width:0; margin:0; overflow:hidden; color:var(--text); font-size:19px; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
+    .market-insight-detail-code { flex:0 0 auto; color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.2px; white-space:nowrap; }
+    .market-insight-detail-subtitle { margin:3px 0 0; color:var(--muted); font-size:10.5px; font-weight:600; line-height:1.4; }
+    .market-insight-detail-head .market-insight-actions { flex:0 0 auto; align-items:center; align-self:flex-start; justify-content:flex-end; gap:7px; margin:0 0 0 auto; flex-wrap:nowrap; }
     .market-insight-detail-head .market-insight-loading { white-space:nowrap; }
-    .market-insight-detail-close { display:grid; flex:0 0 auto; place-items:center; width:34px; min-height:34px; padding:0; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--muted); line-height:1; }
+    .market-insight-detail-close { display:grid; flex:0 0 auto; place-items:center; width:32px; min-height:32px; padding:0; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--muted); line-height:1; }
     .market-insight-detail-close:hover { border-color:var(--line); background:var(--panel-2); color:var(--text); box-shadow:none; }
     .market-insight-detail-close svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
-    .market-insight-detail-body { flex:1 1 auto; min-height:0; overflow-y:auto; padding:16px 20px 28px; }
+    .market-insight-detail-body { flex:1 1 auto; min-height:0; overflow-y:auto; padding:12px 16px 24px; }
     .market-insight-charts { display:grid; gap:12px; }
     .market-insight-chart-card { padding:16px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow); }
     .market-insight-chart-card h3 { margin:0; color:var(--text); font-size:15px; }
@@ -4337,13 +4341,14 @@
       .market-insight-table td[data-label="股票名称"] { display:block; }
       .market-insight-table td[data-label="股票名称"] > div { text-align:left; }
       .market-insight-detail-panel { width:100vw; }
-      .market-insight-detail-head { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:10px; padding:14px 12px; }
-      .market-insight-detail-head .market-insight-detail-title { grid-column:1 / -1; }
-      .market-insight-detail-head .market-insight-actions { grid-column:1 / -1; width:100%; margin:0; }
-      .market-insight-detail-head .market-insight-range { flex:1 1 auto; }
-      .market-insight-detail-head .market-insight-range button { flex:1 1 auto; width:auto; }
-      .market-insight-detail-head .market-insight-detail-close { width:36px; }
-      .market-insight-detail-body { padding:12px; }
+      .market-insight-detail-head { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:7px; padding:9px 10px; }
+      .market-insight-detail-head .market-insight-detail-title { grid-column:1; }
+      .market-insight-detail-head .market-insight-actions { grid-column:2; width:auto; margin:0; }
+      .market-insight-detail-head .market-insight-loading { display:none; }
+      .market-insight-detail-head .market-insight-range { flex:0 0 auto; gap:2px; padding:2px; }
+      .market-insight-detail-head .market-insight-range button { flex:0 0 auto; width:auto; min-height:26px; padding:0 7px; font-size:11px; }
+      .market-insight-detail-head .market-insight-detail-close { width:32px; }
+      .market-insight-detail-body { padding:10px; }
       .market-insight-chart-card { padding:12px; }
       .market-insight-chart { height:260px; }
       .market-insight-ai-card { padding:14px 12px; }
@@ -6146,7 +6151,7 @@
       const shortTrend = marketInsightTrendAnalysis(shortSeries[0].values);
       const connectTrend = marketInsightTrendAnalysis(connectSeries[0].values);
       const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
-      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div class="market-insight-title"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><p>${escapeHtml(stock?.code || "")} · 市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
+      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div><div class="market-insight-detail-name-row"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><span class="market-insight-detail-code">${escapeHtml(stock?.code || "")}</span></div><p class="market-insight-detail-subtitle">市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>纵轴按当前区间数据自适应；曲线展示5周、30周、40周、50周乖离率，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
