@@ -4,7 +4,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
 const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MARKET_INSIGHT_MODEL") || "deepseek-v4-pro";
-const PROMPT_VERSION = "market-insight-deepseek-thinking-v3";
+const PROMPT_VERSION = "market-insight-deepseek-thinking-v4-party-on-demand";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -14,6 +14,7 @@ const corsHeaders = {
 };
 
 type Point = { date: string; value: number; quality?: string };
+type PartyKey = "short_position" | "stock_connect";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -108,7 +109,7 @@ async function fingerprint(value: unknown) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function analysisSchema() {
+function analysisSchema(partyKey: PartyKey) {
   const hypothesis = {
     type: "object",
     additionalProperties: false,
@@ -121,14 +122,14 @@ function analysisSchema() {
     },
     required: ["label", "explanation", "supporting_evidence", "counter_evidence", "confidence"],
   };
+  const party = { type: "object", additionalProperties: false, properties: { conclusion: { type: "string" }, hypotheses: { type: "array", items: hypothesis } }, required: ["conclusion", "hypotheses"] };
   return {
     type: "object",
     additionalProperties: false,
     properties: {
       headline: { type: "string" },
       overall_assessment: { type: "string" },
-      short_position: { type: "object", additionalProperties: false, properties: { conclusion: { type: "string" }, hypotheses: { type: "array", items: hypothesis } }, required: ["conclusion", "hypotheses"] },
-      stock_connect: { type: "object", additionalProperties: false, properties: { conclusion: { type: "string" }, hypotheses: { type: "array", items: hypothesis } }, required: ["conclusion", "hypotheses"] },
+      [partyKey]: party,
       interaction: { type: "string" },
       key_evidence: { type: "array", items: { type: "string" } },
       counter_evidence: { type: "array", items: { type: "string" } },
@@ -136,20 +137,29 @@ function analysisSchema() {
       confidence: { type: "string", enum: ["低", "中", "高"] },
       data_limitations: { type: "array", items: { type: "string" } },
     },
-    required: ["headline", "overall_assessment", "short_position", "stock_connect", "interaction", "key_evidence", "counter_evidence", "watch_items", "confidence", "data_limitations"],
+    required: [partyKey],
   };
 }
 
-function validateAnalysis(value: any) {
+function validateAnalysis(value: any, partyKey: PartyKey) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("模型返回的解读不是 JSON 对象");
-  const normalized: any = { ...value };
+  let candidate = value;
+  for (let depth = 0; depth < 3; depth++) {
+    const nested = [candidate.analysis, candidate.result, candidate.data, candidate.output].find((item) => item && typeof item === "object" && !Array.isArray(item));
+    if (!nested || candidate.short_position || candidate.stock_connect) break;
+    candidate = nested;
+  }
+  const normalized: any = { ...candidate };
   const text = (input: unknown, fallback = "") => typeof input === "string" && input.trim() ? input.trim() : fallback;
   const strings = (input: unknown) => Array.isArray(input) ? input.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).map((item) => item.trim()) : [];
   const confidence = (input: unknown) => ["低", "中", "高"].includes(String(input)) ? String(input) : "中";
-  for (const partyName of ["short_position", "stock_connect"]) {
-    const party = value[partyName];
-    if (!party || typeof party !== "object" || Array.isArray(party)) throw new Error(`模型返回缺少核心字段 ${partyName}`);
-    const hypotheses = Array.isArray(party.hypotheses) ? party.hypotheses.flatMap((hypothesis: any) => {
+  const aliases = partyKey === "short_position"
+    ? ["short_position", "shortPosition", "short", "short_selling", "short_analysis", "空头持仓", "空头", "淡仓"]
+    : ["stock_connect", "stockConnect", "connect", "southbound", "stock_connect_analysis", "港股通持仓", "港股通", "南向资金"];
+  const directParty = candidate.conclusion || candidate.hypotheses ? candidate : null;
+  const party = aliases.map((key) => candidate[key]).find((item) => item && typeof item === "object" && !Array.isArray(item)) || directParty;
+  if (!party || typeof party !== "object" || Array.isArray(party)) throw new Error(`模型返回缺少核心字段 ${partyKey}`);
+  const hypotheses = Array.isArray(party.hypotheses) ? party.hypotheses.flatMap((hypothesis: any) => {
       if (!hypothesis || typeof hypothesis !== "object" || Array.isArray(hypothesis)) return [];
       const explanation = text(hypothesis.explanation);
       if (!explanation) return [];
@@ -161,27 +171,31 @@ function validateAnalysis(value: any) {
         confidence: confidence(hypothesis.confidence),
       }];
     }).slice(0, 2) : [];
-    const conclusion = text(party.conclusion, hypotheses[0]?.explanation || "模型未给出明确结论，请结合图表观察。");
-    normalized[partyName] = { conclusion, hypotheses };
-  }
-  normalized.overall_assessment = text(value.overall_assessment, `${normalized.short_position.conclusion} ${normalized.stock_connect.conclusion}`);
-  normalized.headline = text(value.headline, normalized.overall_assessment.slice(0, 60));
-  normalized.interaction = text(value.interaction, "暂未发现足够证据判断两类持仓变化之间的联动关系。");
-  normalized.key_evidence = strings(value.key_evidence);
-  normalized.counter_evidence = strings(value.counter_evidence);
-  normalized.watch_items = strings(value.watch_items);
-  normalized.data_limitations = strings(value.data_limitations);
-  normalized.confidence = confidence(value.confidence);
+  const conclusion = text(party.conclusion, hypotheses[0]?.explanation || "模型未给出明确结论，请结合图表观察。");
+  normalized[partyKey] = { conclusion, hypotheses };
+  normalized.overall_assessment = text(candidate.overall_assessment, conclusion);
+  normalized.headline = text(candidate.headline, normalized.overall_assessment.slice(0, 60));
+  normalized.interaction = text(candidate.interaction, "");
+  normalized.key_evidence = strings(candidate.key_evidence);
+  normalized.counter_evidence = strings(candidate.counter_evidence);
+  normalized.watch_items = strings(candidate.watch_items);
+  normalized.data_limitations = strings(candidate.data_limitations);
+  normalized.confidence = confidence(candidate.confidence);
   return normalized;
 }
 
-async function requestDeepSeek(evidence: unknown) {
-  const schema = analysisSchema();
+async function requestDeepSeek(evidence: unknown, partyKey: PartyKey) {
+  const schema = analysisSchema(partyKey);
+  const partyLabel = partyKey === "short_position" ? "空头持仓" : "港股通持仓";
+  const partyQuestion = partyKey === "short_position"
+    ? "重点判断空头更接近高位建仓后下跌平仓、顺势追空，还是对冲/事件驱动。"
+    : "重点判断港股通更接近逆势承接、趋势增持、反弹减持或持续撤离。";
   const messages = [
-    { role: "system", content: `你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，分析股价、空头持仓比例与港股通持仓比例的关系。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。只输出一个合法 JSON 对象，不要输出 Markdown 或额外文字。每个交易方最多给出2个假设，每组证据最多3条，每条尽量控制在80个汉字以内，最终 JSON 控制在3000个汉字以内。JSON 必须严格符合以下结构：${JSON.stringify(schema)}` },
-    { role: "user", content: `请分析以下数据。重点判断空头更接近高位建仓后下跌平仓、顺势追空，还是对冲/事件驱动；港股通更接近逆势承接、趋势增持、反弹减持或持续撤离。不要套用固定分类，若数据支持其他解释请提出。请输出 JSON。\n\n${JSON.stringify(evidence)}` },
+    { role: "system", content: `你是一名严谨的港股市场行为研究员。根据提供的客观时间序列和统计证据，仅生成${partyLabel}与股价关系的解读。区分观察事实与推测；提出竞争性假设并列出支持证据和反向证据；不得把相关性写成因果，不得断言操纵、打压或具体交易者意图；数据不足时降低置信度。使用简洁中文，不构成投资建议。只输出一个合法 JSON 对象，不要输出 Markdown 或额外文字。必须包含顶层字段 ${partyKey}，不得改名、翻译或省略；最多给出2个假设，每组证据最多3条，每条尽量控制在80个汉字以内。JSON 必须严格符合以下结构：${JSON.stringify(schema)}` },
+    { role: "user", content: `请分析以下数据。${partyQuestion}不要套用固定分类，若数据支持其他解释请提出。只生成 ${partyKey} 对应解读并输出 JSON。\n\n${JSON.stringify(evidence)}` },
   ];
   let lastError: Error | null = null;
+  let correctionMessages = messages;
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 240000);
@@ -192,7 +206,7 @@ async function requestDeepSeek(evidence: unknown) {
         signal: controller.signal,
         body: JSON.stringify({
           model: DEEPSEEK_MODEL,
-          messages,
+          messages: correctionMessages,
           thinking: { type: "enabled" },
           reasoning_effort: "high",
           response_format: { type: "json_object" },
@@ -206,7 +220,12 @@ async function requestDeepSeek(evidence: unknown) {
       if (choice?.finish_reason === "length") throw new Error("模型输出被截断");
       const content = choice?.message?.content;
       if (!content) throw new Error("模型未返回可解析的 JSON 解读");
-      return validateAnalysis(JSON.parse(content));
+      try {
+        return validateAnalysis(JSON.parse(content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")), partyKey);
+      } catch (validationError) {
+        correctionMessages = [...messages, { role: "assistant", content }, { role: "user", content: `上次输出结构不合格：${validationError instanceof Error ? validationError.message : String(validationError)}。请修正并重新输出完整 JSON；顶层必须包含且只能使用字段名 ${partyKey} 表示核心解读。` }];
+        throw validationError;
+      }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (lastError.name === "AbortError") throw new Error("DeepSeek 思考超过 240 秒，请稍后重试");
@@ -233,7 +252,8 @@ Deno.serve(async (request) => {
     const stockCode = String(body.stock_code || "").padStart(5, "0");
     const indexCode = String(body.index_code || "").toUpperCase();
     const rangeKey = ["2Y", "1Y", "YTD"].includes(body.range_key) ? body.range_key : "2Y";
-    if (!/^\d{5}$/.test(stockCode) || !["HSTECH", "HSLI", "HSMI", "HSSI"].includes(indexCode)) return jsonResponse({ error: "请求参数无效" }, 400);
+    const partyKey = body.party_key as PartyKey;
+    if (!/^\d{5}$/.test(stockCode) || !["HSTECH", "HSLI", "HSMI", "HSSI"].includes(indexCode) || !["short_position", "stock_connect"].includes(partyKey)) return jsonResponse({ error: "请求参数无效" }, 400);
     const cutoff = cutoffFor(rangeKey);
 
     const [securityResult, priceResult, shortResult, connectResult] = await Promise.all([
@@ -249,23 +269,37 @@ Deno.serve(async (request) => {
     const connectDaily: Point[] = (connectResult.data || []).flatMap((row: any) => finite(row.holding_ratio_pct) === null ? [] : [{ date: row.holding_date, value: Number(row.holding_ratio_pct), quality: `${row.ratio_quality}/${row.completeness}` }]);
     const connect = weeklyLast(connectDaily);
     if (price.length < 6) return jsonResponse({ error: "股价周线数据不足，暂不能生成 AI 解读" }, 422);
-    if (short.length < 2 && connect.length < 2) return jsonResponse({ error: "空头与港股通历史比例数据不足，暂不能生成 AI 解读" }, 422);
+    if (partyKey === "short_position" && short.length < 2) return jsonResponse({ error: "空头历史比例数据不足，暂不能生成 AI 解读" }, 422);
+    if (partyKey === "stock_connect" && connect.length < 2) return jsonResponse({ error: "港股通历史比例数据不足，暂不能生成 AI 解读" }, 422);
 
-    const evidence = {
+    const evidence = partyKey === "short_position" ? {
+      party: partyKey,
       stock: { code: stockCode, name: securityResult.data?.name_zh || securityResult.data?.name_en || stockCode, index: indexCode, range: rangeKey },
-      summaries: { price: summarize(price), short_position_ratio: summarize(short), stock_connect_ratio: summarize(connect) },
-      relationships: { short_vs_price: relationshipEvidence(price, short), connect_vs_price: relationshipEvidence(price, connect) },
-      series: { price, short_position_ratio: short, stock_connect_ratio_weekly: connect },
-      disclosure_notes: {
-        short_position: "香港证监会合计须申报淡仓，周度披露，不代表全部空头，且不能识别具体交易者。",
-        stock_connect: "港股通为沪港通与深港通相关持仓汇总；完整性和股本分母质量见每个数据点 quality。",
-      },
+      summaries: { price: summarize(price), short_position_ratio: summarize(short) },
+      relationships: { short_vs_price: relationshipEvidence(price, short) },
+      series: { price, short_position_ratio: short },
+      disclosure_notes: { short_position: "香港证监会合计须申报淡仓，周度披露，不代表全部空头，且不能识别具体交易者。" },
+    } : {
+      party: partyKey,
+      stock: { code: stockCode, name: securityResult.data?.name_zh || securityResult.data?.name_en || stockCode, index: indexCode, range: rangeKey },
+      summaries: { price: summarize(price), stock_connect_ratio: summarize(connect) },
+      relationships: { connect_vs_price: relationshipEvidence(price, connect) },
+      series: { price, stock_connect_ratio_weekly: connect },
+      disclosure_notes: { stock_connect: "港股通为沪港通与深港通相关持仓汇总；完整性和股本分母质量见每个数据点 quality。" },
     };
     const dataFingerprint = await fingerprint(evidence);
     const { data: cached } = await supabase.from("market_insight_ai_analyses").select("analysis,evidence,model,prompt_version,price_as_of,short_as_of,connect_as_of,created_at").eq("index_code", indexCode).eq("stock_code", stockCode).eq("range_key", rangeKey).eq("data_fingerprint", dataFingerprint).eq("model", DEEPSEEK_MODEL).eq("prompt_version", PROMPT_VERSION).maybeSingle();
-    if (cached) return jsonResponse({ analysis: cached.analysis, meta: { ...cached, analysis: undefined, evidence: undefined, generated_at: cached.created_at, cached: true } });
+    if (cached) {
+      try {
+        const cachedAnalysis = validateAnalysis(cached.analysis, partyKey);
+        return jsonResponse({ analysis: cachedAnalysis, meta: { ...cached, analysis: undefined, evidence: undefined, generated_at: cached.created_at, cached: true } });
+      } catch {
+        // A previous on-demand request may have cached only the other party.
+      }
+    }
 
-    const analysis = await requestDeepSeek(evidence);
+    const generatedAnalysis = await requestDeepSeek(evidence, partyKey);
+    const analysis = { ...(cached?.analysis && typeof cached.analysis === "object" ? cached.analysis : {}), ...generatedAnalysis };
     const row = {
       index_code: indexCode, stock_code: stockCode, range_key: rangeKey, data_fingerprint: dataFingerprint,
       analysis, evidence, model: DEEPSEEK_MODEL, prompt_version: PROMPT_VERSION,

@@ -6082,14 +6082,14 @@
 
     async function loadMarketInsightAiAnalysis(partyKey = "") {
       const rawCode = state.marketInsightDetailCode;
-      if (!rawCode) return;
+      if (!rawCode || !["short_position", "stock_connect"].includes(partyKey)) return;
       if (partyKey && !(state.marketInsightAiRequestedParties || []).includes(partyKey)) state.marketInsightAiRequestedParties = [...(state.marketInsightAiRequestedParties || []), partyKey];
       const selectedRow = state.marketInsightRows.find((item) => item.rawCode === rawCode);
       const selectedIndex = marketInsightRowIndex(selectedRow);
       const rangeKey = state.marketInsightDetailRange;
-      const cacheKey = `${selectedIndex.code}:${rawCode}:${rangeKey}`;
+      const cacheKey = `${selectedIndex.code}:${rawCode}:${rangeKey}:${partyKey}`;
       if (state.marketInsightAiCache[cacheKey]) {
-        state.marketInsightAiAnalysis = state.marketInsightAiCache[cacheKey].analysis;
+        state.marketInsightAiAnalysis = { ...(state.marketInsightAiAnalysis || {}), ...(state.marketInsightAiCache[cacheKey].analysis || {}) };
         state.marketInsightAiMeta = state.marketInsightAiCache[cacheKey].meta;
         state.marketInsightAiLoading = false;
         state.marketInsightAiError = "";
@@ -6106,10 +6106,10 @@
       try {
         const response = state.session?.access_token === "local-demo"
           ? { analysis:marketInsightAiDemo(), meta:{ model:"本地演示", cached:false, generated_at:new Date().toISOString() } }
-          : await supabaseRequest("/functions/v1/market-insight-ai", { method:"POST", signal:aiRequestController.signal, body:JSON.stringify({ stock_code:String(rawCode).padStart(5, "0"), index_code:selectedIndex.code, range_key:rangeKey }) });
+          : await supabaseRequest("/functions/v1/market-insight-ai", { method:"POST", signal:aiRequestController.signal, body:JSON.stringify({ stock_code:String(rawCode).padStart(5, "0"), index_code:selectedIndex.code, range_key:rangeKey, party_key:partyKey }) });
         if (state.marketInsightDetailCode !== rawCode || state.marketInsightDetailRange !== rangeKey) return;
         state.marketInsightAiCache[cacheKey] = response;
-        state.marketInsightAiAnalysis = response.analysis;
+        state.marketInsightAiAnalysis = { ...(state.marketInsightAiAnalysis || {}), ...(response.analysis || {}) };
         state.marketInsightAiMeta = response.meta || {};
       } catch (error) {
         if (state.marketInsightDetailCode !== rawCode || state.marketInsightDetailRange !== rangeKey) return;
