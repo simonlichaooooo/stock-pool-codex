@@ -4168,8 +4168,12 @@
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
+    .market-insight-row-actions { display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .market-insight-detail-link { min-height:30px; padding:0 12px; border:1px solid color-mix(in srgb,var(--brand) 34%,transparent); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 44%,#fff); color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
     .market-insight-detail-link:hover { border-color:var(--brand); background:var(--brand-soft); box-shadow:0 2px 6px rgba(16,24,40,.10); }
+    .market-insight-watchlist-button { min-height:30px; padding:0 11px; border:1px solid color-mix(in srgb,var(--brand) 22%,var(--line)); border-radius:999px; background:var(--panel); color:var(--muted); font:inherit; font-weight:700; cursor:pointer; }
+    .market-insight-watchlist-button:hover { border-color:var(--brand); background:color-mix(in srgb,var(--brand-soft) 42%,var(--panel)); color:var(--brand-strong); box-shadow:0 2px 6px color-mix(in srgb,var(--brand) 12%,transparent); }
+    .market-insight-watchlist-button.active { border-color:color-mix(in srgb,var(--brand) 52%,var(--line)); background:linear-gradient(135deg,color-mix(in srgb,var(--brand-soft) 82%,var(--panel)),var(--panel)); color:var(--brand-strong); }
     .market-insight-index-tabs { display:inline-flex; justify-content:flex-end; gap:4px; flex-wrap:nowrap; padding:5px; border:1px solid color-mix(in srgb,var(--brand) 20%,rgba(255,255,255,.76)); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 27%,rgba(255,255,255,.50)); box-shadow:inset 0 1px 0 rgba(255,255,255,.82); }
     .market-insight-index-tabs button { min-height:30px; padding:0 13px; border:1px solid transparent; border-radius:999px; background:transparent; color:var(--muted); box-shadow:none; }
     .market-insight-index-tabs button:hover { color:var(--brand-strong); background:rgba(255,255,255,.42); }
@@ -4340,6 +4344,7 @@
       .market-insight-table td > div, .market-insight-table td > span { flex:0 0 auto; text-align:right; }
       .market-insight-table td[data-label="股票名称"] { display:block; }
       .market-insight-table td[data-label="股票名称"] > div { text-align:left; }
+      .market-insight-row-actions { justify-content:flex-end; }
       .market-insight-detail-panel { width:100vw; }
       .market-insight-detail-head { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:7px; padding:9px 10px; }
       .market-insight-detail-head .market-insight-detail-title { grid-column:1; }
@@ -4371,6 +4376,7 @@
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
+    const MARKET_INSIGHT_WATCHLIST_STORAGE_PREFIX = "stockpool.marketInsightWatchlist.";
     const THEME_STORAGE_KEY = "stockpool.colorTheme.v1";
     const DEFAULT_THEME_ID = "glacier";
     const COLOR_THEMES = [
@@ -4420,12 +4426,13 @@
 
     const MARKET_INSIGHT_INDEXES = [
       { id: "all", name: "全部", code: "ALL", quoteId: "", constituentAsOf: "" },
+      { id: "watchlist", name: "自选", code: "WATCHLIST", quoteId: "", constituentAsOf: "自选列表" },
       { id: "hstech", name: "恒生科技", code: "HSTECH", quoteId: "124.HSTECH", constituentAsOf: "2026-06-08" },
       { id: "hsli", name: "大型股", code: "HSLI", quoteId: "124.HSLI", constituentAsOf: "" },
       { id: "hsmi", name: "中型股", code: "HSMI", quoteId: "124.HSMI", constituentAsOf: "" },
       { id: "hssi", name: "小型股", code: "HSSI", quoteId: "124.HSSI", constituentAsOf: "" }
     ];
-    const MARKET_INSIGHT_BASE_INDEXES = MARKET_INSIGHT_INDEXES.filter((item) => item.id !== "all");
+    const MARKET_INSIGHT_BASE_INDEXES = MARKET_INSIGHT_INDEXES.filter((item) => !["all", "watchlist"].includes(item.id));
     const HSTECH_CONSTITUENTS = [
       ["9988", "阿里巴巴-W"], ["3690", "美团-W"], ["1211", "比亚迪股份"], ["9618", "京东集团-SW"],
       ["9888", "百度集团-SW"], ["1024", "快手-W"], ["9961", "携程集团-S"], ["9868", "小鹏汽车-W"],
@@ -4481,6 +4488,7 @@
       marketInsightRatingFilter: "all",
       marketInsightRuleFilters: [],
       marketInsightSearch: "",
+      marketInsightWatchlistCodes: [],
       portfolios: [],
       activePortfolioId: "",
       portfolioModal: null,
@@ -5878,7 +5886,7 @@
     async function loadPersistedMarketInsightMetrics(rows, indexCode) {
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
       const baseCodes = MARKET_INSIGHT_BASE_INDEXES.map((item) => item.code);
-      const indexFilter = indexCode === "ALL" ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
+      const indexFilter = ["ALL", "WATCHLIST"].includes(indexCode) ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
       const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=${indexFilter}&select=index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=3000`);
       const byIndexAndCode = new Map((metrics || []).map((item) => [`${item.index_code}:${item.stock_code}`, item]));
       const byCode = new Map();
@@ -6229,6 +6237,22 @@
         }));
         return [...merged.values()];
       }
+      if (indexId === "watchlist") {
+        const favoriteCodes = Array.isArray(state.marketInsightWatchlistCodes) ? state.marketInsightWatchlistCodes : [];
+        const sources = [
+          ...(state.marketInsightRows || []),
+          ...Object.values(state.marketInsightCache || {}).flat(),
+          ...marketInsightConstituents("all", snapshot)
+        ];
+        const byCode = new Map();
+        sources.forEach((row) => {
+          if (row?.rawCode && !byCode.has(row.rawCode)) byCode.set(row.rawCode, row);
+        });
+        return favoriteCodes.flatMap((rawCode, order) => {
+          const row = byCode.get(rawCode);
+          return row ? [{ ...row, id:`watchlist-${rawCode}`, order }] : [];
+        });
+      }
       const official = snapshot?.constituents?.indexes?.[indexId];
       const members = official?.members?.length ? official.members : indexId === "hstech" ? HSTECH_CONSTITUENTS.map((item) => ({ code:item.rawCode, name:item.name })) : [];
       return members.map((member, order) => {
@@ -6252,13 +6276,40 @@
         const asOfDates = MARKET_INSIGHT_BASE_INDEXES.map((item) => state.marketInsightSnapshot?.constituents?.indexes?.[item.id]?.asOf || item.constituentAsOf).filter(Boolean).sort();
         return { ...index, constituentAsOf:asOfDates.at(-1) || "各指数最新成分", sourceUrl:"https://www.hsi.com.hk/chi/indexes/all-indexes/sizeindexes" };
       }
+      if (index.id === "watchlist") return { ...index, sourceUrl:"https://www.hsi.com.hk/chi/indexes/all-indexes/sizeindexes" };
       const official = state.marketInsightSnapshot?.constituents?.indexes?.[index.id];
       return { ...index, constituentAsOf:official?.asOf || index.constituentAsOf, sourceUrl:official?.sourceUrl || "https://www.hsi.com.hk/chi/indexes/all-indexes/sizeindexes" };
     }
 
     function marketInsightRowIndex(row) {
-      const indexId = state.marketInsightIndexId === "all" ? row?.primaryIndexId : state.marketInsightIndexId;
+      const indexId = ["all", "watchlist"].includes(state.marketInsightIndexId) ? row?.primaryIndexId : state.marketInsightIndexId;
       return MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === indexId) || MARKET_INSIGHT_BASE_INDEXES[0];
+    }
+
+    function marketInsightWatchlistStorageKey() {
+      return `${MARKET_INSIGHT_WATCHLIST_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
+    }
+
+    function loadMarketInsightWatchlist() {
+      const saved = readJson(marketInsightWatchlistStorageKey(), []);
+      state.marketInsightWatchlistCodes = [...new Set((Array.isArray(saved) ? saved : []).map((code) => String(code || "").padStart(4, "0")).filter(Boolean))];
+    }
+
+    function isMarketInsightWatchlisted(rawCode) {
+      return state.marketInsightWatchlistCodes.includes(String(rawCode || "").padStart(4, "0"));
+    }
+
+    function toggleMarketInsightWatchlist(rawCode) {
+      const normalizedCode = String(rawCode || "").padStart(4, "0");
+      if (!normalizedCode) return;
+      state.marketInsightWatchlistCodes = isMarketInsightWatchlisted(normalizedCode)
+        ? state.marketInsightWatchlistCodes.filter((code) => code !== normalizedCode)
+        : [...state.marketInsightWatchlistCodes, normalizedCode];
+      writeJson(marketInsightWatchlistStorageKey(), state.marketInsightWatchlistCodes);
+      delete state.marketInsightCache.watchlist;
+      if (state.marketInsightIndexId === "watchlist") state.marketInsightRows = marketInsightConstituents("watchlist", state.marketInsightSnapshot);
+      state.marketInsightPage = 1;
+      render();
     }
 
     function calculateFiveWeekReturn(weeklyCloses) {
@@ -6379,8 +6430,8 @@
           <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto">别研究太细，跟着炒就行，勤翻面，别骄傲！</div></div>
         </section>
         <div class="market-insight-meta">
-          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只成分股</span>
-          <span>成分生效日：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
+          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${index.id === "watchlist" ? "股票" : "成分股"}</span>
+          <span>${index.id === "watchlist" ? "列表类型" : "成分生效日"}：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
           <span>空仓报告：<strong>${escapeHtml(shortAsOf)}</strong></span>
           <span>港股通持仓：<strong>${escapeHtml(connectAsOf)}</strong></span>
           ${state.marketInsightLoading ? `<span class="market-insight-loading">正在读取市场数据</span>` : ""}
@@ -6413,7 +6464,7 @@
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
                   ${marketInsightShortChangeCell(row, shortRatio, rating.rules[3])}
                   ${marketInsightConnectChangeCell(row, connectRatio, rating.rules[4])}
-                  <td data-label="操作"><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></td>
+                  <td data-label="操作"><div class="market-insight-row-actions"><button class="market-insight-watchlist-button ${isMarketInsightWatchlisted(row.rawCode) ? "active" : ""}" data-action="toggleMarketInsightWatchlist" data-code="${escapeHtml(row.rawCode)}" aria-pressed="${isMarketInsightWatchlisted(row.rawCode)}">${isMarketInsightWatchlisted(row.rawCode) ? "已自选" : "加自选"}</button><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></div></td>
                 </tr>`;
               }).join("")}</tbody>
             </table>
@@ -6421,8 +6472,8 @@
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
-          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
-          ${index.id === "all" ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
+          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“已自选”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
+          ${["all", "watchlist"].includes(index.id) ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。
           数据源：<a href="${escapeHtml(snapshot.shortPositions?.sourceUrl || "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares")}" target="_blank" rel="noopener">香港证监会</a>、<a href="${escapeHtml(snapshot.stockConnect?.sourceUrl || "https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk")}" target="_blank" rel="noopener">港交所</a>、腾讯/东方财富周线行情。
@@ -9493,6 +9544,7 @@
         state.profile = null;
         state.profileRequired = false;
         state.stocks = [];
+        state.marketInsightWatchlistCodes = [];
         state.portfolios = [];
         state.activePortfolioId = "";
         state.journals = [];
@@ -9501,12 +9553,13 @@
       if (action === "githubLogin") loginWithGithub();
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
       if (action === "refreshMarketInsight") await refreshMarketInsight({ force: true });
+      if (action === "toggleMarketInsightWatchlist") toggleMarketInsightWatchlist(event.currentTarget.dataset.code || "");
       if (action === "selectMarketInsightIndex") {
         const indexId = event.currentTarget.dataset.indexId || "all";
         if (indexId !== state.marketInsightIndexId) {
           state.marketInsightIndexId = indexId;
           state.marketInsightPage = 1;
-          state.marketInsightSort = { key:indexId === "all" ? "marketCap" : "indexWeight", dir:"desc" };
+          state.marketInsightSort = { key:["all", "watchlist"].includes(indexId) ? "marketCap" : "indexWeight", dir:"desc" };
           state.marketInsightRatingFilter = "all";
           state.marketInsightRuleFilters = [];
           state.marketInsightSearch = "";
@@ -11772,6 +11825,7 @@
     }
 
     async function afterProfileReady(initialStocksPromise = null) {
+      loadMarketInsightWatchlist();
       const stocksReady = initialStocksPromise || loadStocks();
       const auxiliaryReady = Promise.allSettled([
         loadPortfolios(),
@@ -11802,6 +11856,7 @@
       if (localPortfolioDemo) {
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
         state.profile = { id: "local-portfolio-demo", nickname: "本地验收" };
+        loadMarketInsightWatchlist();
         await loadPortfolios();
         await loadJournals();
         ensureLocalPortfolioDemo();
