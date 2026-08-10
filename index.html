@@ -4198,7 +4198,11 @@
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
     .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:10px; padding:12px 14px; border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.78)); border-radius:8px; background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.76)),color-mix(in srgb,var(--panel) 90%,var(--brand-soft))); box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.88); backdrop-filter:blur(12px) saturate(120%); -webkit-backdrop-filter:blur(12px) saturate(120%); }
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
-    .market-insight-rating-standard { flex:0 0 auto; margin-left:auto; color:var(--muted); font-size:10.5px; line-height:1.6; text-align:right; white-space:nowrap; }
+    .market-insight-rating-copy { flex:0 0 auto; margin-left:auto; text-align:right; }
+    .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
+    .market-insight-rating-motto { margin-top:4px; color:color-mix(in srgb,var(--brand) 54%,var(--muted)); font-family:"STKaiti","KaiTi","Kaiti SC",serif; font-size:12px; font-weight:600; letter-spacing:1.1px; line-height:1.45; opacity:.72; white-space:nowrap; user-select:none; }
+    .market-insight-rating-motto::before { content:"“"; margin-right:1px; font-size:15px; line-height:0; }
+    .market-insight-rating-motto::after { content:"”"; margin-left:1px; font-size:15px; line-height:0; }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -4316,7 +4320,8 @@
       .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
       .market-insight-rating-main { flex-direction:column; gap:5px; }
-      .market-insight-rating-standard { flex-basis:auto; margin-left:0; text-align:left; white-space:normal; }
+      .market-insight-rating-copy { margin-left:0; text-align:left; }
+      .market-insight-rating-standard, .market-insight-rating-motto { white-space:normal; }
       .market-insight-rating-filter-groups { align-items:flex-start; margin-left:0; }
       .market-insight-rating-filter-row, .market-insight-rating-filters { justify-content:flex-start; }
       .market-insight-table table { width:100%; min-width:0; }
@@ -6342,7 +6347,7 @@
               </div></div>
             </div>
           </div>
-          <div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div>
+          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto">别研究太细，跟着炒就行，勤翻面，别骄傲！</div></div>
         </section>
         <div class="market-insight-meta">
           <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只成分股</span>
