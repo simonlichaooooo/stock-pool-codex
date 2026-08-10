@@ -1,5 +1,7 @@
 # Session Summary
 
+> 2026-08-10 状态更新：本文记录的是历史开发过程。股池分享、关注、订阅、广场及对应管理后台现已下线，不再代表当前产品能力。
+
 最后更新：2026-05-17  
 项目：股池管理工具  
 当前线上地址：`https://simonlichaooooo.github.io/stock-pool-codex/`

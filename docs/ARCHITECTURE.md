@@ -18,7 +18,7 @@
 
 ## 2. 前端运行模型
 
-- 全局 `state` 保存会话、股池、组合、日志、广场和弹窗状态。
+- 全局 `state` 保存会话、私人股池、组合、日志和弹窗状态。
 - `init()` 初始化主题、会话、档案、业务数据和自动刷新。
 - `render()` 根据 state 重建界面。
 - `bindEvents()` 在渲染后重新绑定事件。
@@ -45,10 +45,8 @@
 
 | 数据域 | 主要存储 | 说明 |
 | --- | --- | --- |
-| 用户 | `profiles` | 昵称、账户信息和可见性 |
+| 用户 | `profiles` | 昵称与账户信息 |
 | 股池 | `stock_records` | 私有股票与估值 payload |
-| 发布 | `stock_publications` | 公开版本快照 |
-| 社交 | `follows`、订阅相关表 | 关注、复制和订阅关系 |
 | 日志 | `journal_entries` | 私有研究日志 |
 | 组合 | `portfolios` | 组合主体和嵌套 payload |
 | 净值 | `portfolio_cash_flows`、`portfolio_daily_nav` | 外部现金流和日终净值 |
@@ -78,14 +76,13 @@ portfolio
 └─ cashFlows[]
 ```
 
-## 4. 认证、权限与公开内容
+## 4. 认证与权限
 
 - Supabase Auth 支持 GitHub OAuth 和 Email Magic Link。
 - 登录后使用用户 JWT 请求 REST API。
 - 业务表通过 RLS 隔离用户数据。
-- 公开发布使用独立记录，不直接开放私有草稿。
+- `profiles`、`stock_records`、组合和日志均只允许所属用户读取与修改。
 - 前端可以包含 anon key，不得包含 `service_role` 或 `CRON_SECRET`。
-- 管理员能力必须由后台权限与 RLS 共同约束。
 
 ## 5. 外部数据与降级
 
@@ -129,7 +126,7 @@ pg_cron / pg_net
 
 ## 9. 演进方向
 
-- 将样式、数据访问、股池、组合、日志和广场拆为 ES Modules。
+- 将样式、数据访问、股池、组合和日志拆为 ES Modules。
 - 为 payload 增加 schema version、校验和迁移。
 - 把交易、现金校准、换汇等迁移到可审计流水表。
 - 为份额、净值、摊薄成本、外汇和估值反算增加单元测试。

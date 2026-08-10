@@ -411,198 +411,6 @@
       line-height: 1.55;
       font-size: 13px;
     }
-    .share-banner {
-      margin-bottom: 12px;
-      padding: 11px 12px;
-      border: 1px solid #b8d3ff;
-      background: #eef5ff;
-      color: #163b76;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .update-banner {
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border: 1px solid #f1d28a;
-      background: #fff8e5;
-      color: #7a4b00;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .publisher-panel {
-      margin-bottom: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      border-radius: 6px;
-      box-shadow: var(--shadow-soft);
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-    }
-    .publisher-panel h2 {
-      margin: 0 0 6px;
-      font-size: 16px;
-    }
-    .publisher-meta {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .share-settings {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      color: #344054;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .share-switch {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      color: #344054;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-    }
-    .share-switch input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .share-switch-track {
-      position: relative;
-      width: 38px;
-      height: 22px;
-      border-radius: 999px;
-      background: #d0d7e2;
-      transition: background .16s ease, box-shadow .16s ease;
-      flex: 0 0 auto;
-    }
-    .share-switch-track::after {
-      content: "";
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: white;
-      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.24);
-      transition: transform .16s ease;
-    }
-    .share-switch input:checked + .share-switch-track {
-      background: var(--brand);
-    }
-    .share-switch input:checked + .share-switch-track::after {
-      transform: translateX(16px);
-    }
-    .share-switch input:focus-visible + .share-switch-track {
-      box-shadow: 0 0 0 3px rgba(15, 95, 85, 0.14);
-    }
-    .share-switch input:disabled + .share-switch-track,
-    .share-switch input:disabled ~ span {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-    .page-header-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-    .nav-pool-controls {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-      flex: 0 1 auto;
-      min-width: 0;
-      margin-left: auto;
-    }
-    .nav-publisher-select {
-      width: 130px;
-      min-width: 130px;
-      max-width: 130px;
-      flex: 0 0 130px;
-      border-color: rgba(15, 95, 85, 0.38);
-      background-color: var(--brand-soft);
-      color: var(--brand-strong);
-      font-weight: 700;
-      box-shadow: 0 4px 12px rgba(15, 95, 85, 0.08);
-    }
-    .share-link {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .share-state, .source-cell {
-      display: grid;
-      gap: 4px;
-    }
-    .share-cell { text-align: center; }
-    .share-cell .share-state { justify-items: center; }
-    .share-cell button { margin: 0 auto; }
-    .share-head { text-align: center; }
-    .share-action {
-      min-height: 20px;
-      padding: 0 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      line-height: 1.2;
-    }
-    .share-state strong, .source-cell strong { font-size: 13px; }
-    .source-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .badge.soft { font-weight: 500; color: var(--muted); background: #f4f6fa; }
-    .badge.warn { background: #fff4cc; color: #805400; }
-    .publish-box {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-    .publish-box label {
-      display: block;
-      font-weight: 700;
-      color: #344054;
-      margin-bottom: 7px;
-      font-size: 13px;
-    }
-    .publish-box textarea { min-height: 82px; }
-    .publish-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 10px;
-    }
-    .publish-actions button {
-      min-width: 112px;
-      border-color: #c2410c;
-      background: #c2410c;
-      color: white;
-      font-weight: 800;
-      box-shadow: 0 8px 18px rgba(194, 65, 12, 0.16);
-    }
-    .publish-actions button:hover:not(:disabled) {
-      border-color: #9a3412;
-      background: #9a3412;
-    }
     .history-modal {
       position: fixed;
       inset: 0;
@@ -613,131 +421,6 @@
       overflow: auto;
     }
     .history-modal.open { display: grid; place-items: start center; }
-    .history-panel {
-      width: min(1040px, 100%);
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.2);
-      overflow: hidden;
-    }
-    .history-head {
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .history-head h3 { margin: 0; font-size: 18px; }
-    .history-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
-    .history-body {
-      padding: 16px 18px 18px;
-      background: #f6f8fa;
-      max-height: min(760px, calc(100vh - 150px));
-      overflow: auto;
-    }
-    .history-list {
-      display: grid;
-      gap: 12px;
-    }
-    .history-item {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 13px;
-      display: grid;
-      gap: 12px;
-    }
-    .history-item-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    .history-item h4 { margin: 0; font-size: 15px; }
-    .history-note {
-      margin: 0;
-      color: #344054;
-      line-height: 1.55;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-    .history-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-    }
-    .history-metric {
-      position: relative;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: #f8fafc;
-      padding: 8px;
-      min-height: 58px;
-      min-width: 0;
-    }
-    .history-metric-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 4px;
-      min-width: 0;
-    }
-    .history-metric-title span,
-    .history-metric-title em {
-      display: block;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-style: normal;
-    }
-    .history-metric-title em {
-      max-width: 58%;
-      color: #667085;
-      text-align: right;
-    }
-    .history-metric strong {
-      display: block;
-      font-size: 14px;
-      line-height: 1.35;
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: "tnum";
-      overflow-wrap: anywhere;
-    }
-    .history-metric strong.text-value {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow-wrap: normal;
-    }
-    .history-metric [data-tooltip] { cursor: help; }
-    .history-metric [data-tooltip]:hover::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      top: calc(100% - 4px);
-      z-index: 4;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: #111827;
-      color: white;
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: normal;
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
-    }
-    .history-delta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
     .form-error {
       margin-top: 14px;
       padding: 10px 12px;
@@ -749,16 +432,6 @@
       text-align: left;
       font-size: 13px;
     }
-    .readonly-note {
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border: 1px solid #d7e3f8;
-      background: #f2f6ff;
-      color: #24436f;
-      border-radius: 6px;
-      line-height: 1.5;
-      font-size: 13px;
-    }
     .disclaimer {
       margin-top: 12px;
       padding-top: 12px;
@@ -767,70 +440,6 @@
       font-size: 12px;
       line-height: 1.5;
     }
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 12px;
-    }
-    .square-card, .admin-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 13px;
-      box-shadow: var(--shadow);
-      display: grid;
-      gap: 10px;
-    }
-    .square-card h3, .admin-card h3 { margin: 0; font-size: 16px; }
-    .mini-list {
-      display: grid;
-      gap: 7px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .mini-list li {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 13px;
-      border-top: 1px solid var(--soft);
-      padding-top: 7px;
-    }
-    .admin-layout {
-      display: grid;
-      grid-template-columns: 340px minmax(0, 1fr);
-      gap: 12px;
-      align-items: start;
-    }
-    .admin-list {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .admin-user-row {
-      width: 100%;
-      border: 0;
-      border-bottom: 1px solid var(--line);
-      border-radius: 0;
-      min-height: 62px;
-      text-align: left;
-      padding: 10px;
-      display: grid;
-      gap: 4px;
-    }
-    .admin-user-row.active { background: #e9f0fb; }
-    .admin-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .admin-actions input { width: min(360px, 100%); }
-    .private-row { background: #fffdf6; }
-
     .drawer {
       position: fixed;
       inset: 0;
@@ -3272,17 +2881,6 @@
       background-position:right 14px center;
       background-size:12px 8px;
     }
-    button[data-action="copyShareLink"] {
-      min-height:36px;
-      padding:0 14px;
-      border-color:rgba(83,137,201,.46);
-      background:rgba(255,255,255,.54);
-      color:#174775;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 4px 12px rgba(52,111,181,.09);
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
-    }
-    button[data-action="copyShareLink"]:hover { background:rgba(255,255,255,.86); border-color:#6694c8; color:#0753bd; }
     .stock-add-button {
       border:1px solid rgba(255,255,255,.72);
       background:linear-gradient(135deg,rgba(38,137,255,.92),rgba(7,89,218,.92));
@@ -4755,7 +4353,6 @@
     const LAYOUT_DEBUG_ENABLED = new URLSearchParams(window.location.search).get("layoutDebug") === "1";
     const AUTH_REDIRECT_URL = appBaseUrl();
     const AUTH_STORAGE_KEY = "stockpool.supabaseSession";
-    const PENDING_SHARE_KEY = "stockpool.pendingSharePublisher";
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
     const THEME_STORAGE_KEY = "stockpool.colorTheme.v1";
@@ -4838,12 +4435,7 @@
       profile: null,
       profileRequired: false,
       nicknameNotice: "",
-      shareInviteProfile: null,
-      followedPublishers: [],
       stocks: [],
-      publisherStocks: [],
-      publisherProfile: null,
-      sourceUpdateCount: 0,
       mainView: "pool",
       poolBiasExpanded: false,
       marketInsightIndexId: "hstech",
@@ -4911,14 +4503,6 @@
       navHistory: [],
       navHistoryPortfolioId: "",
       benchmarkHistory: [],
-      isAdmin: false,
-      squareProfiles: [],
-      squareSort: "recent",
-      adminUsers: [],
-      adminStocks: [],
-      adminSelectedUserId: "",
-      viewPublisherId: "own",
-      shareFilter: "ALL",
       route: location.hash || "#/",
       filter: "ALL",
       query: "",
@@ -4930,16 +4514,7 @@
       formInitialSnapshot: "",
       formDirty: false,
       saving: false,
-      publishing: false,
-      sharingStockId: "",
       drawerError: "",
-      publicationHistory: {
-        open: false,
-        loading: false,
-        stock: null,
-        rows: [],
-        error: ""
-      },
       deleteConfirm: {
         open: false,
         stockId: "",
@@ -5028,18 +4603,6 @@
 
     function hasAuthTokensInHash() {
       return location.hash.includes("access_token=");
-    }
-
-    function rememberPendingShareFromUrl() {
-      const publisherId = new URLSearchParams(location.search).get("share");
-      if (publisherId) {
-        localStorage.setItem(PENDING_SHARE_KEY, publisherId);
-        return publisherId;
-      }
-      if (!hasAuthTokensInHash()) {
-        localStorage.removeItem(PENDING_SHARE_KEY);
-      }
-      return null;
     }
 
     function decodeJwt(token) {
@@ -5731,7 +5294,23 @@
     }
 
     function payloadForStockRecord(stock) {
-      return stripRuntimeMarketCapFields(normalizeShareholderReturnFields(stock));
+      const {
+        publishNote,
+        isShared,
+        lastPublishedAt,
+        sourceUserId,
+        sourceStockId,
+        sourceNickname,
+        sourceType,
+        sourceSeenPublishedAt,
+        lastSourceUpdatedAt,
+        sourceStopped,
+        sourceDeletedAt,
+        hasSourceUpdate,
+        adminHidden,
+        ...privateStock
+      } = normalizeShareholderReturnFields(stock);
+      return stripRuntimeMarketCapFields(privateStock);
     }
 
     function mergeRuntimeMarketCap(stock, quote) {
@@ -5749,37 +5328,28 @@
 
     async function refreshMarketCaps({ renderAfter = true } = {}) {
       if (marketCapRefreshInFlight || !state.session) return;
-      const canRefreshQuote = (stock) => !stock.sourceDeletedAt && Boolean(stock.quoteId || stockQuoteId(stock) || tencentSymbol(stock));
-      const ownTargets = state.stocks.filter(canRefreshQuote);
-      const publisherTargets = state.publisherStocks.filter(canRefreshQuote);
-      const targets = [
-        ...ownTargets.map((stock) => ({ scope: "own", stock })),
-        ...publisherTargets.map((stock) => ({ scope: "publisher", stock }))
-      ];
+      const canRefreshQuote = (stock) => Boolean(stock.quoteId || stockQuoteId(stock) || tencentSymbol(stock));
+      const targets = state.stocks.filter(canRefreshQuote);
       if (!targets.length) return;
       marketCapRefreshInFlight = true;
       try {
-        const quotes = await Promise.all(targets.map(async (item) => {
+        const quotes = await Promise.all(targets.map(async (stock) => {
           try {
             const [quote, bias] = await Promise.all([
-              fetchQuote(item.stock),
-              fetchBiasMetrics(item.stock).catch((error) => {
-                console.warn("刷新乖离率失败。", item.stock?.code, error);
+              fetchQuote(stock),
+              fetchBiasMetrics(stock).catch((error) => {
+                console.warn("刷新乖离率失败。", stock?.code, error);
                 return { bias30w: null, bias2yPercentile: null, biasRecentValues: [], biasUpdatedAt: "" };
               })
             ]);
-            return { ...item, quote: { ...quote, ...bias } };
+            return { stock, quote: { ...quote, ...bias } };
           } catch (error) {
-            console.warn("刷新市值失败。", item.stock?.code, error);
+            console.warn("刷新市值失败。", stock?.code, error);
             return null;
           }
         }));
-        quotes.filter(Boolean).forEach(({ scope, stock, quote }) => {
-          if (scope === "own") {
-            state.stocks = state.stocks.map((item) => item.id === stock.id ? mergeRuntimeMarketCap(item, quote) : item);
-          } else {
-            state.publisherStocks = state.publisherStocks.map((item) => item.id === stock.id ? mergeRuntimeMarketCap(item, quote) : item);
-          }
+        quotes.filter(Boolean).forEach(({ stock, quote }) => {
+          state.stocks = state.stocks.map((item) => item.id === stock.id ? mergeRuntimeMarketCap(item, quote) : item);
           if (state.form?.id === stock.id) {
             state.form = mergeRuntimeMarketCap(state.form, quote);
           }
@@ -5971,83 +5541,6 @@
       return ["乐观", "中性", "悲观"].includes(normalizeStockVersion(value)) ? normalizeStockVersion(value) : "自定义";
     }
 
-    function buildPublicationSnapshot(stock, changeNote = "") {
-      const normalized = normalizeShareholderReturnFields(stock);
-      const computed = calc(normalized);
-      return {
-        schemaVersion: 2,
-        stock: {
-          id: normalized.id || null,
-          name: normalized.name || "",
-          code: normalized.code || "",
-          market: normalized.market || "",
-          exchange: normalized.exchange || "",
-          version: normalizeStockVersion(normalized.version),
-          displayCurrency: normalized.displayCurrency || defaultCurrencyFor(normalized)
-        },
-        assumptions: {
-          latestMarketCapCny: Number(normalized.latestMarketCapCny) || 0,
-          marketCapUpdatedAt: normalized.marketCapUpdatedAt || "",
-          amountCurrencies: normalizeAmountCurrencies(normalized.amountCurrencies),
-          amountInputValues: normalizeAmountInputValues(normalized.amountInputValues),
-          originalAmounts: normalizeOriginalAmounts(normalized),
-          useSegmentValuation: Boolean(normalized.useSegmentValuation),
-          segmentValuations: Array.isArray(normalized.segmentValuations) ? normalized.segmentValuations : [],
-          expectedProfitCny: Number(normalized.expectedProfitCny) || 0,
-          expectedPE: Number(normalized.expectedPE) || 0,
-          expectedPEInput: normalized.expectedPEInput === undefined || normalized.expectedPEInput === null ? "" : String(normalized.expectedPEInput),
-          forecastYear: normalized.forecastYear || "",
-          expectedPERemark: normalized.expectedPERemark || "",
-          netCashCny: Number(normalized.netCashCny) || 0,
-          netCashScope: normalized.netCashScope || "",
-          netCashDiscountRate: Number(normalized.netCashDiscountRate) || 0,
-          expectedDividendCny: Number(normalized.expectedDividendCny) || 0,
-          expectedBuybackCny: Number(normalized.expectedBuybackCny) || 0,
-          expectedShareholderReturnCny: Number(normalized.expectedShareholderReturnCny) || 0,
-          shareholderReturnRemark: normalized.shareholderReturnRemark || ""
-        },
-        computed,
-        note: {
-          investmentNote: normalized.investmentNote || "",
-          myNote: normalized.myNote || "",
-          changeNote
-        }
-      };
-    }
-
-    function stockFromPublication(publication) {
-      const payload = publication?.payload || {};
-      if (!payload.schemaVersion) return normalizeShareholderReturnFields(payload);
-      return normalizeShareholderReturnFields({
-        ...(payload.stock || {}),
-        ...(payload.assumptions || {}),
-        investmentNote: payload.note?.investmentNote || "",
-        myNote: payload.note?.myNote || "",
-        isShared: true,
-        lastPublishedAt: publication.created_at || payload.lastPublishedAt || "",
-        updatedAt: publication.created_at || payload.updatedAt || ""
-      });
-    }
-
-    function stockWithPublication(stock, publication) {
-      if (!publication) return stock;
-      return {
-        ...stock,
-        ...stockFromPublication(publication),
-        id: stock.id,
-        userId: stock.userId,
-        publisherId: stock.publisherId,
-        publisherNickname: stock.publisherNickname,
-        sourceUserId: stock.sourceUserId,
-        sourceStockId: stock.sourceStockId,
-        sourceNickname: stock.sourceNickname,
-        sourceType: stock.sourceType,
-        isShared: true,
-        lastPublishedAt: publication.created_at || stock.lastPublishedAt,
-        updatedAt: publication.created_at || stock.updatedAt
-      };
-    }
-
     function ensureAuth() {
       if (state.loading) {
         renderLoading();
@@ -6170,12 +5663,9 @@
             </div>
           </header>
           <main class="workspace">
-            ${renderNavTabs()}
-            ${renderShareInvite()}
             ${renderCurrentView()}
           </main>
           ${renderDrawer()}
-          ${renderPublicationHistory()}
           ${renderDeleteConfirm()}
           ${renderPortfolioModal()}
           ${renderJournalModal()}
@@ -6186,35 +5676,12 @@
       scheduleLayoutDebugPanel();
     }
 
-    function renderNavTabs() {
-      const viewingOwn = state.viewPublisherId === "own";
-      if (state.mainView !== "pool") return "";
-      return `
-        <div class="nav-row">
-          <div class="nav-primary">
-            ${renderPublisherSelect()}
-          </div>
-          <div class="nav-pool-controls">
-            ${viewingOwn ? `
-              <label class="share-switch" title="打开后，所有已分享状态股票会同步至广场可见">
-                <input type="checkbox" data-input="shareVisibilityToggle" ${state.profile?.share_visibility === "public" ? "checked" : ""} ${state.profile?.share_banned ? "disabled" : ""}>
-                <span class="share-switch-track" aria-hidden="true"></span><span>公开至广场</span>
-              </label>
-              <button class="secondary" data-action="copyShareLink">复制1v1分享链接</button>
-            ` : ""}
-          </div>
-        </div>
-      `;
-    }
-
     function renderMainNavTabs() {
       return `<nav class="nav-tabs topbar-nav" aria-label="主导航">
         <button class="${state.mainView === "pool" ? "active" : ""}" data-action="switchMainView" data-view="pool">股池</button>
         <button class="${state.mainView === "portfolio" ? "active" : ""}" data-action="switchMainView" data-view="portfolio">组合管理</button>
         <button class="${state.mainView === "marketInsight" ? "active" : ""}" data-action="switchMainView" data-view="marketInsight">市场洞察</button>
         <button class="${state.mainView === "journal" ? "active" : ""}" data-action="switchMainView" data-view="journal">日志</button>
-        <button class="${state.mainView === "square" ? "active" : ""}" data-action="switchMainView" data-view="square">广场</button>
-        ${state.isAdmin ? `<button class="${state.mainView === "admin" ? "active" : ""}" data-action="switchMainView" data-view="admin">管理后台</button>` : ""}
       </nav>`;
     }
 
@@ -6222,11 +5689,7 @@
       if (state.mainView === "portfolio") return renderPortfolioView();
       if (state.mainView === "marketInsight") return renderMarketInsightView();
       if (state.mainView === "journal") return renderJournalView();
-      if (state.mainView === "square") return renderSquare();
-      if (state.mainView === "admin" && state.isAdmin) return renderAdmin();
       return `
-        ${renderUpdateBanner()}
-        ${renderPublisherPanel()}
         ${renderToolbar()}
         ${state.poolBiasExpanded ? renderBiasAlertPanel(userStocks(), "股池") : ""}
         ${renderTable()}
@@ -7013,7 +6476,6 @@
       if (!stock) return stock;
       const candidates = [
         ...state.stocks,
-        ...state.publisherStocks,
         ...state.portfolios.flatMap((portfolio) => portfolio.positions || []),
         ...stockCatalog
       ];
@@ -7357,7 +6819,7 @@
         <main class="login-wrap">
           <section class="login-panel">
             <h1>设置昵称</h1>
-            <p>这个昵称会显示在你的分享股池里，需要保持唯一。</p>
+            <p>昵称用于识别你的私人账户，需要保持唯一。</p>
             <form class="field" data-form="profile">
               <label for="nickname">昵称</label>
               <input id="nickname" name="nickname" minlength="2" maxlength="24" placeholder="例如：Simon 的股池" required>
@@ -7368,53 +6830,6 @@
         </main>
       `;
       bindEvents();
-    }
-
-    function renderShareInvite() {
-      const profile = state.shareInviteProfile;
-      if (!profile || profile.id === state.session.user.id) return "";
-      const followed = state.followedPublishers.some((item) => item.id === profile.id);
-      return `
-        <div class="share-banner">
-          <div>
-            <strong>你正在查看：${escapeHtml(profile.nickname)} 的分享股池</strong>
-            <div class="muted">可以复制或订阅股票；复制/订阅后会进入你的股池。</div>
-          </div>
-          <div class="actions">
-            <button class="primary" data-action="followPublisher" data-id="${profile.id}" ${followed ? "disabled" : ""}>${followed ? "已关注" : "关注分享"}</button>
-            <button class="secondary" data-action="openOwnPool">进入我的股池</button>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderUpdateBanner() {
-      if (state.viewPublisherId !== "own" || !state.sourceUpdateCount) return "";
-      return `
-        <div class="update-banner">
-          <div>你订阅的股池有 ${state.sourceUpdateCount} 条更新。</div>
-          <button data-action="markSourceUpdatesRead">标记已读</button>
-        </div>
-      `;
-    }
-
-    function renderPublisherPanel() {
-      if (state.viewPublisherId === "own") return "";
-      const profile = state.publisherProfile || state.followedPublishers.find((item) => item.id === state.viewPublisherId);
-      const latest = state.publisherStocks.map((item) => item.lastPublishedAt).filter(Boolean).sort().at(-1);
-      return `
-        <div class="publisher-panel">
-          <div>
-            <h2>${escapeHtml(profile?.nickname || "分享股池")}</h2>
-            <div class="publisher-meta">
-              <span>${profile?.share_visibility === "public" ? "公开分享" : "私密分享"}</span>
-              <span>${state.publisherStocks.length} 只已发布股票</span>
-              <span>最近发布：${formatDateTime(latest)}</span>
-            </div>
-          </div>
-          <div class="muted">这是发布者的公开观点视图，内容为个人记录，不构成投资建议。</div>
-        </div>
-      `;
     }
 
     function activePortfolio() {
@@ -8323,7 +7738,7 @@
     function rebalanceValuationProfile(position) {
       const stock = portfolioValuationStock(position);
       const plan = rebalancePlanState(position);
-      if (!stock || stock.sourceDeletedAt) return { stock: null, plan, confidence: 0, score: 0, text: "未关联有效估值版本" };
+      if (!stock) return { stock: null, plan, confidence: 0, score: 0, text: "未关联有效估值版本" };
       const computed = calc(stock);
       const upside = Number(computed.upside);
       const shareholderReturn = Number(computed.shareholderReturnRate);
@@ -9021,125 +8436,6 @@
       document.querySelectorAll("[data-plan-row]").forEach((row) => syncPositionPlanRow(row.dataset.planSide, Number(row.dataset.planIndex)));
     }
 
-    function renderSquare() {
-      const query = state.query.trim().toLowerCase();
-      let profiles = [...state.squareProfiles];
-      if (query) profiles = profiles.filter((item) => `${item.nickname} ${item.email || ""}`.toLowerCase().includes(query));
-      profiles.sort((a, b) => {
-        if (state.squareSort === "count") return (b.stockCount || 0) - (a.stockCount || 0);
-        return String(b.latestPublishedAt || "").localeCompare(String(a.latestPublishedAt || ""));
-      });
-      return `
-        <div class="toolbar">
-          <input data-input="searchList" placeholder="搜索发布者昵称" value="${escapeHtml(state.query)}">
-          <select data-input="squareSort">
-            <option value="recent" ${state.squareSort === "recent" ? "selected" : ""}>最近发布</option>
-            <option value="count" ${state.squareSort === "count" ? "selected" : ""}>发布数量</option>
-          </select>
-        </div>
-        ${profiles.length ? `
-          <div class="card-grid">
-            ${profiles.map(renderSquareCard).join("")}
-          </div>
-        ` : `<section class="table-panel"><div class="empty">暂无公开分享股池。</div></section>`}
-      `;
-    }
-
-    function renderSquareCard(profile) {
-      const stocks = (profile.stocks || []).slice(0, 3);
-      return `
-        <section class="square-card">
-          <div>
-            <h3>${escapeHtml(profile.nickname || "--")}</h3>
-            <div class="publisher-meta">
-              <span>${profile.stockCount || 0} 只已发布</span>
-              <span>最近：${formatDateTime(profile.latestPublishedAt)}</span>
-            </div>
-          </div>
-          <ul class="mini-list">
-            ${stocks.length ? stocks.map((stock) => {
-              const c = calc(stock);
-              return `<li><span>${escapeHtml(stock.name)} <span class="stock-code">${escapeHtml(stock.code)}</span></span><span>${percent(c.upside)} · ${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</span></li>`;
-            }).join("") : `<li><span>暂无代表股票</span><span></span></li>`}
-          </ul>
-          <button class="primary" data-action="openPublisherFromSquare" data-id="${profile.id}">进入股池</button>
-        </section>
-      `;
-    }
-
-    function renderAdmin() {
-      const selected = state.adminUsers.find((item) => item.id === state.adminSelectedUserId);
-      return `
-        <div class="admin-layout">
-          <aside class="admin-list">
-            ${state.adminUsers.length ? state.adminUsers.map((user) => `
-              <button class="admin-user-row ${state.adminSelectedUserId === user.id ? "active" : ""}" data-action="selectAdminUser" data-id="${user.id}">
-                <strong>${escapeHtml(user.nickname || "--")}</strong>
-                <span class="stock-code">${escapeHtml(user.email || "")}</span>
-                <span class="publisher-meta">
-                  <span>${user.share_visibility === "public" ? "公开" : "私密"}</span>
-                  ${user.square_hidden ? "<span>广场隐藏</span>" : ""}
-                  ${user.share_banned ? "<span>禁用分享</span>" : ""}
-                </span>
-              </button>
-            `).join("") : `<div class="empty">暂无用户</div>`}
-          </aside>
-          <section>
-            ${selected ? renderAdminUserDetail(selected) : `<div class="table-panel"><div class="empty">选择左侧用户查看股池。</div></div>`}
-          </section>
-        </div>
-      `;
-    }
-
-    function renderAdminUserDetail(user) {
-      const stocks = state.adminStocks.filter((stock) => stock.userId === user.id);
-      return `
-        <div class="admin-card">
-          <h3>${escapeHtml(user.nickname || "--")}</h3>
-          <div class="publisher-meta">
-            <span>${escapeHtml(user.email || "")}</span>
-            <span>${user.share_visibility === "public" ? "公开分享" : "私密分享"}</span>
-            <span>${stocks.length} 条股池记录</span>
-          </div>
-          <div class="admin-actions">
-            <button data-action="adminToggleSquare" data-id="${user.id}">${user.square_hidden ? "恢复广场展示" : "从广场隐藏"}</button>
-            <button data-action="adminToggleShareBan" data-id="${user.id}">${user.share_banned ? "恢复分享能力" : "禁用分享能力"}</button>
-            <input data-input="adminNote" value="${escapeHtml(user.admin_note || "")}" placeholder="管理员备注">
-            <button data-action="adminSaveNote" data-id="${user.id}">保存备注</button>
-          </div>
-        </div>
-        <section class="table-panel" style="margin-top:16px">
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>标的</th><th>可见性</th><th>最新市值<br><span class="stock-code">CNY 亿</span></th><th>upside</th><th>Forward PE</th><th>发布</th><th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${stocks.length ? stocks.map(renderAdminStockRow).join("") : `<tr><td colspan="7" class="empty">这个用户还没有股票。</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      `;
-    }
-
-    function renderAdminStockRow(stock) {
-      const c = calc(stock);
-      return `
-        <tr class="${stock.isShared ? "" : "private-row"}">
-          <td data-label="标的"><div class="stock-name">${escapeHtml(stock.name || "--")}</div><div class="stock-code">${escapeHtml(stock.code || "--")}</div></td>
-          <td data-label="可见性">${stock.isShared ? "公开发布" : "私有记录"}${stock.adminHidden ? `<br><span class="badge warn">已隐藏</span>` : ""}</td>
-          <td data-label="最新市值">${moneyYiCny(stock.latestMarketCapCny)}</td>
-          <td data-label="upside">${percent(c.upside)}</td>
-          <td data-label="Forward PE">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
-          <td data-label="发布">${formatDateTime(stock.lastPublishedAt)}</td>
-          <td data-label="操作"><button data-action="adminToggleStockHidden" data-id="${stock.id}">${stock.adminHidden ? "恢复公开" : "隐藏股票"}</button></td>
-        </tr>
-      `;
-    }
-
     function renderLogin() {
       document.getElementById("app").innerHTML = `
         <main class="login-wrap">
@@ -9169,7 +8465,6 @@
     }
 
     function renderToolbar() {
-      const viewingOwn = state.viewPublisherId === "own";
       return `
         <div class="toolbar">
           <div class="toolbar-left">
@@ -9184,27 +8479,12 @@
                 </button>
               `).join("")}
             </div>
-            ${viewingOwn ? `
-              <button class="${state.shareFilter === "SHARED" ? "primary" : "secondary"}" data-action="toggleSharedFilter">已分享</button>
-            ` : ""}
           </div>
           <div class="toolbar-actions">
             <button class="secondary pool-bias-toggle ${state.poolBiasExpanded ? "active" : ""}" data-action="togglePoolBias" aria-expanded="${Boolean(state.poolBiasExpanded)}">${portfolioActionIcon("insight")}<span>乖离率洞察</span><span class="portfolio-action-chevron">${portfolioActionIcon(state.poolBiasExpanded ? "collapse" : "expand")}</span></button>
-            ${viewingOwn ? `
-              <button class="primary stock-add-button" data-action="newStock">+添加股票</button>
-            ` : ""}
+            <button class="primary stock-add-button" data-action="newStock">+添加股票</button>
           </div>
         </div>
-      `;
-    }
-
-    function renderPublisherSelect() {
-      const viewingOwn = state.viewPublisherId === "own";
-      return `
-        <select class="nav-publisher-select" data-input="viewPublisher" aria-label="股池筛选">
-          <option value="own" ${viewingOwn ? "selected" : ""}>我的股池</option>
-          ${state.followedPublishers.map((item) => `<option value="${item.id}" ${state.viewPublisherId === item.id ? "selected" : ""}>${escapeHtml(item.nickname)} 的股池</option>`).join("")}
-        </select>
       `;
     }
 
@@ -9234,10 +8514,8 @@
 
     function userStocks() {
       const query = state.query.trim();
-      const viewingOwn = state.viewPublisherId === "own";
-      let rows = viewingOwn ? [...state.stocks] : [...state.publisherStocks];
+      let rows = [...state.stocks];
       if (state.filter !== "ALL") rows = rows.filter((item) => item.market === state.filter);
-      if (viewingOwn && state.shareFilter === "SHARED") rows = rows.filter((item) => item.isShared);
       if (query) rows = rows.filter((item) => stockMatchesPoolSearch(item, query));
       rows.sort((a, b) => {
         if (state.sort.key === "manual") return (a.manualOrder || 0) - (b.manualOrder || 0);
@@ -9274,7 +8552,7 @@
 
     function renderBiasAlertPanel(items, scopeLabel) {
       const unique = new Map();
-      (items || []).filter((item) => item?.assetType !== "option" && !item?.sourceDeletedAt).forEach((item) => {
+      (items || []).filter((item) => item?.assetType !== "option").forEach((item) => {
         const key = `${item.market || ""}:${item.code || item.id || ""}`;
         if (!unique.has(key)) unique.set(key, item);
       });
@@ -9328,9 +8606,9 @@
       return `<th class="num bias-metric-head"><span class="bias-sort-line" ${attributes("bias30w")}>30周乖离率${indicator("bias30w")}</span><span class="bias-sort-line" ${attributes("bias2yPercentile")}>2年分位${indicator("bias2yPercentile")}</span></th>`;
     }
 
-    function renderStockTableColgroup(viewingOwn) {
+    function renderStockTableColgroup() {
       return `<colgroup>
-        ${viewingOwn ? `<col class="pool-width-drag">` : ""}
+        <col class="pool-width-drag">
         <col class="pool-width-stock">
         <col class="pool-width-version">
         <col class="pool-width-market-cap">
@@ -9346,24 +8624,20 @@
         <col class="pool-width-cash pool-fold-hide">
         <col class="pool-width-discount pool-fold-hide">
         <col class="pool-width-forward-return pool-fold-hide">
-        ${viewingOwn ? `<col class="pool-width-share pool-fold-hide"><col class="pool-width-source pool-fold-hide">` : ""}
         <col class="pool-width-actions">
       </colgroup>`;
     }
 
     function renderTable() {
       const rows = userStocks();
-      const viewingOwn = state.viewPublisherId === "own";
-      if (state.tableLoading) return renderTableSkeleton(viewingOwn);
+      if (state.tableLoading) return renderTableSkeleton();
       if (!rows.length) {
-        const title = viewingOwn ? "还没有匹配的股票" : "这个分享股池暂无已发布股票";
-        const text = viewingOwn ? "从股票搜索开始录入市值、盈利假设和估值参数，建立你的研究股池。" : "可以切换其他关注人，或回到自己的股池继续维护研究记录。";
         return `
           <section class="table-panel">
             <div class="empty">
-              <strong>${title}</strong>
-              <p>${text}</p>
-              ${viewingOwn ? `<button class="primary stock-add-button" data-action="newStock">+添加股票</button>` : ""}
+              <strong>还没有匹配的股票</strong>
+              <p>从股票搜索开始录入市值、盈利假设和估值参数，建立你的研究股池。</p>
+              <button class="primary stock-add-button" data-action="newStock">+添加股票</button>
             </div>
           </section>
         `;
@@ -9372,11 +8646,11 @@
         <section class="table-panel horizontal-data-table stock-pool-table">
           <div class="table-scroll">
             <table>
-              ${renderStockTableColgroup(viewingOwn)}
+              ${renderStockTableColgroup()}
               <thead>
                 <tr>
-                  ${viewingOwn ? `<th class="drag-col sticky-col" aria-label="拖拽排序"></th>` : ""}
-                  <th class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">股票名称</th>
+                  <th class="drag-col sticky-col" aria-label="拖拽排序"></th>
+                  <th class="sticky-col stock-col-after-drag">股票名称</th>
                   <th>版本</th>
                   <th class="num">最新市值<br><span class="stock-code">CNY 亿</span></th>
                   ${biasMetricHeader(state.sort)}
@@ -9391,12 +8665,11 @@
                   <th class="num pool-fold-hide">净现金<br><span class="stock-code">CNY 亿</span></th>
                   <th class="num pool-fold-hide">现金折扣</th>
                   <th class="num pool-fold-hide">前瞻股东回报<br><span class="stock-code">CNY 亿</span></th>
-                  ${viewingOwn ? "<th class=\"share-head pool-fold-hide\">分享</th><th class=\"pool-fold-hide\">来源</th>" : ""}
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                ${rows.map((stock) => renderRow(stock, viewingOwn)).join("")}
+                ${rows.map(renderRow).join("")}
               </tbody>
             </table>
           </div>
@@ -9404,13 +8677,13 @@
       `;
     }
 
-    function renderTableSkeleton(viewingOwn) {
-      const colSpan = viewingOwn ? 19 : 16;
+    function renderTableSkeleton() {
+      const colSpan = 17;
       return `
         <section class="table-panel horizontal-data-table stock-pool-table">
           <div class="table-scroll">
             <table>
-              ${renderStockTableColgroup(viewingOwn)}
+              ${renderStockTableColgroup()}
               <thead><tr><th colspan="${colSpan}">正在加载股池数据</th></tr></thead>
               <tbody>${Array.from({ length: 6 }).map(() => `<tr><td colspan="${colSpan}"><div class="skeleton-row"></div></td></tr>`).join("")}</tbody>
             </table>
@@ -9425,97 +8698,42 @@
       return `<th class="sortable ${cls}" data-sort="${key}">${label}${arrow}</th>`;
     }
 
-    function renderRow(stock, viewingOwn) {
+    function renderRow(stock) {
       const c = calc(stock);
-      const sourceDeleted = Boolean(stock.sourceDeletedAt);
       const shareholderRate = shareholderReturnRateForList(stock, c);
       const latest = Number(stock.latestMarketCapCny) || 0;
       const dividendYield = latest ? (Number(stock.expectedDividendCny) || 0) / latest : null;
       const buybackRate = latest ? (Number(stock.expectedBuybackCny) || 0) / latest : null;
       return `
         <tr class="stock-row" data-stock-row="${stock.id}">
-          ${viewingOwn ? `<td data-label="排序" class="drag-col sticky-col"><span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span></td>` : ""}
-          <td data-label="股票名称" class="sticky-col ${viewingOwn ? "stock-col-after-drag" : ""}">
+          <td data-label="排序" class="drag-col sticky-col"><span class="drag-handle" draggable="true" data-drag-id="${stock.id}" title="拖拽调整顺序" aria-label="拖拽调整顺序">⠿</span></td>
+          <td data-label="股票名称" class="sticky-col stock-col-after-drag">
             <div class="stock-name">${escapeHtml(stock.name || "--")}</div>
             <div class="stock-code">${escapeHtml(stock.code || "--")}</div>
           </td>
           <td data-label="版本" class="version-cell" title="${escapeHtml(normalizeStockVersion(stock.version))}">${escapeHtml(normalizeStockVersion(stock.version))}</td>
-          <td data-label="最新市值" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.latestMarketCapCny)}</td>
-          ${sourceDeleted ? `<td data-label="30周乖离率 / 2年分位" class="num bias-metric-cell muted"><span>--</span><span class="muted">2年分位 --</span></td>` : biasMetricCell(stock)}
-          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(c.upside)}</td>
-          <td data-label="Forward PE" class="kpi plain-kpi">${sourceDeleted || !c.forwardPE ? "--" : trimNumber(c.forwardPE) + "x"}</td>
-          <td data-label="股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${sourceDeleted ? "--" : percent(shareholderRate)}</td>
-          <td data-label="股息率" class="kpi">${sourceDeleted ? "--" : percent(dividendYield)}</td>
-          <td data-label="回购率" class="kpi">${sourceDeleted ? "--" : percent(buybackRate)}</td>
-          <td data-label="前瞻市值" class="num">${sourceDeleted ? "--" : moneyYiCny(c.expectedMarketCapCny)}</td>
-          <td data-label="前瞻利润" class="num">${sourceDeleted ? "--" : moneyYiCny(stock.expectedProfitCny)}</td>
-          <td data-label="前瞻 PE" class="num">${sourceDeleted || !stock.expectedPE ? "--" : trimNumber(stock.expectedPE) + "x"}</td>
-          <td data-label="净现金" class="num pool-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.netCashCny)}</td>
-          <td data-label="现金折扣" class="num pool-fold-hide">${sourceDeleted ? "--" : stock.netCashDiscountRate ?? "--"}</td>
-          <td data-label="前瞻股东回报" class="num pool-fold-hide">${sourceDeleted ? "--" : moneyYiCny(stock.expectedShareholderReturnCny)}</td>
-          ${viewingOwn ? `
-            <td data-label="分享" class="share-cell pool-fold-hide">${renderShareState(stock)}</td>
-            <td data-label="来源" class="pool-fold-hide">${renderSourceCell(stock)}</td>
-          ` : ""}
+          <td data-label="最新市值" class="num">${moneyYiCny(stock.latestMarketCapCny)}</td>
+          ${biasMetricCell(stock)}
+          <td data-label="Upside" class="kpi plain-kpi ${Number(c.upside) >= 0 ? "gain" : "loss"}">${percent(c.upside)}</td>
+          <td data-label="Forward PE" class="kpi plain-kpi">${c.forwardPE ? trimNumber(c.forwardPE) + "x" : "--"}</td>
+          <td data-label="股东回报率" class="kpi ${Number(shareholderRate) >= 0 ? "gain" : "loss"}">${percent(shareholderRate)}</td>
+          <td data-label="股息率" class="kpi">${percent(dividendYield)}</td>
+          <td data-label="回购率" class="kpi">${percent(buybackRate)}</td>
+          <td data-label="前瞻市值" class="num">${moneyYiCny(c.expectedMarketCapCny)}</td>
+          <td data-label="前瞻利润" class="num">${moneyYiCny(stock.expectedProfitCny)}</td>
+          <td data-label="前瞻 PE" class="num">${stock.expectedPE ? trimNumber(stock.expectedPE) + "x" : "--"}</td>
+          <td data-label="净现金" class="num pool-fold-hide">${moneyYiCny(stock.netCashCny)}</td>
+          <td data-label="现金折扣" class="num pool-fold-hide">${stock.netCashDiscountRate ?? "--"}</td>
+          <td data-label="前瞻股东回报" class="num pool-fold-hide">${moneyYiCny(stock.expectedShareholderReturnCny)}</td>
           <td data-label="操作">
             <div class="actions">
-              ${viewingOwn ? `
-                <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
-                <button class="icon" title="上提1位" data-action="moveUp" data-id="${stock.id}">↑</button>
-                <button class="icon" title="下提1位" data-action="moveDown" data-id="${stock.id}">↓</button>
-                ${stock.sourceType === "subscribed" ? `
-                  <button class="text-action" title="取消订阅" data-action="unsubscribeStock" data-id="${stock.id}">取消订阅</button>
-                  <button class="text-action" title="转为我的股票" data-action="convertToOwn" data-id="${stock.id}">转为我的</button>
-                ` : ""}
-                <button class="icon danger" title="删除" data-action="delete" data-id="${stock.id}">×</button>
-              ` : `
-                <button class="text-action" data-action="copySharedStock" data-id="${stock.id}">一键复制</button>
-                <button class="primary text-action" data-action="subscribeStock" data-id="${stock.id}">订阅</button>
-                <button class="text-action" data-action="openPublicationHistory" data-id="${stock.id}">历史</button>
-              `}
+              <button class="icon" title="编辑" data-action="edit" data-id="${stock.id}">✎</button>
+              <button class="icon" title="上提1位" data-action="moveUp" data-id="${stock.id}">↑</button>
+              <button class="icon" title="下提1位" data-action="moveDown" data-id="${stock.id}">↓</button>
+              <button class="icon danger" title="删除" data-action="delete" data-id="${stock.id}">×</button>
             </div>
           </td>
         </tr>
-      `;
-    }
-
-    function renderShareState(stock) {
-      if (stock.sourceDeletedAt) {
-        return `<span class="badge unshared">订阅失效</span>`;
-      }
-      if (!stock.isShared) {
-        const sharing = state.sharingStockId === stock.id;
-        return `<button class="text-action share-action" data-action="shareStock" data-id="${stock.id}" ${sharing ? "disabled" : ""}>${sharing ? "分享中..." : "去分享"}</button>`;
-      }
-      return `
-        <div class="share-state">
-          <span class="badge shared">已分享</span>
-          <button class="text-action share-action" data-action="openPublicationHistory" data-id="${stock.id}">历史</button>
-        </div>
-      `;
-    }
-
-    function renderPublicationHistory() {
-      const modal = state.publicationHistory;
-      if (!modal.open) return "";
-      const stock = modal.stock || {};
-      return `
-        <div class="history-modal open" data-history-backdrop="true">
-          <section class="history-panel">
-            <div class="history-head">
-              <div>
-                <h3>${escapeHtml(stock.name || "发布历史")}</h3>
-                <p>${escapeHtml(stock.code || "")}${stock.publisherNickname ? ` · ${escapeHtml(stock.publisherNickname)}` : ""}</p>
-              </div>
-              <button class="icon" data-action="closePublicationHistory" title="关闭">×</button>
-            </div>
-            <div class="history-body">
-              ${modal.loading ? `<div class="empty">正在加载发布历史...</div>` : ""}
-              ${modal.error ? `<div class="form-error">${escapeHtml(modal.error)}</div>` : ""}
-              ${!modal.loading && !modal.error ? renderPublicationHistoryRows(modal.rows) : ""}
-            </div>
-          </section>
-        </div>
       `;
     }
 
@@ -9530,7 +8748,7 @@
               <button class="icon" data-action="closeDeleteConfirm" title="关闭" ${modal.deleting ? "disabled" : ""}>×</button>
             </div>
             <div class="confirm-body">
-              <p>确认删除该股票吗？如有分享，也同步一并删除。</p>
+              <p>确认删除该股票吗？此操作不可撤销。</p>
               ${modal.stockName ? `<div class="stock-code">${escapeHtml(modal.stockName)}</div>` : ""}
               ${modal.error ? `<div class="form-error">${escapeHtml(modal.error)}</div>` : ""}
               <div class="confirm-actions">
@@ -9539,100 +8757,6 @@
               </div>
             </div>
           </section>
-        </div>
-      `;
-    }
-
-    function renderPublicationHistoryRows(rows) {
-      if (!rows.length) return `<div class="empty">还没有发布快照。</div>`;
-      return `
-        <div class="history-list">
-          ${rows.map((row, index) => renderPublicationHistoryItem(row, rows[index + 1])).join("")}
-        </div>
-      `;
-    }
-
-    function renderPublicationHistoryItem(row, previousRow) {
-      const stock = stockFromPublication(row);
-      const previous = previousRow ? stockFromPublication(previousRow) : null;
-      const c = row.payload?.computed || calc(stock);
-      return `
-        <article class="history-item">
-          <div class="history-item-head">
-            <div>
-              <h4>V${Number(row.version_number) || "--"} · ${formatDateTime(row.created_at)}</h4>
-              <div class="stock-code">${escapeHtml(stock.forecastYear || "--")} · ${escapeHtml(marketLabel(stock.market))}</div>
-            </div>
-            <div class="history-delta">${renderPublicationDeltas(stock, previous)}</div>
-          </div>
-          ${row.change_note ? `<p class="history-note">${escapeHtml(row.change_note)}</p>` : ""}
-          <div class="history-grid">
-            ${historyMetric("当时市值", moneyYiCny(stock.latestMarketCapCny))}
-            ${historyMetric("前瞻市值", moneyYiCny(c.expectedMarketCapCny), { meta: stock.forecastYear ? `@${stock.forecastYear}` : "" })}
-            ${historyMetric("Upside", percent(c.upside))}
-            ${historyMetric("前瞻利润", moneyYiCny(stock.expectedProfitCny), { meta: stock.expectedPERemark || "", tooltip: stock.expectedPERemark || "" })}
-            ${historyMetric("前瞻估值", stock.expectedPE ? `${trimNumber(stock.expectedPE)}x` : "--")}
-            ${historyMetric("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)}x` : "--")}
-            ${historyMetric("净现金", moneyYiCny(stock.netCashCny))}
-            ${historyMetric("现金折扣", percent(stock.netCashDiscountRate))}
-            ${historyMetric("净现金口径", stock.netCashScope || "--", { text: true, tooltip: stock.netCashScope || "" })}
-            ${historyMetric("前瞻股东回报", moneyYiCny(stock.expectedShareholderReturnCny))}
-            ${historyMetric("股东回报率", percent(c.shareholderReturnRate))}
-            ${historyMetric("股东回报政策", stock.shareholderReturnRemark || "--", { text: true, tooltip: stock.shareholderReturnRemark || "" })}
-          </div>
-        </article>
-      `;
-    }
-
-    function historyMetric(label, value, options = {}) {
-      const tooltip = options.tooltip ? ` data-tooltip="${escapeHtml(options.tooltip)}" title="${escapeHtml(options.tooltip)}"` : "";
-      const meta = options.meta ? `<em${tooltip}>${escapeHtml(options.meta)}</em>` : "";
-      const valueTooltip = options.text && options.tooltip ? ` data-tooltip="${escapeHtml(options.tooltip)}" title="${escapeHtml(options.tooltip)}"` : "";
-      return `
-        <div class="history-metric">
-          <div class="history-metric-title"><span>${escapeHtml(label)}</span>${meta}</div>
-          <strong class="${options.text ? "text-value" : ""}"${valueTooltip}>${escapeHtml(value)}</strong>
-        </div>
-      `;
-    }
-
-    function renderPublicationDeltas(stock, previous) {
-      if (!previous) return `<span class="badge soft">首个版本</span>`;
-      const items = [
-        deltaBadge("市值", previous.latestMarketCapCny, stock.latestMarketCapCny, ""),
-        deltaBadge("利润", previous.expectedProfitCny, stock.expectedProfitCny, ""),
-        deltaBadge("PE", previous.expectedPE, stock.expectedPE, "x"),
-        deltaBadge("净现金", previous.netCashCny, stock.netCashCny, "")
-      ].filter(Boolean);
-      return items.length ? items.join("") : `<span class="badge soft">核心假设无变化</span>`;
-    }
-
-    function deltaBadge(label, before, after, suffix) {
-      const a = Number(after);
-      const b = Number(before);
-      if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return "";
-      return `<span class="badge soft">${escapeHtml(label)} ${trimNumber(b)}${suffix} → ${trimNumber(a)}${suffix}</span>`;
-    }
-
-    function renderSourceCell(stock) {
-      if (stock.sourceDeletedAt) {
-        return `
-          <div class="source-cell">
-            <div class="source-tags">
-              <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
-              <span class="badge warn">已删除</span>
-            </div>
-          </div>
-        `;
-      }
-      if (!stock.sourceStockId) return "";
-      const typeLabel = stock.sourceType === "subscribed" ? "订阅" : stock.sourceType === "copied" ? "复制" : "来源";
-      return `
-        <div class="source-cell">
-          <div class="source-tags">
-            <strong>${escapeHtml(stock.sourceNickname || stock.sourceUserId || "--")}</strong>
-            <span class="badge source">${typeLabel}</span>
-          </div>
         </div>
       `;
     }
@@ -9669,18 +8793,6 @@
         shareholderReturnRemark: "",
         forecastYear: "2026E",
         investmentNote: "",
-        publishNote: "",
-        isShared: false,
-        lastPublishedAt: "",
-        sourceUserId: "",
-        sourceStockId: "",
-        sourceNickname: "",
-        sourceType: "self",
-        sourceSeenPublishedAt: "",
-        lastSourceUpdatedAt: "",
-        sourceStopped: false,
-        sourceDeletedAt: "",
-        hasSourceUpdate: false,
         myNote: ""
       };
     }
@@ -9689,8 +8801,7 @@
       const form = state.form || emptyForm();
       const c = calc(form);
       const currency = form.displayCurrency || "CNY";
-      const isSubscribed = form.sourceType === "subscribed";
-      const locked = isSubscribed ? "disabled" : "";
+      const locked = "";
       const stockError = state.drawerError && (!form.name.trim() || !form.code.trim()) ? state.drawerError : "";
       const generalError = state.drawerError && !stockError ? state.drawerError : "";
       return `
@@ -9705,7 +8816,6 @@
             <div class="drawer-body">
               <div class="valuation-layout">
                 <div class="valuation-form">
-                  ${isSubscribed ? `<div class="readonly-note">这条股票来自订阅，核心估值会跟随发布者最新版本同步。你只能维护“我的备注”；如需修改估值，请先转为我的股票。</div>` : ""}
                   ${sectionCard("基础信息", "从股票名称或代码搜索匹配标的，市值会自动带入并可按选择币种展示。", `
                     <div class="form-grid three">
                       ${formField("股票名称/代码搜索", `
@@ -9773,15 +8883,6 @@
                       ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
                     </div>
                     <div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>
-                    ${!isSubscribed ? `
-                      <div class="publish-box">
-                        <label>发布快照说明</label>
-                        <textarea class="auto-grow-note" data-field="publishNote" placeholder="记录这次发布相对上一版的变化，例如利润假设、PE、股东回报或净现金口径调整。">${escapeHtml(form.publishNote || "")}</textarea>
-                        <div class="publish-actions">
-                          <button data-action="publishStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.publishing ? "发布中..." : "发布快照"}</button>
-                        </div>
-                      </div>
-                    ` : ""}
                   </div>
                 </div>
               </div>
@@ -9789,11 +8890,11 @@
             <div class="drawer-foot">
               <div class="foot-left">
                 <span class="hint">${state.formDirty ? "有未保存修改" : "所有已保存内容会保留在你的私人股池中"}</span>
-                ${form.id ? `<button class="drawer-delete-link" data-action="openDeleteConfirm" data-id="${form.id}" ${state.saving || state.publishing ? "disabled" : ""}>删除股票</button>` : ""}
+                ${form.id ? `<button class="drawer-delete-link" data-action="openDeleteConfirm" data-id="${form.id}" ${state.saving ? "disabled" : ""}>删除股票</button>` : ""}
               </div>
               <div class="foot-actions">
-                <button data-action="closeDrawer" ${state.saving || state.publishing ? "disabled" : ""}>取消</button>
-                <button class="primary" data-action="saveStock" ${state.saving || state.publishing ? "disabled" : ""}>${state.saving ? "保存中..." : "保存股票"}</button>
+                <button data-action="closeDrawer" ${state.saving ? "disabled" : ""}>取消</button>
+                <button class="primary" data-action="saveStock" ${state.saving ? "disabled" : ""}>${state.saving ? "保存中..." : "保存股票"}</button>
               </div>
             </div>
           </div>
@@ -10121,29 +9222,6 @@
           if (event.currentTarget.dataset.composing !== "true") applyMarketInsightSearch(event.currentTarget);
         });
       }
-      const viewPublisher = document.querySelector("[data-input='viewPublisher']");
-      if (viewPublisher) viewPublisher.addEventListener("change", async (event) => {
-        state.viewPublisherId = event.target.value;
-        state.query = "";
-        if (state.viewPublisherId === "own") {
-          openOwnPool();
-          return;
-        } else {
-          state.tableLoading = true;
-          render();
-          await loadPublisherStocks(state.viewPublisherId);
-          state.tableLoading = false;
-        }
-        render();
-      });
-      const shareVisibilityToggle = document.querySelector("[data-input='shareVisibilityToggle']");
-      if (shareVisibilityToggle) {
-        shareVisibilityToggle.addEventListener("change", (event) => {
-          updateShareVisibility(event.target.checked ? "public" : "private");
-        });
-      }
-      const squareSort = document.querySelector("[data-input='squareSort']");
-      if (squareSort) squareSort.addEventListener("change", (event) => { state.squareSort = event.target.value; render(); });
       const navYear = document.querySelector("[data-input='navYear']");
       if (navYear) navYear.addEventListener("change", (event) => { state.navYear = event.target.value; state.navRange = event.target.value ? "YEAR" : "ALL"; render(); });
       const benchmark = document.querySelector("[data-input='benchmark']");
@@ -10309,12 +9387,6 @@
         journalContent.addEventListener("keyup", (event) => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) updateMention(); });
         journalContent.addEventListener("scroll", () => { if (document.querySelector("[data-journal-mention-popup].show")) positionJournalMentionPopup(); });
       }
-      const historyBackdrop = document.querySelector("[data-history-backdrop]");
-      if (historyBackdrop) {
-        historyBackdrop.addEventListener("click", (event) => {
-          if (event.target === historyBackdrop) closePublicationHistory();
-        });
-      }
       const deleteBackdrop = document.querySelector("[data-delete-backdrop]");
       if (deleteBackdrop) {
         deleteBackdrop.addEventListener("click", (event) => {
@@ -10346,9 +9418,6 @@
         state.profile = null;
         state.profileRequired = false;
         state.stocks = [];
-        state.publisherStocks = [];
-        state.publisherProfile = null;
-        state.followedPublishers = [];
         state.portfolios = [];
         state.activePortfolioId = "";
         state.journals = [];
@@ -10566,37 +9635,15 @@
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
       if (action === "saveStock") saveStock();
-      if (action === "publishStock") publishStock();
-      if (action === "shareStock") shareStockFromList(stockId);
-      if (action === "openPublicationHistory") openPublicationHistory(stockId);
-      if (action === "closePublicationHistory") closePublicationHistory();
       if (action === "openDeleteConfirm") openDeleteConfirm(stockId);
       if (action === "closeDeleteConfirm") closeDeleteConfirm();
       if (action === "confirmDeleteStock") confirmDeleteStock();
-      if (action === "toggleSharedFilter") {
-        state.shareFilter = state.shareFilter === "SHARED" ? "ALL" : "SHARED";
-        render();
-      }
       if (action === "togglePoolBias") {
         state.poolBiasExpanded = !state.poolBiasExpanded;
         render();
       }
-      if (action === "copyShareLink") copyShareLink();
-      if (action === "followPublisher") followPublisher(stockId);
-      if (action === "openOwnPool") openOwnPool();
-      if (action === "copySharedStock") copySharedStock(stockId, "copied");
-      if (action === "subscribeStock") copySharedStock(stockId, "subscribed");
-      if (action === "unsubscribeStock") unsubscribeStock(stockId);
-      if (action === "convertToOwn") convertToOwnStock(stockId);
       if (action === "addSegment") addSegmentValuation();
       if (action === "removeSegment") removeSegmentValuation(Number(event.currentTarget.dataset.index));
-      if (action === "markSourceUpdatesRead") markSourceUpdatesRead();
-      if (action === "openPublisherFromSquare") openPublisherFromSquare(stockId);
-      if (action === "selectAdminUser") selectAdminUser(stockId);
-      if (action === "adminToggleSquare") adminToggleUser(stockId, "square_hidden");
-      if (action === "adminToggleShareBan") adminToggleUser(stockId, "share_banned");
-      if (action === "adminSaveNote") adminSaveNote(stockId);
-      if (action === "adminToggleStockHidden") adminToggleStockHidden(stockId);
       if (action === "edit") openDrawer(stockId);
       if (action === "moveUp") moveStockOneStep(stockId, -1);
       if (action === "moveDown") moveStockOneStep(stockId, 1);
@@ -10616,16 +9663,6 @@
       state.mainView = view || "pool";
       state.query = "";
       render();
-      if (state.mainView === "square") {
-        await loadSquare();
-        render();
-        return;
-      }
-      if (state.mainView === "admin" && state.isAdmin) {
-        await loadAdmin();
-        render();
-        return;
-      }
       if (state.mainView === "pool") {
         refreshMarketCaps({ renderAfter: false }).then(render).catch((error) => console.warn("市值刷新失败。", error));
         return;
@@ -12050,58 +11087,6 @@
       portfolioQuoteRefreshTimer = null;
     }
 
-    function openOwnPool() {
-      state.mainView = "pool";
-      state.viewPublisherId = "own";
-      state.shareInviteProfile = null;
-      state.publisherStocks = [];
-      state.publisherProfile = null;
-      state.query = "";
-      localStorage.removeItem(PENDING_SHARE_KEY);
-      render();
-      refreshMarketCaps();
-    }
-
-    async function openPublicationHistory(stockId) {
-      const stock = [...state.stocks, ...state.publisherStocks, ...state.adminStocks].find((item) => item.id === stockId);
-      if (!stockId || !stock) return;
-      state.publicationHistory = {
-        open: true,
-        loading: true,
-        stock,
-        rows: [],
-        error: ""
-      };
-      render();
-      try {
-        const rows = await loadPublicationRows(stockId);
-        state.publicationHistory = {
-          ...state.publicationHistory,
-          loading: false,
-          rows,
-          error: ""
-        };
-      } catch (error) {
-        state.publicationHistory = {
-          ...state.publicationHistory,
-          loading: false,
-          error: `读取发布历史失败：${error.message || String(error)}`
-        };
-      }
-      render();
-    }
-
-    function closePublicationHistory() {
-      state.publicationHistory = {
-        open: false,
-        loading: false,
-        stock: null,
-        rows: [],
-        error: ""
-      };
-      render();
-    }
-
     function openDeleteConfirm(stockId) {
       const stock = state.stocks.find((item) => item.id === stockId) || (state.form?.id === stockId ? state.form : null);
       if (!stockId || !stock) return;
@@ -12168,17 +11153,16 @@
       state.nicknameNotice = "正在创建昵称...";
       renderProfileSetup();
       try {
-        const rows = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,share_visibility,created_at", {
+        const rows = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,created_at", {
           method: "POST",
           prefer: "return=representation",
           body: JSON.stringify({
             id: state.session.user.id,
             email: state.session.user.email,
-            nickname,
-            share_visibility: "private"
+            nickname
           })
         });
-        state.profile = rows?.[0] || { id: state.session.user.id, email: state.session.user.email, nickname, share_visibility: "private" };
+        state.profile = rows?.[0] || { id: state.session.user.id, email: state.session.user.email, nickname };
         state.profileRequired = false;
         state.nicknameNotice = "";
         await afterProfileReady();
@@ -12277,7 +11261,7 @@
     }
 
     function addSegmentValuation() {
-      if (!state.form || state.form.sourceType === "subscribed") return;
+      if (!state.form) return;
       if (!Array.isArray(state.form.segmentValuations)) state.form.segmentValuations = [];
       state.form.segmentValuations.push(emptySegmentValuationRow(state.form.segmentValuations.length + 1, state.form.forecastYear || "2026E"));
       applySegmentValuationTotals(state.form);
@@ -12286,7 +11270,7 @@
     }
 
     function removeSegmentValuation(index) {
-      if (!state.form || state.form.sourceType === "subscribed" || !Array.isArray(state.form.segmentValuations)) return;
+      if (!state.form || !Array.isArray(state.form.segmentValuations)) return;
       if (state.form.segmentValuations.length <= 1 || !state.form.segmentValuations[index]) return;
       state.form.segmentValuations.splice(index, 1);
       applySegmentValuationTotals(state.form);
@@ -12454,8 +11438,8 @@
       render();
     }
 
-    async function saveStock({ keepOpen = false, fromPublish = false } = {}) {
-      if (state.saving || (state.publishing && !fromPublish)) return null;
+    async function saveStock() {
+      if (state.saving) return null;
       state.form = normalizeShareholderReturnFields(state.form);
       if (!state.form.name.trim() || !state.form.code.trim()) {
         state.drawerError = "请填写股票名称和代码。";
@@ -12478,22 +11462,13 @@
       const now = new Date().toISOString();
       const payload = {
         ...normalizeShareholderReturnFields(state.form),
-        publishNote: "",
         updatedAt: now,
         manualOrder: state.form.manualOrder ?? Date.now()
       };
       const persistedPayload = payloadForStockRecord(payload);
       const rowPatch = {
         payload: persistedPayload,
-        updated_at: now,
-        source_user_id: payload.sourceUserId || null,
-        source_stock_id: payload.sourceStockId || null,
-        source_nickname: payload.sourceNickname || null,
-        source_type: payload.sourceType || "self",
-        last_source_updated_at: payload.lastSourceUpdatedAt || null,
-        source_seen_published_at: payload.sourceSeenPublishedAt || null,
-        is_shared: Boolean(payload.isShared),
-        last_published_at: payload.lastPublishedAt || null
+        updated_at: now
       };
       if (payload.id) {
         try {
@@ -12534,140 +11509,12 @@
       state.formInitialSnapshot = formSnapshot(state.form);
       state.formDirty = false;
       state.saving = false;
-      if (!keepOpen) {
-        state.drawerOpen = false;
-        state.editingId = null;
-        state.form = null;
-        state.formInitialSnapshot = "";
-      }
-      render();
-      return payload;
-    }
-
-    async function publishStock() {
-      if (state.publishing || state.saving) return;
-      if (state.form?.sourceType === "subscribed") {
-        state.drawerError = "订阅来的股票不能发布。如需发布自己的观点，请先转为我的股票。";
-        render();
-        return;
-      }
-      if (state.profile?.share_banned) {
-        state.drawerError = "你的分享能力当前已被管理员禁用，暂时不能发布。";
-        render();
-        return;
-      }
-      if (!confirm("发布会保存当前内容并生成一个可分享快照，确定发布吗？")) return;
-      state.publishing = true;
-      const note = state.form?.publishNote?.trim() || "";
-      const stock = await saveStock({ keepOpen: true, fromPublish: true });
-      if (!stock?.id) {
-        state.publishing = false;
-        render();
-        return;
-      }
-      const now = new Date().toISOString();
-      const payload = {
-        ...stock,
-        isShared: true,
-        lastPublishedAt: now,
-        updatedAt: now,
-        publishNote: ""
-      };
-      try {
-        const latest = await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stock.id)}&select=version_number&order=version_number.desc&limit=1`);
-        const versionNumber = Number(latest?.[0]?.version_number || 0) + 1;
-        const publicationPayload = buildPublicationSnapshot(payload, note);
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            payload: payloadForStockRecord(payload),
-            updated_at: now,
-            is_shared: true,
-            last_published_at: now
-          })
-        });
-        await supabaseRequest("/rest/v1/stock_publications", {
-          method: "POST",
-          body: JSON.stringify({
-            stock_id: stock.id,
-            publisher_id: state.session.user.id,
-            version_number: versionNumber,
-            change_note: note,
-            payload: publicationPayload
-          })
-        });
-      } catch (error) {
-        state.drawerError = `发布失败：${error.message || String(error)}`;
-        state.publishing = false;
-        render();
-        return;
-      }
-      state.stocks = state.stocks.map((item) => item.id === stock.id ? payload : item);
-      state.form = { ...payload };
-      state.formInitialSnapshot = formSnapshot(state.form);
-      state.formDirty = false;
-      state.publishing = false;
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
       state.formInitialSnapshot = "";
       render();
-    }
-
-    async function shareStockFromList(stockId) {
-      if (state.sharingStockId || state.publishing || state.saving) return;
-      const stock = state.stocks.find((item) => item.id === stockId);
-      if (!stock || stock.isShared) return;
-      if (stock.sourceType === "subscribed") {
-        alert("订阅来的股票不能发布。如需发布自己的观点，请先转为我的股票。");
-        return;
-      }
-      if (state.profile?.share_banned) {
-        alert("你的分享能力当前已被管理员禁用，暂时不能发布。");
-        return;
-      }
-      state.sharingStockId = stockId;
-      render();
-      const now = new Date().toISOString();
-      const payload = {
-        ...stock,
-        isShared: true,
-        lastPublishedAt: now,
-        updatedAt: now,
-        publishNote: ""
-      };
-      try {
-        const latest = await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stockId)}&select=version_number&order=version_number.desc&limit=1`);
-        const versionNumber = Number(latest?.[0]?.version_number || 0) + 1;
-        const publicationPayload = buildPublicationSnapshot(payload, "");
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            payload: payloadForStockRecord(payload),
-            updated_at: now,
-            is_shared: true,
-            last_published_at: now
-          })
-        });
-        await supabaseRequest("/rest/v1/stock_publications", {
-          method: "POST",
-          body: JSON.stringify({
-            stock_id: stockId,
-            publisher_id: state.session.user.id,
-            version_number: versionNumber,
-            change_note: "",
-            payload: publicationPayload
-          })
-        });
-      } catch (error) {
-        alert(`分享失败：${error.message || String(error)}`);
-        state.sharingStockId = "";
-        render();
-        return;
-      }
-      state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
-      state.sharingStockId = "";
-      render();
+      return payload;
     }
 
     async function moveStockOneStep(stockId, direction) {
@@ -12785,7 +11632,6 @@
       const stock = state.stocks.find((item) => item.id === stockId);
       if (!stock) return false;
       try {
-        await markSubscribedCopiesSourceDeleted(stockId);
         await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
           method: "DELETE"
         });
@@ -12811,10 +11657,6 @@
       return true;
     }
 
-    async function markSubscribedCopiesSourceDeleted(stockId) {
-      console.warn("跳过订阅副本删除标记：线上数据库未安装 mark_subscriptions_source_deleted RPC。", stockId);
-    }
-
     function toggleSort(key) {
       if (state.sort.key !== key) state.sort = { key, dir: "desc" };
       else if (state.sort.dir === "desc") state.sort.dir = "asc";
@@ -12822,10 +11664,10 @@
       render();
     }
 
-    async function loadStocks({ mergeSources = true } = {}) {
+    async function loadStocks() {
       let data;
       try {
-        data = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,user_id,payload,source_user_id,source_stock_id,source_nickname,source_type,last_source_updated_at,source_seen_published_at,is_shared,last_published_at,created_at,updated_at&order=created_at.asc`);
+        data = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(state.session.user.id)}&select=id,user_id,payload,created_at,updated_at&order=created_at.asc`);
       } catch (error) {
         state.lastError = error.message || String(error);
         state.stocks = [];
@@ -12834,7 +11676,6 @@
       state.stocks = (data || [])
         .filter((row) => row.user_id === state.session.user.id)
         .map((row) => normalizeStockRow(row));
-      if (mergeSources) await mergeLatestSourceStocks();
     }
 
     function normalizeStockRow(row) {
@@ -12842,268 +11683,21 @@
         ...row.payload,
         id: row.id,
         userId: row.user_id || row.payload?.userId || "",
-        sourceUserId: row.source_user_id || row.payload?.sourceUserId || "",
-        sourceStockId: row.source_stock_id || row.payload?.sourceStockId || "",
-        sourceNickname: row.source_nickname || row.payload?.sourceNickname || "",
-        sourceType: row.source_type || row.payload?.sourceType || (row.source_stock_id || row.payload?.sourceStockId ? "copied" : "self"),
-        lastSourceUpdatedAt: row.last_source_updated_at || row.payload?.lastSourceUpdatedAt || "",
-        sourceSeenPublishedAt: row.source_seen_published_at || row.payload?.sourceSeenPublishedAt || "",
-        isShared: Boolean(row.is_shared || row.payload?.isShared),
-        lastPublishedAt: row.last_published_at || row.payload?.lastPublishedAt || "",
-        adminHidden: Boolean(row.admin_hidden || row.payload?.adminHidden),
-        sourceStopped: Boolean(row.payload?.sourceStopped),
-        sourceDeletedAt: row.payload?.sourceDeletedAt || "",
-        hasSourceUpdate: Boolean(row.payload?.hasSourceUpdate),
         myNote: row.payload?.myNote || ""
       });
     }
 
-    async function loadLatestPublications(stockIds) {
-      const ids = [...new Set((stockIds || []).filter(Boolean))];
-      if (!ids.length) return new Map();
-      const rows = await supabaseRequest(`/rest/v1/stock_publications?stock_id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,stock_id,version_number,change_note,payload,created_at&order=version_number.desc`);
-      const latest = new Map();
-      (rows || []).forEach((row) => {
-        if (!latest.has(row.stock_id)) latest.set(row.stock_id, row);
-      });
-      return latest;
-    }
-
-    async function loadPublicationRows(stockId) {
-      return await supabaseRequest(`/rest/v1/stock_publications?stock_id=eq.${encodeURIComponent(stockId)}&select=id,stock_id,publisher_id,version_number,change_note,payload,created_at&order=version_number.desc`) || [];
-    }
-
-    async function mergeLatestSourceStocks() {
-      state.sourceUpdateCount = 0;
-      const sourceIds = [...new Set(state.stocks.filter((stock) => stock.sourceType === "subscribed").map((stock) => stock.sourceStockId).filter(Boolean))];
-      if (!sourceIds.length) return;
-      try {
-        const rows = await supabaseRequest(`/rest/v1/stock_records?id=in.(${sourceIds.map(encodeURIComponent).join(",")})&is_shared=eq.true&select=id,payload,source_nickname,last_published_at,updated_at`);
-        const latestPublications = await loadLatestPublications(sourceIds);
-        const sourceMap = new Map((rows || []).map((row) => {
-          const source = normalizeStockRow(row);
-          return [row.id, stockWithPublication(source, latestPublications.get(row.id))];
-        }));
-        state.stocks = state.stocks.map((stock) => {
-          const source = sourceMap.get(stock.sourceStockId);
-          if (!source) return { ...stock, sourceStopped: true, hasSourceUpdate: false };
-          const sourcePublishedAt = source.lastPublishedAt || source.updatedAt || "";
-          const hasSourceUpdate = Boolean(sourcePublishedAt && stock.sourceSeenPublishedAt && sourcePublishedAt > stock.sourceSeenPublishedAt);
-          if (hasSourceUpdate) state.sourceUpdateCount += 1;
-          return {
-            ...source,
-            id: stock.id,
-            createdAt: stock.createdAt,
-            manualOrder: stock.manualOrder,
-            pin: stock.pin,
-            isShared: stock.isShared,
-            lastPublishedAt: stock.lastPublishedAt,
-            sourceUserId: stock.sourceUserId,
-            sourceStockId: stock.sourceStockId,
-            sourceNickname: stock.sourceNickname,
-            sourceType: stock.sourceType,
-            sourceSeenPublishedAt: stock.sourceSeenPublishedAt,
-            lastSourceUpdatedAt: sourcePublishedAt || stock.lastSourceUpdatedAt,
-            updatedAt: source.updatedAt || stock.updatedAt,
-            sourceStopped: false,
-            hasSourceUpdate,
-            myNote: stock.myNote || ""
-          };
-        });
-      } catch (error) {
-        console.warn("同步来源股池失败。", error);
-      }
-    }
-
-    async function loadPublisherStocks(publisherId) {
-      state.publisherStocks = [];
-      state.publisherProfile = null;
-      if (!publisherId || publisherId === "own") return;
-      try {
-        const rows = await supabaseRequest(`/rest/v1/stock_records?user_id=eq.${encodeURIComponent(publisherId)}&is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,is_shared,last_published_at,updated_at&order=last_published_at.desc`);
-        const latestPublications = await loadLatestPublications((rows || []).map((row) => row.id));
-        const profile = state.followedPublishers.find((item) => item.id === publisherId) || state.shareInviteProfile || state.publisherProfile;
-        state.publisherProfile = profile || null;
-        state.publisherStocks = (rows || []).map((row) => ({
-          ...stockWithPublication(normalizeStockRow(row), latestPublications.get(row.id)),
-          publisherId: row.user_id,
-          publisherNickname: profile?.nickname || row.user_id
-        }));
-        await refreshMarketCaps({ renderAfter: false });
-      } catch (error) {
-        alert(`读取分享股池失败：${error.message || String(error)}`);
-      }
-    }
-
-    async function loadSquare() {
-      try {
-        const profiles = await supabaseRequest("/rest/v1/profiles?share_visibility=eq.public&square_hidden=eq.false&share_banned=eq.false&select=id,email,nickname,share_visibility,created_at");
-        const rows = await supabaseRequest("/rest/v1/stock_records?is_shared=eq.true&admin_hidden=eq.false&select=id,user_id,payload,last_published_at,updated_at&order=last_published_at.desc");
-        const latestPublications = await loadLatestPublications((rows || []).map((row) => row.id));
-        const byUser = new Map();
-        (rows || []).forEach((row) => {
-          const stock = stockWithPublication(normalizeStockRow(row), latestPublications.get(row.id));
-          const list = byUser.get(row.user_id) || [];
-          list.push({ ...stock, userId: row.user_id });
-          byUser.set(row.user_id, list);
-        });
-        state.squareProfiles = (profiles || [])
-          .map((profile) => {
-            const stocks = byUser.get(profile.id) || [];
-            const latestPublishedAt = stocks.map((stock) => stock.lastPublishedAt).filter(Boolean).sort().at(-1);
-            return { ...profile, stocks, stockCount: stocks.length, latestPublishedAt };
-          })
-          .filter((profile) => profile.stockCount > 0);
-      } catch (error) {
-        alert(`读取广场失败：${error.message || String(error)}`);
-      }
-    }
-
-    async function loadAdmin() {
-      if (!state.isAdmin) return;
-      try {
-        state.adminUsers = await supabaseRequest("/rest/v1/profiles?select=id,email,nickname,share_visibility,square_hidden,share_banned,admin_note,created_at&order=created_at.desc") || [];
-        state.adminStocks = (await supabaseRequest("/rest/v1/stock_records?select=id,user_id,payload,is_shared,last_published_at,admin_hidden,created_at,updated_at&order=created_at.desc") || []).map((row) => normalizeStockRow(row));
-        if (!state.adminSelectedUserId && state.adminUsers[0]) state.adminSelectedUserId = state.adminUsers[0].id;
-      } catch (error) {
-        alert(`读取管理后台失败：${error.message || String(error)}`);
-      }
-    }
-
-    async function openPublisherFromSquare(publisherId) {
-      const profile = state.squareProfiles.find((item) => item.id === publisherId);
-      if (!profile) return;
-      state.mainView = "pool";
-      state.viewPublisherId = publisherId;
-      state.publisherProfile = profile;
-      await loadPublisherStocks(publisherId);
-      render();
-    }
-
-    async function selectAdminUser(userId) {
-      state.adminSelectedUserId = userId;
-      render();
-    }
-
-    async function adminToggleUser(userId, key) {
-      const user = state.adminUsers.find((item) => item.id === userId);
-      if (!user || !state.isAdmin) return;
-      const next = !Boolean(user[key]);
-      try {
-        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ [key]: next, updated_at: new Date().toISOString() })
-        });
-        await logModeration(key === "square_hidden" ? (next ? "hide_from_square" : "restore_to_square") : (next ? "ban_share" : "restore_share"), userId, null);
-        state.adminUsers = state.adminUsers.map((item) => item.id === userId ? { ...item, [key]: next } : item);
-      } catch (error) {
-        alert(`管理操作失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
-    async function adminSaveNote(userId) {
-      const input = document.querySelector("[data-input='adminNote']");
-      const note = input?.value || "";
-      try {
-        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ admin_note: note, updated_at: new Date().toISOString() })
-        });
-        await logModeration("admin_note", userId, null, note);
-        state.adminUsers = state.adminUsers.map((item) => item.id === userId ? { ...item, admin_note: note } : item);
-      } catch (error) {
-        alert(`保存管理员备注失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
-    async function adminToggleStockHidden(stockId) {
-      const stock = state.adminStocks.find((item) => item.id === stockId);
-      if (!stock || !state.isAdmin) return;
-      const next = !stock.adminHidden;
-      const payload = { ...stock, adminHidden: next };
-      try {
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ payload: payloadForStockRecord(payload), admin_hidden: next, updated_at: new Date().toISOString() })
-        });
-        await logModeration(next ? "hide_stock" : "restore_stock", stock.userId || null, stockId);
-        state.adminStocks = state.adminStocks.map((item) => item.id === stockId ? { ...item, adminHidden: next } : item);
-      } catch (error) {
-        alert(`股票隐藏操作失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
-    async function logModeration(actionType, userId, stockId, reason = "") {
-      const username = state.session.user.user_metadata?.user_name || state.session.user.user_metadata?.preferred_username || state.session.user.user_metadata?.name || "admin";
-      try {
-        await supabaseRequest("/rest/v1/moderation_actions", {
-          method: "POST",
-          body: JSON.stringify({
-            admin_github_username: username,
-            action_type: actionType,
-            target_user_id: userId,
-            target_stock_id: stockId,
-            reason
-          })
-        });
-      } catch (error) {
-        console.warn("管理员操作日志记录失败。", error);
-      }
-    }
-
     async function loadProfile() {
-      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,share_visibility,square_hidden,share_banned,admin_note,created_at&limit=1`);
+      const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,nickname,created_at&limit=1`);
       state.profile = rows?.[0] || null;
       state.profileRequired = !state.profile;
     }
 
-    async function loadAdminMarker() {
-      state.isAdmin = false;
-      try {
-        const rows = await supabaseRequest("/rest/v1/admin_users?select=github_username&limit=1");
-        state.isAdmin = Boolean(rows?.length);
-      } catch {
-        state.isAdmin = false;
-      }
-    }
-
-    async function loadFollowedPublishers() {
-      const follows = await supabaseRequest(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(state.session.user.id)}&select=publisher_id,created_at`);
-      const ids = (follows || []).map((row) => row.publisher_id);
-      if (!ids.length) {
-        state.followedPublishers = [];
-        return;
-      }
-      const profiles = await supabaseRequest(`/rest/v1/profiles?id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,nickname,email,share_visibility`);
-      state.followedPublishers = profiles || [];
-    }
-
-    async function loadShareInvite() {
-      rememberPendingShareFromUrl();
-      const publisherId = localStorage.getItem(PENDING_SHARE_KEY);
-      if (!publisherId || publisherId === state.session.user.id) {
-        state.shareInviteProfile = null;
-        return;
-      }
-      try {
-        const rows = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(publisherId)}&select=id,nickname,email,share_visibility&limit=1`);
-        state.shareInviteProfile = rows?.[0] || null;
-      } catch (error) {
-        state.shareInviteProfile = null;
-      }
-    }
-
     async function afterProfileReady(initialStocksPromise = null) {
-      const stocksReady = initialStocksPromise || loadStocks({ mergeSources: false });
+      const stocksReady = initialStocksPromise || loadStocks();
       const auxiliaryReady = Promise.allSettled([
         loadPortfolios(),
-        loadJournals(),
-        loadAdminMarker(),
-        loadFollowedPublishers(),
-        loadShareInvite()
+        loadJournals()
       ]);
 
       await stocksReady;
@@ -13112,234 +11706,24 @@
       startMarketCapAutoRefresh();
       startPortfolioQuoteAutoRefresh();
 
-      auxiliaryReady.then(async () => {
-        await openFollowedPendingShare();
-        render();
-      }).catch((error) => console.warn("辅助数据后台加载失败。", error));
+      auxiliaryReady
+        .then(() => render())
+        .catch((error) => console.warn("辅助数据后台加载失败。", error));
 
-      mergeLatestSourceStocks()
-        .then(() => refreshMarketCaps({ renderAfter: false }))
+      refreshMarketCaps({ renderAfter: false })
         .then(() => render())
         .catch((error) => console.warn("股池行情后台刷新失败。", error));
     }
 
-    async function openFollowedPendingShare() {
-      const publisherId = localStorage.getItem(PENDING_SHARE_KEY);
-      if (!publisherId || publisherId === state.session.user.id) return;
-      const followed = state.followedPublishers.some((item) => item.id === publisherId);
-      if (!followed) return;
-      state.mainView = "pool";
-      state.viewPublisherId = publisherId;
-      state.query = "";
-      await loadPublisherStocks(publisherId);
-      localStorage.removeItem(PENDING_SHARE_KEY);
-    }
-
-    async function followPublisher(publisherId) {
-      if (!publisherId) return;
-      try {
-        await supabaseRequest("/rest/v1/follows", {
-          method: "POST",
-          body: JSON.stringify({
-            follower_id: state.session.user.id,
-            publisher_id: publisherId
-          })
-        });
-        localStorage.removeItem(PENDING_SHARE_KEY);
-        await loadFollowedPublishers();
-        state.viewPublisherId = publisherId;
-        await loadPublisherStocks(publisherId);
-      } catch (error) {
-        if (!String(error.message || error).includes("duplicate")) {
-          alert(`关注失败：${error.message || String(error)}`);
-          return;
-        }
-        localStorage.removeItem(PENDING_SHARE_KEY);
-        await loadFollowedPublishers();
-        state.viewPublisherId = publisherId;
-        await loadPublisherStocks(publisherId);
-      }
-      render();
-    }
-
-    async function updateShareVisibility(value) {
-      const next = value === "public" ? "public" : "private";
-      const previous = state.profile?.share_visibility || "private";
-      state.profile = { ...state.profile, share_visibility: next };
-      render();
-      try {
-        await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ share_visibility: next, updated_at: new Date().toISOString() })
-        });
-      } catch (error) {
-        state.profile = { ...state.profile, share_visibility: previous };
-        alert(`公开状态保存失败：${error.message || String(error)}`);
-        render();
-      }
-    }
-
-    async function copyShareLink() {
-      const shareUrl = `${AUTH_REDIRECT_URL}?share=${encodeURIComponent(state.profile.id)}`;
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        alert("1v1分享链接已复制。");
-      } catch {
-        prompt("复制你的1v1分享链接：", shareUrl);
-      }
-    }
-
-    async function copySharedStock(stockId, mode = "copied") {
-      const source = state.publisherStocks.find((stock) => stock.id === stockId);
-      if (!source) return;
-      const sourceType = mode === "subscribed" ? "subscribed" : "copied";
-      if (sourceType === "subscribed" && state.stocks.some((stock) => stock.sourceType === "subscribed" && stock.sourceStockId === source.id)) {
-        alert("你已经订阅过这只股票。");
-        return;
-      }
-      const now = new Date().toISOString();
-      const payload = {
-        ...source,
-        id: null,
-        isShared: false,
-        lastPublishedAt: "",
-        sourceUserId: source.publisherId,
-        sourceStockId: source.id,
-        sourceNickname: source.publisherNickname,
-        sourceType,
-        sourceSeenPublishedAt: source.lastPublishedAt || source.updatedAt || now,
-        lastSourceUpdatedAt: source.lastPublishedAt || source.updatedAt || now,
-        sourceStopped: false,
-        hasSourceUpdate: false,
-        myNote: "",
-        createdAt: now,
-        updatedAt: now,
-        pin: "normal",
-        manualOrder: Date.now()
-      };
-      try {
-        const rows = await supabaseRequest("/rest/v1/stock_records?select=id,payload", {
-          method: "POST",
-          prefer: "return=representation",
-          body: JSON.stringify({
-            user_id: state.session.user.id,
-            payload: payloadForStockRecord(payload),
-            source_user_id: payload.sourceUserId,
-            source_stock_id: payload.sourceStockId,
-            source_nickname: payload.sourceNickname,
-            source_type: payload.sourceType,
-            last_source_updated_at: payload.lastSourceUpdatedAt,
-            source_seen_published_at: payload.sourceSeenPublishedAt,
-            is_shared: false
-          })
-        });
-        payload.id = rows?.[0]?.id;
-        if (sourceType === "subscribed") {
-          await supabaseRequest("/rest/v1/stock_subscriptions", {
-            method: "POST",
-            body: JSON.stringify({
-              subscriber_id: state.session.user.id,
-              publisher_id: payload.sourceUserId,
-              source_stock_id: payload.sourceStockId,
-              target_stock_id: payload.id,
-              last_seen_published_at: payload.sourceSeenPublishedAt
-            })
-          });
-        }
-        state.stocks.push(payload);
-        const shouldOpenOwnPool = confirm(sourceType === "subscribed" ? "已订阅到你的股池。现在去管理吗？" : "已复制到你的股池。现在去管理吗？");
-        if (shouldOpenOwnPool) openOwnPool();
-      } catch (error) {
-        alert(`${sourceType === "subscribed" ? "订阅" : "复制"}失败：${error.message || String(error)}`);
-      }
-    }
-
-    async function unsubscribeStock(stockId) {
-      const stock = state.stocks.find((item) => item.id === stockId);
-      if (!stock || stock.sourceType !== "subscribed") return;
-      if (!confirm(`取消订阅 ${stock.name}？取消后可删除或转为你的股票。`)) return;
-      try {
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
-        await supabaseRequest(`/rest/v1/stock_subscriptions?target_stock_id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
-        state.stocks = state.stocks.filter((item) => item.id !== stockId);
-        await mergeLatestSourceStocks();
-      } catch (error) {
-        alert(`取消订阅失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
-    async function convertToOwnStock(stockId) {
-      const stock = state.stocks.find((item) => item.id === stockId);
-      if (!stock || !stock.sourceStockId) return;
-      const now = new Date().toISOString();
-      const payload = {
-        ...stock,
-        sourceUserId: "",
-        sourceStockId: "",
-        sourceNickname: "",
-        sourceType: "self",
-        sourceSeenPublishedAt: "",
-        lastSourceUpdatedAt: "",
-        sourceStopped: false,
-        hasSourceUpdate: false,
-        updatedAt: now
-      };
-      try {
-        await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stockId)}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            payload: payloadForStockRecord(payload),
-            updated_at: now,
-            source_user_id: null,
-            source_stock_id: null,
-            source_nickname: null,
-            source_type: "self",
-            last_source_updated_at: null,
-            source_seen_published_at: null
-          })
-        });
-        await supabaseRequest(`/rest/v1/stock_subscriptions?target_stock_id=eq.${encodeURIComponent(stockId)}`, { method: "DELETE" });
-        state.stocks = state.stocks.map((item) => item.id === stockId ? payload : item);
-      } catch (error) {
-        alert(`转为我的股票失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
-    async function markSourceUpdatesRead() {
-      const updated = state.stocks.filter((stock) => stock.sourceType === "subscribed" && stock.hasSourceUpdate);
-      if (!updated.length) return;
-      try {
-        await Promise.all(updated.map((stock) => {
-          const seenAt = stock.lastSourceUpdatedAt || new Date().toISOString();
-          const payload = { ...stock, sourceSeenPublishedAt: seenAt, hasSourceUpdate: false };
-          return supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(stock.id)}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              payload: payloadForStockRecord(payload),
-              source_seen_published_at: seenAt,
-              last_source_updated_at: stock.lastSourceUpdatedAt || null
-            })
-          });
-        }));
-        await loadStocks();
-      } catch (error) {
-        alert(`标记已读失败：${error.message || String(error)}`);
-      }
-      render();
-    }
-
     async function init() {
       applyColorTheme(readJson(THEME_STORAGE_KEY, DEFAULT_THEME_ID), { persist: false });
-      rememberPendingShareFromUrl();
       renderLoading();
       const localDemoParams = new URLSearchParams(location.search);
       const localDemoHost = ["127.0.0.1", "localhost", "[::1]", "::1"].includes(location.hostname);
       const localPortfolioDemo = localDemoHost && (localDemoParams.has("portfolio-demo") || localDemoParams.has("market-insight-demo"));
       if (localPortfolioDemo) {
         state.session = { user: { id: "local-portfolio-demo", email: "portfolio-demo@local.test" }, access_token: "local-demo" };
-        state.profile = { id: "local-portfolio-demo", nickname: "本地验收", share_visibility: "private" };
+        state.profile = { id: "local-portfolio-demo", nickname: "本地验收" };
         await loadPortfolios();
         await loadJournals();
         ensureLocalPortfolioDemo();
@@ -13378,7 +11762,7 @@
       state.session = currentSession();
       if (state.session) {
         const exchangeRatesReady = fetchExchangeRates();
-        const initialStocksPromise = loadStocks({ mergeSources: false });
+        const initialStocksPromise = loadStocks();
         try {
           await loadProfile();
           if (!state.profileRequired) {

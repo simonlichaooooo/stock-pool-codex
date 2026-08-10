@@ -1,5 +1,7 @@
 # 项目文档索引
 
+当前产品为私人研究工具，不提供股池分享、订阅、广场或管理后台。旧数据库对象的退场步骤见 [`HANDOFF.md`](./HANDOFF.md) 和 [`../supabase/remove-social-sharing.sql`](../supabase/remove-social-sharing.sql)。
+
 最后更新：2026-08-09
 
 本目录只保留当前有效文档：
