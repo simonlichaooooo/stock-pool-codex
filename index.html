@@ -4171,10 +4171,12 @@
     .market-insight-row-actions { display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .market-insight-detail-link { min-height:30px; padding:0 12px; border:1px solid color-mix(in srgb,var(--brand) 34%,transparent); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 44%,#fff); color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
     .market-insight-detail-link:hover { border-color:var(--brand); background:var(--brand-soft); box-shadow:0 2px 6px rgba(16,24,40,.10); }
-    .market-insight-watchlist-button { min-height:30px; padding:0 11px; border:1px solid color-mix(in srgb,var(--brand) 38%,var(--line)); border-radius:999px; background:color-mix(in srgb,var(--panel) 90%,var(--brand-soft)); color:var(--brand-strong); font:inherit; font-weight:750; cursor:pointer; }
-    .market-insight-watchlist-button:hover { border-color:var(--brand); background:color-mix(in srgb,var(--brand-soft) 58%,var(--panel)); color:var(--brand-strong); box-shadow:0 2px 7px color-mix(in srgb,var(--brand) 15%,transparent); }
-    .market-insight-watchlist-button.active { border-color:var(--brand-strong); background:linear-gradient(135deg,var(--brand),var(--brand-strong)); color:#fff; box-shadow:0 3px 9px color-mix(in srgb,var(--brand) 24%,transparent); }
-    .market-insight-watchlist-button.active:hover { border-color:var(--brand-strong); background:var(--brand-strong); color:#fff; }
+    .market-insight-watchlist-button { display:inline-flex; align-items:center; justify-content:center; gap:2px; width:62px; min-height:30px; padding:0 8px; border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line)); border-radius:999px; background:color-mix(in srgb,var(--panel) 92%,var(--brand-soft)); color:var(--brand-strong); font:inherit; font-weight:750; cursor:pointer; transition:border-color .12s ease,background-color .12s ease,color .12s ease; }
+    .market-insight-watchlist-button:hover { border-color:color-mix(in srgb,var(--brand) 52%,var(--line)); background:color-mix(in srgb,var(--brand-soft) 44%,var(--panel)); color:var(--brand-strong); box-shadow:none; }
+    .market-insight-watchlist-button.active { border-color:color-mix(in srgb,var(--brand) 42%,var(--line)); background:color-mix(in srgb,var(--brand-soft) 68%,var(--panel)); color:color-mix(in srgb,var(--brand-strong) 86%,var(--text)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 5%,transparent); }
+    .market-insight-watchlist-button.active:hover { border-color:color-mix(in srgb,var(--brand) 52%,var(--line)); background:color-mix(in srgb,var(--brand-soft) 76%,var(--panel)); color:var(--brand-strong); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 7%,transparent); }
+    .market-insight-watchlist-icon { display:inline-grid; flex:0 0 11px; place-items:center; width:11px; font-size:11px; line-height:1; }
+    .market-insight-watchlist-label { display:inline-block; min-width:24px; text-align:left; }
     .market-insight-index-tabs { display:inline-flex; justify-content:flex-end; gap:4px; flex-wrap:nowrap; padding:5px; border:1px solid color-mix(in srgb,var(--brand) 20%,rgba(255,255,255,.76)); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 27%,rgba(255,255,255,.50)); box-shadow:inset 0 1px 0 rgba(255,255,255,.82); }
     .market-insight-index-tabs button { min-height:30px; padding:0 13px; border:1px solid transparent; border-radius:999px; background:transparent; color:var(--muted); box-shadow:none; }
     .market-insight-index-tabs button:hover { color:var(--brand-strong); background:rgba(255,255,255,.42); }
@@ -4259,6 +4261,11 @@
     .market-insight-chart .right-axis-title { fill:#64748b; font-weight:750; }
     .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
     .market-insight-chart-hit { cursor:crosshair; }
+    .market-insight-chart-crosshair { position:absolute; z-index:4; display:none; pointer-events:none; background:color-mix(in srgb,var(--brand-strong) 52%,var(--muted)); opacity:.62; }
+    .market-insight-chart-stage.crosshair-visible .market-insight-chart-crosshair { display:block; }
+    .market-insight-chart-stage.crosshair-pinned .market-insight-chart-crosshair { opacity:.76; }
+    .market-insight-chart-crosshair.vertical { top:0; bottom:0; width:1px; transform:translateX(-.5px); }
+    .market-insight-chart-crosshair.horizontal { right:0; left:0; height:1px; transform:translateY(-.5px); }
     .market-insight-chart-tooltip { position:absolute; z-index:5; display:none; min-width:190px; padding:9px 11px; border:1px solid var(--line); border-radius:6px; background:rgba(255,255,255,.96); color:var(--text); box-shadow:0 8px 20px rgba(16,24,40,.16); pointer-events:none; font-size:11px; }
     .market-insight-chart-tooltip.visible { display:block; }
     .market-insight-chart-tooltip strong { display:block; margin-bottom:6px; }
@@ -6005,7 +6012,7 @@
         });
       }).join("") : "";
       const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
-      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text>${rightValues.length ? `<text class="axis-label right-axis-title" x="${width - 4}" y="${top + 4}" text-anchor="end">${escapeHtml(rightSeries[0]?.unit || "价格")}</text>` : ""}</svg><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
+      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text>${rightValues.length ? `<text class="axis-label right-axis-title" x="${width - 4}" y="${top + 4}" text-anchor="end">${escapeHtml(rightSeries[0]?.unit || "价格")}</text>` : ""}</svg><i class="market-insight-chart-crosshair vertical" aria-hidden="true"></i><i class="market-insight-chart-crosshair horizontal" aria-hidden="true"></i><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
     }
 
     function marketInsightRangeValues(values) {
@@ -6478,7 +6485,7 @@
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
                   ${marketInsightShortChangeCell(row, shortRatio, rating.rules[3])}
                   ${marketInsightConnectChangeCell(row, connectRatio, rating.rules[4])}
-                  <td data-label="操作"><div class="market-insight-row-actions"><button class="market-insight-watchlist-button ${isMarketInsightWatchlisted(row.rawCode) ? "active" : ""}" data-action="toggleMarketInsightWatchlist" data-code="${escapeHtml(row.rawCode)}" aria-pressed="${isMarketInsightWatchlisted(row.rawCode)}">${isMarketInsightWatchlisted(row.rawCode) ? "✓已加" : "+自选"}</button><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></div></td>
+                  <td data-label="操作"><div class="market-insight-row-actions"><button class="market-insight-watchlist-button ${isMarketInsightWatchlisted(row.rawCode) ? "active" : ""}" data-action="toggleMarketInsightWatchlist" data-code="${escapeHtml(row.rawCode)}" aria-pressed="${isMarketInsightWatchlisted(row.rawCode)}"><span class="market-insight-watchlist-icon" aria-hidden="true">${isMarketInsightWatchlisted(row.rawCode) ? "✓" : "+"}</span><span class="market-insight-watchlist-label">${isMarketInsightWatchlisted(row.rawCode) ? "已加" : "自选"}</span></button><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></div></td>
                 </tr>`;
               }).join("")}</tbody>
             </table>
@@ -9246,25 +9253,59 @@
         target.addEventListener("blur", hideTooltip);
       });
       document.querySelectorAll("[data-market-chart-point]").forEach((target) => {
-        const showTooltip = () => {
+        const showTooltip = (event, { force = false } = {}) => {
           const chart = target.closest("[data-market-chart]");
           const tooltip = chart?.querySelector("[data-market-chart-tooltip]");
           if (!chart || !tooltip) return;
+          if (chart.dataset.crosshairPinned === "true" && !force) return;
           const data = JSON.parse(target.dataset.marketChartPoint || "{}");
           tooltip.innerHTML = `<strong>${escapeHtml(data.date || "")}</strong>${(data.entries || []).map((entry) => `<div class="market-insight-chart-tooltip-row"><span>${escapeHtml(entry.label || "")}</span><b>${escapeHtml(entry.value || "--")}</b></div>`).join("")}`;
           const chartRect = chart.getBoundingClientRect();
           const targetRect = target.getBoundingClientRect();
-          const left = Math.min(chart.clientWidth - 210, Math.max(8, targetRect.left - chartRect.left + targetRect.width / 2 + 10));
+          const crosshairX = targetRect.left - chartRect.left + targetRect.width / 2;
+          const pointerY = Number.isFinite(event?.clientY) && event.clientY > 0 ? event.clientY - chartRect.top : targetRect.top - chartRect.top + targetRect.height / 2;
+          const crosshairY = Math.min(targetRect.bottom - chartRect.top, Math.max(targetRect.top - chartRect.top, pointerY));
+          const vertical = chart.querySelector(".market-insight-chart-crosshair.vertical");
+          const horizontal = chart.querySelector(".market-insight-chart-crosshair.horizontal");
+          if (vertical) vertical.style.left = `${crosshairX}px`;
+          if (horizontal) horizontal.style.top = `${crosshairY}px`;
+          chart.classList.add("crosshair-visible");
+          const tooltipWidth = 210;
+          const preferredLeft = crosshairX + 10;
+          const left = preferredLeft + tooltipWidth > chart.clientWidth ? Math.max(8, crosshairX - tooltipWidth - 10) : preferredLeft;
           const top = Math.max(8, targetRect.top - chartRect.top + 18);
           tooltip.style.left = `${left}px`;
           tooltip.style.top = `${top}px`;
           tooltip.classList.add("visible");
         };
-        const hideTooltip = () => target.closest("[data-market-chart]")?.querySelector("[data-market-chart-tooltip]")?.classList.remove("visible");
+        const hideTooltip = () => {
+          const chart = target.closest("[data-market-chart]");
+          if (!chart || chart.dataset.crosshairPinned === "true") return;
+          chart.classList.remove("crosshair-visible");
+          chart.querySelector("[data-market-chart-tooltip]")?.classList.remove("visible");
+        };
         target.addEventListener("mouseenter", showTooltip);
+        target.addEventListener("mousemove", showTooltip);
         target.addEventListener("mouseleave", hideTooltip);
         target.addEventListener("focus", showTooltip);
         target.addEventListener("blur", hideTooltip);
+        target.addEventListener("click", (event) => {
+          const chart = target.closest("[data-market-chart]");
+          if (!chart) return;
+          const data = JSON.parse(target.dataset.marketChartPoint || "{}");
+          const samePointPinned = chart.dataset.crosshairPinned === "true" && chart.dataset.crosshairPinnedDate === String(data.date || "");
+          if (samePointPinned) {
+            delete chart.dataset.crosshairPinned;
+            delete chart.dataset.crosshairPinnedDate;
+            chart.classList.remove("crosshair-pinned");
+            showTooltip(event, { force:true });
+            return;
+          }
+          chart.dataset.crosshairPinned = "true";
+          chart.dataset.crosshairPinnedDate = String(data.date || "");
+          chart.classList.add("crosshair-pinned");
+          showTooltip(event, { force:true });
+        });
       });
       document.querySelectorAll("[data-filter]").forEach((el) => {
         el.addEventListener("click", () => { state.filter = el.dataset.filter; render(); });
