@@ -4228,6 +4228,8 @@
     .market-insight-detail-panel { position:relative; display:flex; flex:0 0 auto; flex-direction:column; width:min(1080px,calc(100vw - 56px)); height:100%; background:#eef2f7; box-shadow:-8px 0 30px rgba(7,27,51,.22); }
     .market-insight-detail-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex:0 0 auto; margin:0; padding:16px 20px; border:0; border-bottom:1px solid var(--line); border-radius:0; box-shadow:none; }
     .market-insight-detail-title { display:flex; align-items:center; gap:12px; min-width:0; }
+    .market-insight-detail-head .market-insight-actions { flex:0 0 auto; align-items:center; justify-content:flex-end; gap:8px; margin:0 0 0 auto; flex-wrap:nowrap; }
+    .market-insight-detail-head .market-insight-loading { white-space:nowrap; }
     .market-insight-detail-close { display:grid; flex:0 0 auto; place-items:center; width:34px; min-height:34px; padding:0; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--muted); line-height:1; }
     .market-insight-detail-close:hover { border-color:var(--line); background:var(--panel-2); color:var(--text); box-shadow:none; }
     .market-insight-detail-close svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
@@ -4309,6 +4311,10 @@
     .market-insight-chart-ai .market-insight-ai-hypothesis + .market-insight-ai-hypothesis { margin-top:8px; }
     .market-insight-chart-ai-evidence { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:7px; }
     .market-insight-chart-ai-evidence .market-insight-ai-list { padding:7px 9px; background:#f7fafe; }
+    .market-insight-ai-idle { display:flex; align-items:center; justify-content:space-between; gap:14px; padding-top:2px; }
+    .market-insight-ai-idle span { color:var(--muted); font-size:11px; line-height:1.6; }
+    .market-insight-ai-generate { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; gap:6px; min-height:32px; padding:0 13px; border-color:color-mix(in srgb,var(--brand) 62%,var(--line)); background:linear-gradient(135deg,var(--brand),var(--brand-strong)); color:#fff; box-shadow:0 5px 12px color-mix(in srgb,var(--brand) 20%,transparent); }
+    .market-insight-ai-generate:hover { border-color:var(--brand-strong); background:var(--brand-strong); color:#fff; }
     .market-insight-chart-empty { display:grid; place-items:center; min-height:220px; padding:24px; border:1px dashed var(--line); border-radius:5px; color:var(--muted); font-size:12px; text-align:center; line-height:1.7; }
     @media (max-width: 760px) {
       .market-insight-head { align-items:stretch; flex-direction:column; }
@@ -4331,9 +4337,11 @@
       .market-insight-table td[data-label="股票名称"] { display:block; }
       .market-insight-table td[data-label="股票名称"] > div { text-align:left; }
       .market-insight-detail-panel { width:100vw; }
-      .market-insight-detail-head { align-items:flex-start; padding:14px 12px; }
-      .market-insight-detail-head .market-insight-actions { width:auto; margin-left:auto; }
-      .market-insight-detail-head .market-insight-range button { width:auto; }
+      .market-insight-detail-head { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:10px; padding:14px 12px; }
+      .market-insight-detail-head .market-insight-detail-title { grid-column:1 / -1; }
+      .market-insight-detail-head .market-insight-actions { grid-column:1 / -1; width:100%; margin:0; }
+      .market-insight-detail-head .market-insight-range { flex:1 1 auto; }
+      .market-insight-detail-head .market-insight-range button { flex:1 1 auto; width:auto; }
       .market-insight-detail-head .market-insight-detail-close { width:36px; }
       .market-insight-detail-body { padding:12px; }
       .market-insight-chart-card { padding:12px; }
@@ -4341,6 +4349,8 @@
       .market-insight-ai-card { padding:14px 12px; }
       .market-insight-ai-parties, .market-insight-ai-evidence-grid { grid-template-columns:1fr; }
       .market-insight-chart-ai-evidence { grid-template-columns:1fr; }
+      .market-insight-ai-idle { align-items:stretch; flex-direction:column; }
+      .market-insight-ai-generate { width:100%; }
     }
   </style>
 </head>
@@ -4457,6 +4467,7 @@
       marketInsightAiMeta: null,
       marketInsightAiLoading: false,
       marketInsightAiError: "",
+      marketInsightAiRequestedParties: [],
       marketInsightAiCache: {},
       marketInsightSort: { key: "marketCap", dir: "desc" },
       marketInsightPage: 1,
@@ -4545,6 +4556,7 @@
       state.marketInsightAiMeta = null;
       state.marketInsightAiError = "";
       state.marketInsightAiLoading = false;
+      state.marketInsightAiRequestedParties = [];
       render();
     });
 
@@ -6056,19 +6068,22 @@
       const analysis = state.marketInsightAiAnalysis;
       const meta = state.marketInsightAiMeta || {};
       const party = analysis?.[partyKey];
+      const requested = (state.marketInsightAiRequestedParties || []).includes(partyKey);
       const primaryConfidence = party?.hypotheses?.[0]?.confidence || analysis?.confidence || "--";
       const heading = `<div class="market-insight-ai-head"><div class="market-insight-ai-title"><i>AI</i><div><h3>${escapeHtml(title)}</h3><p>结合股价关系提出竞争性假设，不代表交易者真实意图。</p></div></div>${party ? `<span class="market-insight-ai-confidence">主要假设置信度 ${escapeHtml(primaryConfidence)}</span>` : ""}</div>`;
+      if (!requested) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-idle"><span>需要时再生成，不会在打开详情或切换时间跨度时自动调用 AI。</span><button class="market-insight-ai-generate" data-action="generateMarketInsightAi" data-party-key="${partyKey}" ${state.marketInsightAiLoading ? "disabled" : ""}><span aria-hidden="true">✦</span>生成 AI 解读</button></div></div>`;
       if (state.marketInsightAiLoading) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-skeleton"><i></i><i></i><i></i></div></div>`;
-      if (state.marketInsightAiError) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-error">${escapeHtml(state.marketInsightAiError)}<button class="secondary" data-action="retryMarketInsightAi">重新生成</button></div></div>`;
-      if (!party) return `<div class="market-insight-chart-ai">${heading}<div class="muted">正在等待历史数据，随后生成对应解读。</div></div>`;
+      if (state.marketInsightAiError) return `<div class="market-insight-chart-ai">${heading}<div class="market-insight-ai-error">${escapeHtml(state.marketInsightAiError)}<button class="secondary" data-action="retryMarketInsightAi" data-party-key="${partyKey}">重新生成</button></div></div>`;
+      if (!party) return `<div class="market-insight-chart-ai">${heading}<div class="muted">暂无可展示的 AI 解读，请稍后重试。</div></div>`;
       const hypotheses = (party.hypotheses || []).slice(0, 2).map((item) => `<div class="market-insight-ai-hypothesis"><strong>${escapeHtml(item.label)} · 置信度${escapeHtml(item.confidence)}</strong><span>${escapeHtml(item.explanation)}</span><div class="market-insight-chart-ai-evidence">${renderMarketInsightAiList("支持依据", item.supporting_evidence, 3)}${renderMarketInsightAiList("反向证据", item.counter_evidence, 3)}</div></div>`).join("");
       const updated = meta.generated_at || meta.created_at || "";
       return `<div class="market-insight-chart-ai">${heading}<p class="market-insight-chart-ai-conclusion">${escapeHtml(party.conclusion || "")}</p>${hypotheses}<div class="market-insight-ai-foot"><span>模型 ${escapeHtml(meta.model || "--")} · ${meta.cached ? "读取缓存" : "新生成"}</span><span>${updated ? `生成于 ${escapeHtml(new Date(updated).toLocaleString("zh-CN"))}` : ""}</span></div></div>`;
     }
 
-    async function loadMarketInsightAiAnalysis() {
+    async function loadMarketInsightAiAnalysis(partyKey = "") {
       const rawCode = state.marketInsightDetailCode;
       if (!rawCode) return;
+      if (partyKey && !(state.marketInsightAiRequestedParties || []).includes(partyKey)) state.marketInsightAiRequestedParties = [...(state.marketInsightAiRequestedParties || []), partyKey];
       const selectedRow = state.marketInsightRows.find((item) => item.rawCode === rawCode);
       const selectedIndex = marketInsightRowIndex(selectedRow);
       const rangeKey = state.marketInsightDetailRange;
@@ -6146,6 +6161,7 @@
       state.marketInsightAiMeta = null;
       state.marketInsightAiLoading = false;
       state.marketInsightAiError = "";
+      state.marketInsightAiRequestedParties = [];
       render();
       const stockCode = String(rawCode).padStart(5, "0");
       const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
@@ -6186,7 +6202,6 @@
       state.marketInsightDetailError = errors.length ? `部分历史数据加载失败：${errors.join("；")}` : "";
       state.marketInsightDetailLoading = false;
       render();
-      loadMarketInsightAiAnalysis();
     }
 
     function marketInsightConstituents(indexId, snapshot = state.marketInsightSnapshot) {
@@ -9538,13 +9553,15 @@
           state.marketInsightAiAnalysis = null;
           state.marketInsightAiMeta = null;
           state.marketInsightAiError = "";
+          state.marketInsightAiLoading = false;
+          state.marketInsightAiRequestedParties = [];
           render();
-          await loadMarketInsightAiAnalysis();
         }
       }
-      if (action === "retryMarketInsightAi") await loadMarketInsightAiAnalysis();
+      if (action === "generateMarketInsightAi" && !state.marketInsightAiLoading) await loadMarketInsightAiAnalysis(event.currentTarget.dataset.partyKey || "");
+      if (action === "retryMarketInsightAi" && !state.marketInsightAiLoading) await loadMarketInsightAiAnalysis(event.currentTarget.dataset.partyKey || "");
       if (action === "openMarketInsightDetail") await openMarketInsightDetail(event.currentTarget.dataset.code || "");
-      if (action === "closeMarketInsightDetail") { state.marketInsightDetailCode = ""; state.marketInsightDetail = null; state.marketInsightDetailError = ""; state.marketInsightAiAnalysis = null; state.marketInsightAiMeta = null; state.marketInsightAiError = ""; state.marketInsightAiLoading = false; render(); }
+      if (action === "closeMarketInsightDetail") { state.marketInsightDetailCode = ""; state.marketInsightDetail = null; state.marketInsightDetailError = ""; state.marketInsightAiAnalysis = null; state.marketInsightAiMeta = null; state.marketInsightAiError = ""; state.marketInsightAiLoading = false; state.marketInsightAiRequestedParties = []; render(); }
       if (action === "newJournal") openJournal();
       if (action === "editJournal") openJournal(stockId);
       if (action === "deleteJournal") await deleteJournal(stockId);
@@ -9714,6 +9731,7 @@
         state.marketInsightAiMeta = null;
         state.marketInsightAiError = "";
         state.marketInsightAiLoading = false;
+        state.marketInsightAiRequestedParties = [];
       }
       state.mainView = view || "pool";
       state.query = "";
