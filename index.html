@@ -4200,9 +4200,8 @@
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
     .market-insight-rating-copy { flex:0 0 auto; margin-left:auto; text-align:right; }
     .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
-    .market-insight-rating-motto { margin-top:4px; color:color-mix(in srgb,var(--brand) 54%,var(--muted)); font-family:"STKaiti","KaiTi","Kaiti SC",serif; font-size:12px; font-weight:600; letter-spacing:1.1px; line-height:1.45; opacity:.72; white-space:nowrap; user-select:none; }
-    .market-insight-rating-motto::before { content:"“"; margin-right:1px; font-size:15px; line-height:0; }
-    .market-insight-rating-motto::after { content:"”"; margin-left:1px; font-size:15px; line-height:0; }
+    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:9px; margin-top:13px; font-family:"STKaiti","KaiTi","Kaiti SC",serif; font-size:15px; font-weight:700; letter-spacing:2.1px; line-height:1.45; white-space:nowrap; user-select:none; background:linear-gradient(100deg,var(--brand-strong),color-mix(in srgb,var(--brand) 62%,var(--muted))); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 1px 0 rgba(255,255,255,.72)); }
+    .market-insight-rating-motto::before { content:""; flex:0 0 20px; width:20px; height:2px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand)); box-shadow:6px 3px 0 -1px color-mix(in srgb,var(--brand) 32%,transparent); }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -5753,11 +5752,11 @@
       let changeText = "5周变化 --", changeClass = "";
       if (Number.isFinite(change)) {
         const formatted = `${Math.abs(change).toFixed(2)}%`;
-        if (change > 0) { changeText = `5周增持 ${formatted}`; changeClass = "increase"; }
-        else if (change < 0) { changeText = `5周减持 ${formatted}`; changeClass = "decrease"; }
+        if (change > 0) { changeText = `5周追空 ${formatted}`; changeClass = "increase"; }
+        else if (change < 0) { changeText = `5周平仓 ${formatted}`; changeClass = "decrease"; }
         else changeText = "5周持平 0.00%";
       }
-      return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头持仓下降")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change ${changeClass}">${changeText}</small></div></td>`;
+      return `<td data-label="空头持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(shortRatio) ? `${marketInsightRuleStar(star, "5周空头平仓")}${shortRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change ${changeClass}">${changeText}</small></div></td>`;
     }
 
     function marketInsightConnectChangeCell(row, connectRatio, star = false) {
@@ -6253,7 +6252,9 @@
       if (["ma5", "ma30", "ma40", "ma50"].includes(key)) return numeric(row.biasMetrics?.[key]?.bias);
       if (["p5", "p30", "p40", "p50"].includes(key)) return numeric(row.biasMetrics?.[`ma${key.slice(1)}`]?.percentile);
       if (key === "shortRatio") return numeric(marketInsightShortRatio(row));
+      if (key === "shortChange5w") return numeric(row.shortChange5wPct);
       if (key === "connectRatio") return numeric(marketInsightConnectRatio(row));
+      if (key === "connectChange5w") return numeric(row.connectChange5wPct);
       if (key === "marketCap") return numeric(row.latestMarketCapCny);
       if (key === "indexWeight") return numeric(row.indexWeight ?? row.latestMarketCapCny);
       return Number(row.order);
@@ -6281,6 +6282,14 @@
       return `<div class="market-insight-dual-sort">${marketInsightSortHeader(`${period}周乖离率`, `ma${period}`)}${marketInsightSortHeader("2年分位值", `p${period}`)}</div>`;
     }
 
+    function marketInsightShortSortHeader() {
+      return `<div class="market-insight-dual-sort">${marketInsightSortHeader("空头持仓比例", "shortRatio")}${marketInsightSortHeader("近5周变动", "shortChange5w")}</div>`;
+    }
+
+    function marketInsightConnectSortHeader() {
+      return `<div class="market-insight-dual-sort">${marketInsightSortHeader("港股通持仓比例", "connectRatio")}${marketInsightSortHeader("近5周变动", "connectChange5w")}</div>`;
+    }
+
     function marketInsightRating(row) {
       const number = (value) => value === null || value === undefined || value === "" ? NaN : Number(value);
       const rules = [
@@ -6297,7 +6306,7 @@
       { label:"超额收益", title:"5周超额收益为正" },
       { label:"5周乖离正", title:"5周乖离率为正" },
       { label:"中长期乖离正", title:"30、40、50周乖离率均为正" },
-      { label:"空头平仓", title:"5周空头持仓下降" },
+      { label:"空头平仓", title:"5周空头平仓" },
       { label:"港股通增持", title:"5周港股通持仓增加" }
     ];
 
@@ -6367,8 +6376,8 @@
                 <th class="num">${marketInsightBiasSortHeader(30)}</th>
                 <th class="num">${marketInsightBiasSortHeader(40)}</th>
                 <th class="num">${marketInsightBiasSortHeader(50)}</th>
-                <th class="num">${marketInsightSortHeader("空头持仓比例", "shortRatio", "SFC")}</th>
-                <th class="num">${marketInsightSortHeader("港股通持仓比例", "connectRatio", "HKEX 日终数据")}</th>
+                <th class="num">${marketInsightShortSortHeader()}</th>
+                <th class="num">${marketInsightConnectSortHeader()}</th>
                 <th>操作</th>
               </tr></thead>
               <tbody>${visibleRows.map((row) => {
