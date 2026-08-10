@@ -4198,7 +4198,7 @@
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
     .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:10px; padding:12px 14px; border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.78)); border-radius:8px; background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.76)),color-mix(in srgb,var(--panel) 90%,var(--brand-soft))); box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.88); backdrop-filter:blur(12px) saturate(120%); -webkit-backdrop-filter:blur(12px) saturate(120%); }
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
-    .market-insight-rating-standard { flex:0 1 480px; margin-left:auto; color:var(--muted); font-size:10.5px; line-height:1.6; text-align:right; }
+    .market-insight-rating-standard { flex:0 0 auto; margin-left:auto; color:var(--muted); font-size:10.5px; line-height:1.6; text-align:right; white-space:nowrap; }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -4316,7 +4316,7 @@
       .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
       .market-insight-rating-main { flex-direction:column; gap:5px; }
-      .market-insight-rating-standard { flex-basis:auto; margin-left:0; text-align:left; }
+      .market-insight-rating-standard { flex-basis:auto; margin-left:0; text-align:left; white-space:normal; }
       .market-insight-rating-filter-groups { align-items:flex-start; margin-left:0; }
       .market-insight-rating-filter-row, .market-insight-rating-filters { justify-content:flex-start; }
       .market-insight-table table { width:100%; min-width:0; }
@@ -4400,11 +4400,13 @@
     ];
 
     const MARKET_INSIGHT_INDEXES = [
+      { id: "all", name: "全部", code: "ALL", quoteId: "", constituentAsOf: "" },
       { id: "hstech", name: "恒生科技", code: "HSTECH", quoteId: "124.HSTECH", constituentAsOf: "2026-06-08" },
       { id: "hsli", name: "大型股", code: "HSLI", quoteId: "124.HSLI", constituentAsOf: "" },
       { id: "hsmi", name: "中型股", code: "HSMI", quoteId: "124.HSMI", constituentAsOf: "" },
       { id: "hssi", name: "小型股", code: "HSSI", quoteId: "124.HSSI", constituentAsOf: "" }
     ];
+    const MARKET_INSIGHT_BASE_INDEXES = MARKET_INSIGHT_INDEXES.filter((item) => item.id !== "all");
     const HSTECH_CONSTITUENTS = [
       ["9988", "阿里巴巴-W"], ["3690", "美团-W"], ["1211", "比亚迪股份"], ["9618", "京东集团-SW"],
       ["9888", "百度集团-SW"], ["1024", "快手-W"], ["9961", "携程集团-S"], ["9868", "小鹏汽车-W"],
@@ -4435,8 +4437,8 @@
       stocks: [],
       mainView: "pool",
       poolBiasExpanded: false,
-      marketInsightIndexId: "hstech",
-      marketInsightRows: HSTECH_CONSTITUENTS.map((item) => ({ ...item })),
+      marketInsightIndexId: "all",
+      marketInsightRows: marketInsightConstituents("all", null),
       marketInsightSnapshot: null,
       marketInsightLoading: false,
       marketInsightLoaded: false,
@@ -4452,7 +4454,7 @@
       marketInsightAiLoading: false,
       marketInsightAiError: "",
       marketInsightAiCache: {},
-      marketInsightSort: { key: "indexWeight", dir: "desc" },
+      marketInsightSort: { key: "marketCap", dir: "desc" },
       marketInsightPage: 1,
       marketInsightPageSize: 50,
       marketInsightCache: {},
@@ -5854,14 +5856,27 @@
 
     async function loadPersistedMarketInsightMetrics(rows, indexCode) {
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
-      const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=eq.${encodeURIComponent(indexCode)}&select=stock_code,week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=1000`);
-      const byCode = new Map((metrics || []).map((item) => [item.stock_code, item]));
+      const baseCodes = MARKET_INSIGHT_BASE_INDEXES.map((item) => item.code);
+      const indexFilter = indexCode === "ALL" ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
+      const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=${indexFilter}&select=index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=3000`);
+      const byIndexAndCode = new Map((metrics || []).map((item) => [`${item.index_code}:${item.stock_code}`, item]));
+      const byCode = new Map();
+      (metrics || []).forEach((item) => { if (!byCode.has(item.stock_code)) byCode.set(item.stock_code, item); });
       return rows.map((row) => {
-        const metric = byCode.get(String(row.rawCode).padStart(5, "0"));
+        const stockCode = String(row.rawCode).padStart(5, "0");
+        const sourceIndex = MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === row.primaryIndexId);
+        const metric = byIndexAndCode.get(`${sourceIndex?.code || indexCode}:${stockCode}`) || byCode.get(stockCode);
         if (!metric) return row;
         const value = (field) => metric[field] === null || metric[field] === undefined ? null : Number(metric[field]);
+        const latestPrice = value("close_price");
+        const issuedShares = marketInsightIssuedShares({ ...row, latestPrice });
+        const latestMarketCapCny = Number.isFinite(latestPrice) && latestPrice > 0 && Number(issuedShares) > 0
+          ? latestPrice * Number(issuedShares) * (Number(currencies.HKD?.rateToCny) || 1) / 100000000
+          : Number(row.latestMarketCapCny) || 0;
         return {
           ...row,
+          latestPrice,
+          latestMarketCapCny,
           biasMetrics: {
             ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y") },
             ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y") },
@@ -6050,7 +6065,8 @@
     async function loadMarketInsightAiAnalysis() {
       const rawCode = state.marketInsightDetailCode;
       if (!rawCode) return;
-      const selectedIndex = MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0];
+      const selectedRow = state.marketInsightRows.find((item) => item.rawCode === rawCode);
+      const selectedIndex = marketInsightRowIndex(selectedRow);
       const rangeKey = state.marketInsightDetailRange;
       const cacheKey = `${selectedIndex.code}:${rawCode}:${rangeKey}`;
       if (state.marketInsightAiCache[cacheKey]) {
@@ -6131,7 +6147,7 @@
       const weeklyPromise = fetchTencentWeeklySeries(stock).catch(() => fetchEastmoneyWeeklySeries(stock));
       const quotePromise = fetchQuote(stock).catch(() => stock);
       const canLoadDatabase = state.session?.access_token && state.session.access_token !== "local-demo";
-      const selectedIndex = MARKET_INSIGHT_INDEXES.find((item) => item.id === state.marketInsightIndexId) || MARKET_INSIGHT_INDEXES[0];
+      const selectedIndex = marketInsightRowIndex(stock);
       const metricsPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=eq.${encodeURIComponent(selectedIndex.code)}&stock_code=eq.${encodeURIComponent(stockCode)}&select=week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y&order=week_date.asc&limit=2000`) : Promise.resolve([]);
       const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&select=report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
       const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
@@ -6170,27 +6186,55 @@
     }
 
     function marketInsightConstituents(indexId, snapshot = state.marketInsightSnapshot) {
+      if (indexId === "all") {
+        const merged = new Map();
+        MARKET_INSIGHT_BASE_INDEXES.forEach((index) => marketInsightConstituents(index.id, snapshot).forEach((row) => {
+          const existing = merged.get(row.rawCode);
+          if (existing) {
+            existing.indexIds.push(index.id);
+            return;
+          }
+          merged.set(row.rawCode, {
+            ...row,
+            id:`all-${row.rawCode}`,
+            order:merged.size,
+            indexWeight:null,
+            primaryIndexId:index.id,
+            indexIds:[index.id]
+          });
+        }));
+        return [...merged.values()];
+      }
       const official = snapshot?.constituents?.indexes?.[indexId];
       const members = official?.members?.length ? official.members : indexId === "hstech" ? HSTECH_CONSTITUENTS.map((item) => ({ code:item.rawCode, name:item.name })) : [];
       return members.map((member, order) => {
         const rawCode = String(member.code || "").padStart(4, "0");
         const canonical = stockCatalog.find((stock) => stock.market === "HK" && stock.code.replace(/\.HK$/i, "").padStart(4, "0") === rawCode);
-        return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", indexWeight:Number.isFinite(Number(member.weight)) ? Number(member.weight) : null, code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
+        return { id:`${indexId}-${rawCode}`, order, rawCode, name:canonical?.name || member.name, aliases:canonical?.aliases || "", indexWeight:Number.isFinite(Number(member.weight)) ? Number(member.weight) : null, primaryIndexId:indexId, indexIds:[indexId], code:`${rawCode}.HK`, quoteId:`116.${rawCode.padStart(5, "0")}`, market:"HK", exchange:"HKEX", currency:"HKD" };
       });
     }
 
     function marketInsightGlobalSearch(query) {
       if (!query) return [];
       const found = [];
-      MARKET_INSIGHT_INDEXES.forEach((index) => marketInsightConstituents(index.id).forEach((row) => {
+      MARKET_INSIGHT_BASE_INDEXES.forEach((index) => marketInsightConstituents(index.id).forEach((row) => {
         if (`${row.name} ${row.aliases} ${row.code} ${row.rawCode}`.toLowerCase().includes(query) && !found.some((item) => item.indexId === index.id && item.rawCode === row.rawCode)) found.push({ ...row, indexId:index.id, indexName:index.name });
       }));
       return found.slice(0, 8);
     }
 
     function marketInsightIndexMeta(index) {
+      if (index.id === "all") {
+        const asOfDates = MARKET_INSIGHT_BASE_INDEXES.map((item) => state.marketInsightSnapshot?.constituents?.indexes?.[item.id]?.asOf || item.constituentAsOf).filter(Boolean).sort();
+        return { ...index, constituentAsOf:asOfDates.at(-1) || "各指数最新成分", sourceUrl:"https://www.hsi.com.hk/chi/indexes/all-indexes/sizeindexes" };
+      }
       const official = state.marketInsightSnapshot?.constituents?.indexes?.[index.id];
       return { ...index, constituentAsOf:official?.asOf || index.constituentAsOf, sourceUrl:official?.sourceUrl || "https://www.hsi.com.hk/chi/indexes/all-indexes/sizeindexes" };
+    }
+
+    function marketInsightRowIndex(row) {
+      const indexId = state.marketInsightIndexId === "all" ? row?.primaryIndexId : state.marketInsightIndexId;
+      return MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === indexId) || MARKET_INSIGHT_BASE_INDEXES[0];
     }
 
     function calculateFiveWeekReturn(weeklyCloses) {
@@ -6205,6 +6249,7 @@
       if (["p5", "p30", "p40", "p50"].includes(key)) return numeric(row.biasMetrics?.[`ma${key.slice(1)}`]?.percentile);
       if (key === "shortRatio") return numeric(marketInsightShortRatio(row));
       if (key === "connectRatio") return numeric(marketInsightConnectRatio(row));
+      if (key === "marketCap") return numeric(row.latestMarketCapCny);
       if (key === "indexWeight") return numeric(row.indexWeight ?? row.latestMarketCapCny);
       return Number(row.order);
     }
@@ -6297,7 +6342,7 @@
               </div></div>
             </div>
           </div>
-          <div class="market-insight-rating-standard">5周超额收益为正 · 5周乖离率为正 · 30/40/50周乖离率均为正 · 5周空头持仓下降 · 5周港股通持仓增加；每符合一项得1星。</div>
+          <div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div>
         </section>
         <div class="market-insight-meta">
           <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只成分股</span>
@@ -6342,8 +6387,8 @@
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
-          列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。
-          5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。
+          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
+          ${index.id === "all" ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。
           数据源：<a href="${escapeHtml(snapshot.shortPositions?.sourceUrl || "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares")}" target="_blank" rel="noopener">香港证监会</a>、<a href="${escapeHtml(snapshot.stockConnect?.sourceUrl || "https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk")}" target="_blank" rel="noopener">港交所</a>、腾讯/东方财富周线行情。
@@ -6402,7 +6447,7 @@
         console.warn("持久化周线指标尚不可用，临时使用页面计算。", error);
       }
       let indexFiveWeekReturn = rows.find((row) => Number.isFinite(row.indexFiveWeekReturn))?.indexFiveWeekReturn ?? null;
-      if (!Number.isFinite(indexFiveWeekReturn)) {
+      if (!Number.isFinite(indexFiveWeekReturn) && index.quoteId) {
         try {
           const indexCloses = await fetchEastmoneyWeeklyCloses({ quoteId:index.quoteId, market:"INDEX", code:index.code });
           indexFiveWeekReturn = calculateFiveWeekReturn(indexCloses);
@@ -9423,11 +9468,11 @@
       if (action === "switchMainView") switchMainView(event.currentTarget.dataset.view);
       if (action === "refreshMarketInsight") await refreshMarketInsight({ force: true });
       if (action === "selectMarketInsightIndex") {
-        const indexId = event.currentTarget.dataset.indexId || "hstech";
+        const indexId = event.currentTarget.dataset.indexId || "all";
         if (indexId !== state.marketInsightIndexId) {
           state.marketInsightIndexId = indexId;
           state.marketInsightPage = 1;
-          state.marketInsightSort = { key:"indexWeight", dir:"desc" };
+          state.marketInsightSort = { key:indexId === "all" ? "marketCap" : "indexWeight", dir:"desc" };
           state.marketInsightRatingFilter = "all";
           state.marketInsightRuleFilters = [];
           state.marketInsightSearch = "";
@@ -9442,6 +9487,7 @@
         state.marketInsightIndexId = indexId;
         state.marketInsightSearch = event.currentTarget.dataset.query || "";
         state.marketInsightPage = 1;
+        state.marketInsightSort = { key:"indexWeight", dir:"desc" };
         state.marketInsightRatingFilter = "all";
         state.marketInsightRuleFilters = [];
         state.marketInsightLoaded = false;
