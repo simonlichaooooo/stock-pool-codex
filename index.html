@@ -4171,9 +4171,10 @@
     .market-insight-row-actions { display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .market-insight-detail-link { min-height:30px; padding:0 12px; border:1px solid color-mix(in srgb,var(--brand) 34%,transparent); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 44%,#fff); color:var(--brand-strong); font:inherit; font-weight:700; cursor:pointer; }
     .market-insight-detail-link:hover { border-color:var(--brand); background:var(--brand-soft); box-shadow:0 2px 6px rgba(16,24,40,.10); }
-    .market-insight-watchlist-button { min-height:30px; padding:0 11px; border:1px solid color-mix(in srgb,var(--brand) 22%,var(--line)); border-radius:999px; background:var(--panel); color:var(--muted); font:inherit; font-weight:700; cursor:pointer; }
-    .market-insight-watchlist-button:hover { border-color:var(--brand); background:color-mix(in srgb,var(--brand-soft) 42%,var(--panel)); color:var(--brand-strong); box-shadow:0 2px 6px color-mix(in srgb,var(--brand) 12%,transparent); }
-    .market-insight-watchlist-button.active { border-color:color-mix(in srgb,var(--brand) 52%,var(--line)); background:linear-gradient(135deg,color-mix(in srgb,var(--brand-soft) 82%,var(--panel)),var(--panel)); color:var(--brand-strong); }
+    .market-insight-watchlist-button { min-height:30px; padding:0 11px; border:1px solid color-mix(in srgb,var(--brand) 38%,var(--line)); border-radius:999px; background:color-mix(in srgb,var(--panel) 90%,var(--brand-soft)); color:var(--brand-strong); font:inherit; font-weight:750; cursor:pointer; }
+    .market-insight-watchlist-button:hover { border-color:var(--brand); background:color-mix(in srgb,var(--brand-soft) 58%,var(--panel)); color:var(--brand-strong); box-shadow:0 2px 7px color-mix(in srgb,var(--brand) 15%,transparent); }
+    .market-insight-watchlist-button.active { border-color:var(--brand-strong); background:linear-gradient(135deg,var(--brand),var(--brand-strong)); color:#fff; box-shadow:0 3px 9px color-mix(in srgb,var(--brand) 24%,transparent); }
+    .market-insight-watchlist-button.active:hover { border-color:var(--brand-strong); background:var(--brand-strong); color:#fff; }
     .market-insight-index-tabs { display:inline-flex; justify-content:flex-end; gap:4px; flex-wrap:nowrap; padding:5px; border:1px solid color-mix(in srgb,var(--brand) 20%,rgba(255,255,255,.76)); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 27%,rgba(255,255,255,.50)); box-shadow:inset 0 1px 0 rgba(255,255,255,.82); }
     .market-insight-index-tabs button { min-height:30px; padding:0 13px; border:1px solid transparent; border-radius:999px; background:transparent; color:var(--muted); box-shadow:none; }
     .market-insight-index-tabs button:hover { color:var(--brand-strong); background:rgba(255,255,255,.42); }
@@ -6300,6 +6301,9 @@
     }
 
     function toggleMarketInsightWatchlist(rawCode) {
+      const scrollPosition = { left:window.scrollX, top:window.scrollY };
+      const tableScroller = document.querySelector(".market-insight-table .table-scroll");
+      const tableScrollPosition = tableScroller ? { left:tableScroller.scrollLeft, top:tableScroller.scrollTop } : null;
       const normalizedCode = String(rawCode || "").padStart(4, "0");
       if (!normalizedCode) return;
       state.marketInsightWatchlistCodes = isMarketInsightWatchlisted(normalizedCode)
@@ -6310,6 +6314,16 @@
       if (state.marketInsightIndexId === "watchlist") state.marketInsightRows = marketInsightConstituents("watchlist", state.marketInsightSnapshot);
       state.marketInsightPage = 1;
       render();
+      const restoreScroll = () => {
+        window.scrollTo(scrollPosition.left, scrollPosition.top);
+        const nextTableScroller = document.querySelector(".market-insight-table .table-scroll");
+        if (nextTableScroller && tableScrollPosition) {
+          nextTableScroller.scrollLeft = tableScrollPosition.left;
+          nextTableScroller.scrollTop = tableScrollPosition.top;
+        }
+      };
+      restoreScroll();
+      window.requestAnimationFrame(restoreScroll);
     }
 
     function calculateFiveWeekReturn(weeklyCloses) {
@@ -6464,7 +6478,7 @@
                   ${marketInsightMetricCell(row.biasMetrics?.ma50, 50, Number(row.biasMetrics?.ma50?.bias) > 0, "50周乖离率为正")}
                   ${marketInsightShortChangeCell(row, shortRatio, rating.rules[3])}
                   ${marketInsightConnectChangeCell(row, connectRatio, rating.rules[4])}
-                  <td data-label="操作"><div class="market-insight-row-actions"><button class="market-insight-watchlist-button ${isMarketInsightWatchlisted(row.rawCode) ? "active" : ""}" data-action="toggleMarketInsightWatchlist" data-code="${escapeHtml(row.rawCode)}" aria-pressed="${isMarketInsightWatchlisted(row.rawCode)}">${isMarketInsightWatchlisted(row.rawCode) ? "已自选" : "加自选"}</button><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></div></td>
+                  <td data-label="操作"><div class="market-insight-row-actions"><button class="market-insight-watchlist-button ${isMarketInsightWatchlisted(row.rawCode) ? "active" : ""}" data-action="toggleMarketInsightWatchlist" data-code="${escapeHtml(row.rawCode)}" aria-pressed="${isMarketInsightWatchlisted(row.rawCode)}">${isMarketInsightWatchlisted(row.rawCode) ? "✓已加" : "+自选"}</button><button class="market-insight-detail-link" data-action="openMarketInsightDetail" data-code="${escapeHtml(row.rawCode)}">查看详情</button></div></td>
                 </tr>`;
               }).join("")}</tbody>
             </table>
@@ -6472,7 +6486,7 @@
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <p class="market-insight-note">
-          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“已自选”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
+          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“✓已加”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
           ${["all", "watchlist"].includes(index.id) ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。
