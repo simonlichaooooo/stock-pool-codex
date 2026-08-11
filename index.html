@@ -6373,13 +6373,19 @@
         if (!aValid && !bValid) return a.order - b.order;
         if (!aValid) return 1;
         if (!bValid) return -1;
+        if (key === "shortChange5w" && ["cover", "add"].includes(dir)) {
+          const category = (value) => dir === "cover" ? (value < 0 ? 0 : value === 0 ? 1 : 2) : (value > 0 ? 0 : value === 0 ? 1 : 2);
+          const categoryDifference = category(av) - category(bv);
+          if (categoryDifference) return categoryDifference;
+          return Math.abs(bv) - Math.abs(av) || a.order - b.order;
+        }
         return (av - bv) * (dir === "asc" ? 1 : -1) || a.order - b.order;
       });
     }
 
     function marketInsightSortHeader(label, key, sublabel = "") {
       const active = state.marketInsightSort.key === key;
-      const arrow = active ? (state.marketInsightSort.dir === "asc" ? "↑" : "↓") : "↕";
+      const arrow = !active ? "↕" : key === "shortChange5w" ? (state.marketInsightSort.dir === "cover" ? "平仓↓" : "加空↓") : state.marketInsightSort.dir === "asc" ? "↑" : "↓";
       return `<button class="market-insight-sort ${active ? "active" : ""}" data-action="sortMarketInsight" data-sort-key="${key}" data-sort-arrow="${arrow}"><span>${escapeHtml(label)}${sublabel ? `<br><span class="stock-code">${escapeHtml(sublabel)}</span>` : ""}</span></button>`;
     }
 
@@ -9655,7 +9661,11 @@
       }
       if (action === "sortMarketInsight") {
         const key = event.currentTarget.dataset.sortKey || "excess5w";
-        if (state.marketInsightSort.key !== key) state.marketInsightSort = { key, dir:"desc" };
+        if (key === "shortChange5w") {
+          if (state.marketInsightSort.key !== key) state.marketInsightSort = { key, dir:"cover" };
+          else if (state.marketInsightSort.dir === "cover") state.marketInsightSort = { key, dir:"add" };
+          else state.marketInsightSort = defaultMarketInsightSort();
+        } else if (state.marketInsightSort.key !== key) state.marketInsightSort = { key, dir:"desc" };
         else if (state.marketInsightSort.dir === "desc") state.marketInsightSort = { key, dir:"asc" };
         else state.marketInsightSort = defaultMarketInsightSort();
         state.marketInsightPage = 1;
