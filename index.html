@@ -896,6 +896,7 @@
     .valuation-layout { grid-template-columns: max-content 500px; gap: 24px; align-items: start; justify-content: start; }
     .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
+      position: relative;
       width: 520px !important;
       max-width: 100% !important;
       background: white;
@@ -904,6 +905,8 @@
       box-shadow: var(--shadow-soft);
       padding: 14px;
     }
+    /* Keep an expanded stock search above the following form cards. */
+    .section-card:has(.search-results.show) { z-index: 2; }
     .section-card h3 { margin: 0; font-size: 15px; color: #172033; }
     .section-head {
       display: flex;
