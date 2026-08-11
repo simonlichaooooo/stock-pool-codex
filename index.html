@@ -5747,11 +5747,12 @@
     function marketInsightMetricCell(metric, period, star = false, starLabel = "符合星级条件") {
       const bias = metric?.bias === null || metric?.bias === undefined ? NaN : Number(metric.bias);
       const percentile = metric?.percentile === null || metric?.percentile === undefined ? NaN : Number(metric.percentile);
-      if (!Number.isFinite(bias) || !Number.isFinite(percentile)) {
+      if (!Number.isFinite(bias)) {
         return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
-      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentile.toFixed(0)}%</small></div></td>`;
+      const percentileText = Number.isFinite(percentile) ? `${percentile.toFixed(0)}%` : "历史不足";
+      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentileText}</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
@@ -5763,12 +5764,16 @@
           const average = closes.slice(index - period + 1, index + 1).reduce((sum, value) => sum + value, 0) / period;
           return (close / average - 1) * 100;
         }).filter(Number.isFinite);
-        if (biases.length < 104) {
+        if (!biases.length) {
           result[`ma${period}`] = null;
           return;
         }
         const observations = biases.slice(-104);
         const bias = observations.at(-1);
+        if (observations.length < 104) {
+          result[`ma${period}`] = { bias, percentile:null };
+          return;
+        }
         const lower = observations.filter((value) => value < bias).length;
         const equal = observations.filter((value) => value === bias).length;
         result[`ma${period}`] = {
