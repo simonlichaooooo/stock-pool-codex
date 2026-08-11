@@ -4167,8 +4167,12 @@
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
+    .market-insight-metric small.market-insight-percentile.low { color:var(--loss); font-weight:700; }
+    .market-insight-metric small.market-insight-percentile.high { color:var(--gain); font-weight:700; }
     .market-insight-holding-change.increase { color:var(--loss); }
     .market-insight-holding-change.decrease { color:var(--gain); }
+    .market-insight-connect-change.increase { color:var(--gain); }
+    .market-insight-connect-change.decrease { color:var(--loss); }
     .market-insight-loading { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
     .market-insight-loading::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); animation:pulse 1.2s ease-in-out infinite; }
     .market-insight-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.65; }
@@ -4233,8 +4237,9 @@
     .market-insight-rating-filters .rating-rule.active .rating-rule-icon.inverse { background:color-mix(in srgb,var(--brand-soft) 76%,rgba(255,255,255,.68)); color:var(--brand-strong); }
     .market-insight-rating-filters .rating-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:rgba(255,255,255,.72); color:var(--muted); font-size:9.5px; font-weight:750; line-height:1; }
     .market-insight-rating-filters button.active .rating-count { background:var(--brand); color:#fff; }
-    .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; gap:3px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; white-space:nowrap; }
-    .market-insight-rule-star { display:inline-flex; flex:0 0 auto; margin-right:5px; color:#d79a00; font-size:12px; line-height:1; text-shadow:0 1px 0 #fff; }
+    .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; min-height:20px; padding:0 7px; border:1px solid color-mix(in srgb,var(--brand) 17%,rgba(255,255,255,.76)); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 28%,rgba(255,255,255,.60)); vertical-align:middle; white-space:nowrap; }
+    .market-insight-rating-badge .rating-score { color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:10px; letter-spacing:.7px; line-height:1; text-shadow:0 1px 0 rgba(255,255,255,.72); }
+    .market-insight-rule-star { display:inline-grid; flex:0 0 auto; place-items:center; width:17px; height:17px; margin-right:5px; border-radius:50%; background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.74)); color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:10px; line-height:1; text-shadow:0 1px 0 rgba(255,255,255,.72); }
     .market-insight-table td.num > span,
     .market-insight-metric > div > span { display:inline-flex; align-items:center; justify-content:flex-end; white-space:nowrap; }
     .market-insight-detail-drawer { position:fixed; z-index:90; inset:0; display:flex; justify-content:flex-end; }
@@ -5756,7 +5761,8 @@
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
       const percentileText = Number.isFinite(percentile) ? `${percentile.toFixed(0)}%` : "历史不足";
-      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small>2年分位值 ${percentileText}</small></div></td>`;
+      const percentileClass = Number.isFinite(percentile) ? percentile < 20 ? "low" : percentile > 70 ? "high" : "" : "";
+      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small class="market-insight-percentile ${percentileClass}">2年分位值 ${percentileText}</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
@@ -5818,7 +5824,7 @@
         else if (change < 0) { changeText = `5周减持 ${formatted}`; changeClass = "decrease"; }
         else changeText = "5周持平 0.00%";
       }
-      return `<td data-label="港股通持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(star, "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change ${changeClass}">${changeText}</small></div></td>`;
+      return `<td data-label="港股通持仓比例" class="num market-insight-metric"><div><span>${Number.isFinite(connectRatio) ? `${marketInsightRuleStar(star, "5周港股通持仓增加")}${connectRatio.toFixed(2)}%` : "--"}</span><small class="market-insight-holding-change market-insight-connect-change ${changeClass}">${changeText}</small></div></td>`;
     }
 
     function marketInsightIssuedShares(row) {
@@ -6502,7 +6508,7 @@
                 const connectRatio = marketInsightConnectRatio(row);
                 const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr>
-                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}<span class="market-insight-rating-badge">★ ${rating.score}</span></div></td>
+                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}<span class="market-insight-rating-badge" title="${rating.score}星"><span class="rating-score" aria-label="${rating.score}星">${rating.score ? "★".repeat(rating.score) : "0星"}</span></span></div></td>
                   ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
