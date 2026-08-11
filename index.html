@@ -4154,6 +4154,7 @@
     .market-insight-meta strong { color:var(--text); font-weight:720; }
     .market-insight-meta a { color:var(--brand-strong); text-decoration:none; }
     .market-insight-meta a:hover { text-decoration:underline; }
+    .market-insight-meta.market-insight-meta-bottom { margin-top:10px; margin-bottom:0; }
     .market-insight-table table { min-width:1380px; }
     .market-insight-table th { white-space:nowrap; }
     .market-insight-table th, .market-insight-table th * { text-decoration:none !important; }
@@ -6455,14 +6456,6 @@
           </div>
           <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true"><b class="market-insight-rating-motto-accent">别</b>研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
         </section>
-        <div class="market-insight-meta">
-          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${index.id === "watchlist" ? "股票" : "成分股"}</span>
-          <span>${index.id === "watchlist" ? "列表类型" : "成分生效日"}：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
-          <span>空仓报告：<strong>${escapeHtml(shortAsOf)}</strong></span>
-          <span>港股通持仓：<strong>${escapeHtml(connectAsOf)}</strong></span>
-          ${state.marketInsightLoading ? `<span class="market-insight-loading">正在读取市场数据</span>` : ""}
-          ${state.marketInsightError ? `<span class="loss">${escapeHtml(state.marketInsightError)}</span>` : ""}
-        </div>
         <section class="table-panel horizontal-data-table market-insight-table portfolio-table">
           <div class="table-scroll">
             <table>
@@ -6497,6 +6490,14 @@
           </div>
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
+        <div class="market-insight-meta market-insight-meta-bottom">
+          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${index.id === "watchlist" ? "股票" : "成分股"}</span>
+          <span>${index.id === "watchlist" ? "列表类型" : "成分生效日"}：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
+          <span>空仓报告：<strong>${escapeHtml(shortAsOf)}</strong></span>
+          <span>港股通持仓：<strong>${escapeHtml(connectAsOf)}</strong></span>
+          ${state.marketInsightLoading ? `<span class="market-insight-loading">正在读取市场数据</span>` : ""}
+          ${state.marketInsightError ? `<span class="loss">${escapeHtml(state.marketInsightError)}</span>` : ""}
+        </div>
         <p class="market-insight-note">
           ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“✓已加”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
           ${["all", "watchlist"].includes(index.id) ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
