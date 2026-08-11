@@ -6057,7 +6057,10 @@
       const now = new Date();
       const cutoff = new Date(now);
       if (state.marketInsightDetailRange === "YTD") cutoff.setMonth(0, 1);
-      else cutoff.setFullYear(now.getFullYear() - (state.marketInsightDetailRange === "1Y" ? 1 : 2));
+      else {
+        const years = state.marketInsightDetailRange === "3Y" ? 3 : state.marketInsightDetailRange === "1Y" ? 1 : 2;
+        cutoff.setFullYear(now.getFullYear() - years);
+      }
       const cutoffText = cutoff.toISOString().slice(0, 10);
       return (values || []).filter((item) => item.date >= cutoffText);
     }
@@ -6206,7 +6209,7 @@
       const connectChartSeries = priceSeries.values.length ? [...connectSeries, priceSeries] : connectSeries;
       const shortTrend = marketInsightTrendAnalysis(shortSeries[0].values);
       const connectTrend = marketInsightTrendAnalysis(connectSeries[0].values);
-      const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
+      const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["3Y","3年"],["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
       return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div><div class="market-insight-detail-name-row"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><span class="market-insight-detail-code">${escapeHtml(stock?.code || "")}</span></div><p class="market-insight-detail-subtitle">市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>左轴为5周、30周、40周、50周乖离率，右轴为前复权周线股价；股价使用灰蓝色点线，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasChartSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
     }
 
