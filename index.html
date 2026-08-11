@@ -4167,8 +4167,8 @@
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
     .market-insight-metric span { display:block; }
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
-    .market-insight-metric small.market-insight-percentile.low { color:var(--loss); font-weight:700; }
-    .market-insight-metric small.market-insight-percentile.high { color:var(--gain); font-weight:700; }
+    .market-insight-metric small.market-insight-percentile.low { color:var(--loss); }
+    .market-insight-metric small.market-insight-percentile.high { color:var(--gain); }
     .market-insight-holding-change.increase { color:var(--loss); }
     .market-insight-holding-change.decrease { color:var(--gain); }
     .market-insight-connect-change.increase { color:var(--gain); }
@@ -4222,6 +4222,11 @@
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
+    .market-insight-filter-tree { display:grid; gap:1px; margin:4px 0 0 7px; padding:3px 0 1px; color:var(--muted); font-size:10.5px; line-height:1.35; }
+    .market-insight-filter-tree-node { position:relative; display:flex; align-items:center; gap:5px; min-height:22px; margin-left:calc(var(--depth) * 18px); padding:2px 8px; width:max-content; max-width:100%; border-radius:5px; background:color-mix(in srgb,var(--brand-soft) 24%,transparent); }
+    .market-insight-filter-tree-node:not(:first-child)::before { content:""; position:absolute; left:-11px; top:-12px; width:9px; height:23px; border-left:1px solid color-mix(in srgb,var(--brand) 34%,var(--line)); border-bottom:1px solid color-mix(in srgb,var(--brand) 34%,var(--line)); border-bottom-left-radius:4px; }
+    .market-insight-filter-tree-node strong { color:var(--text); font-weight:650; }
+    .market-insight-filter-tree-count { color:var(--brand-strong); font-variant-numeric:tabular-nums; }
     .market-insight-rating-filters button { display:inline-flex; align-items:center; gap:5px; min-height:31px; padding:0 8px 0 10px; border:1px solid color-mix(in srgb,var(--brand) 17%,rgba(255,255,255,.76)) !important; border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 28%,rgba(255,255,255,.60)); color:var(--muted); box-shadow:inset 0 1px 0 rgba(255,255,255,.82) !important; font-size:11px; letter-spacing:0; text-decoration:none !important; }
     .market-insight-rating-filters button:hover { color:var(--brand-strong); border-color:color-mix(in srgb,var(--brand) 34%,rgba(255,255,255,.62)) !important; background:color-mix(in srgb,var(--brand-soft) 58%,rgba(255,255,255,.62)); box-shadow:inset 0 1px 0 rgba(255,255,255,.92),0 3px 9px color-mix(in srgb,var(--brand) 12%,transparent) !important; }
     .market-insight-rating-filters button.active { color:var(--brand-strong); border-color:color-mix(in srgb,var(--brand) 46%,rgba(255,255,255,.56)) !important; background:linear-gradient(135deg,color-mix(in srgb,var(--brand-soft) 86%,rgba(255,255,255,.82)),rgba(255,255,255,.72)); box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 4px 12px color-mix(in srgb,var(--brand) 18%,transparent) !important; font-weight:800; }
@@ -6458,11 +6463,12 @@
       const selectedRuleFilters = Array.isArray(state.marketInsightRuleFilters) ? state.marketInsightRuleFilters : [];
       const ratingCounts = Object.fromEntries([3, 4, 5].map((score) => [score, searchedRows.filter((row) => ratings.get(row.id)?.score === score).length]));
       const ruleCounts = MARKET_INSIGHT_RATING_RULES.map((_, ruleIndex) => searchedRows.filter((row) => ratings.get(row.id)?.rules[ruleIndex]).length);
-      const filteredRows = searchedRows.filter((row) => {
-        const rating = ratings.get(row.id);
-        const matchesScore = state.marketInsightRatingFilter === "all" || rating?.score === Number(state.marketInsightRatingFilter);
-        return matchesScore && selectedRuleFilters.every((ruleIndex) => rating?.rules[ruleIndex]);
+      let cascadeRows = searchedRows.filter((row) => state.marketInsightRatingFilter === "all" || ratings.get(row.id)?.score === Number(state.marketInsightRatingFilter));
+      const filterTree = selectedRuleFilters.map((ruleIndex) => {
+        cascadeRows = cascadeRows.filter((row) => ratings.get(row.id)?.rules[ruleIndex]);
+        return { ruleIndex, count:cascadeRows.length };
       });
+      const filteredRows = cascadeRows;
       const sortedRows = sortedMarketInsightRows(filteredRows);
       const pageCount = Math.max(1, Math.ceil(sortedRows.length / state.marketInsightPageSize));
       const currentPage = Math.min(state.marketInsightPage, pageCount);
@@ -6485,6 +6491,7 @@
               <div class="market-insight-rating-filter-row"><div class="market-insight-rating-filters" role="group" aria-label="单项评定筛选，可多选">
                 ${MARKET_INSIGHT_RATING_RULES.map((rule, ruleIndex) => `<button class="rating-rule ${selectedRuleFilters.includes(ruleIndex) ? "active" : ""}" data-action="filterMarketInsightRule" data-rule-index="${ruleIndex}" aria-pressed="${selectedRuleFilters.includes(ruleIndex)}" title="${escapeHtml(rule.title)}"><span class="rating-rule-icon ${rule.inverse ? "inverse" : ""}" aria-hidden="true">${escapeHtml(rule.icon || "★")}</span><span>${escapeHtml(rule.label)}</span><span class="rating-count">${ruleCounts[ruleIndex]}</span></button>`).join("")}
               </div></div>
+              ${filterTree.length ? `<div class="market-insight-filter-tree" aria-label="筛选结果路径">${filterTree.map((item, depth) => `<div class="market-insight-filter-tree-node" style="--depth:${depth}"><strong>${escapeHtml(MARKET_INSIGHT_RATING_RULES[item.ruleIndex]?.label || "筛选条件")}</strong><span class="market-insight-filter-tree-count">${item.count}只</span></div>`).join("")}</div>` : ""}
             </div>
           </div>
           <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
@@ -9699,10 +9706,11 @@
       }
       if (action === "filterMarketInsightRule") {
         const ruleIndex = Number(event.currentTarget.dataset.ruleIndex);
-        const selected = new Set(Array.isArray(state.marketInsightRuleFilters) ? state.marketInsightRuleFilters : []);
-        if (selected.has(ruleIndex)) selected.delete(ruleIndex);
-        else selected.add(ruleIndex);
-        state.marketInsightRuleFilters = [...selected].sort((a, b) => a - b);
+        const selected = Array.isArray(state.marketInsightRuleFilters) ? [...state.marketInsightRuleFilters] : [];
+        const selectedIndex = selected.indexOf(ruleIndex);
+        if (selectedIndex >= 0) selected.splice(selectedIndex, 1);
+        else selected.push(ruleIndex);
+        state.marketInsightRuleFilters = selected;
         state.marketInsightPage = 1;
         render();
       }
