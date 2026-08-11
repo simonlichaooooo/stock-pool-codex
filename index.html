@@ -4227,6 +4227,8 @@
     .market-insight-rating-filters .rating-rule:hover .rating-score,
     .market-insight-rating-filters .rating-rule.active .rating-score { color:var(--brand-strong); }
     .market-insight-rating-filters .rating-rule-icon { display:grid; place-items:center; width:17px; height:17px; border-radius:50%; background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.74)); color:var(--brand-strong); font-size:10px; line-height:1; }
+    .market-insight-rating-filters .rating-rule-icon.inverse { background:color-mix(in srgb,var(--panel-2) 78%,var(--brand-soft)); color:color-mix(in srgb,var(--muted) 82%,var(--brand-strong)); font-size:12px; font-weight:800; }
+    .market-insight-rating-filters .rating-rule.active .rating-rule-icon.inverse { background:color-mix(in srgb,var(--brand-soft) 76%,rgba(255,255,255,.68)); color:var(--brand-strong); }
     .market-insight-rating-filters .rating-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:rgba(255,255,255,.72); color:var(--muted); font-size:9.5px; font-weight:750; line-height:1; }
     .market-insight-rating-filters button.active .rating-count { background:var(--brand); color:#fff; }
     .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; gap:3px; padding:1px 6px; border-radius:999px; background:#fff6cf; color:#9a6700; font-size:10px; font-weight:800; vertical-align:middle; white-space:nowrap; }
@@ -6427,8 +6429,8 @@
       { label:"中长期乖离正", title:"30、40、50周乖离率均为正" },
       { label:"空头平仓", title:"5周空头平仓" },
       { label:"港股通增持", title:"5周港股通持仓增加" },
-      { label:"空头加空", title:"近5周空头仓位增长" },
-      { label:"港股通减持", title:"近5周港股通仓位减少" }
+      { label:"空头加空", title:"近5周空头仓位增长", icon:"↗", inverse:true },
+      { label:"港股通减持", title:"近5周港股通仓位减少", icon:"↘", inverse:true }
     ];
 
     function marketInsightExcessCell(value, star = false) {
@@ -6473,7 +6475,7 @@
                 ${[5, 4, 3].map((score) => `<button class="rating-rule rating-score-button ${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}" aria-label="${score}星，${ratingCounts[score]}只" aria-pressed="${state.marketInsightRatingFilter === String(score)}" title="${score}星股票"><span class="rating-score" aria-hidden="true">${"★".repeat(score)}</span><span class="rating-count">${ratingCounts[score]}</span></button>`).join("")}
               </div></div>
               <div class="market-insight-rating-filter-row"><div class="market-insight-rating-filters" role="group" aria-label="单项评定筛选，可多选">
-                ${MARKET_INSIGHT_RATING_RULES.map((rule, ruleIndex) => `<button class="rating-rule ${selectedRuleFilters.includes(ruleIndex) ? "active" : ""}" data-action="filterMarketInsightRule" data-rule-index="${ruleIndex}" aria-pressed="${selectedRuleFilters.includes(ruleIndex)}" title="${escapeHtml(rule.title)}"><span class="rating-rule-icon" aria-hidden="true">★</span><span>${escapeHtml(rule.label)}</span><span class="rating-count">${ruleCounts[ruleIndex]}</span></button>`).join("")}
+                ${MARKET_INSIGHT_RATING_RULES.map((rule, ruleIndex) => `<button class="rating-rule ${selectedRuleFilters.includes(ruleIndex) ? "active" : ""}" data-action="filterMarketInsightRule" data-rule-index="${ruleIndex}" aria-pressed="${selectedRuleFilters.includes(ruleIndex)}" title="${escapeHtml(rule.title)}"><span class="rating-rule-icon ${rule.inverse ? "inverse" : ""}" aria-hidden="true">${escapeHtml(rule.icon || "★")}</span><span>${escapeHtml(rule.label)}</span><span class="rating-count">${ruleCounts[ruleIndex]}</span></button>`).join("")}
               </div></div>
             </div>
           </div>
