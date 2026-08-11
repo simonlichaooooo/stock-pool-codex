@@ -4226,7 +4226,9 @@
     .market-insight-rating-filters .rating-score { color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:12px; letter-spacing:1px; line-height:1; text-shadow:0 1px 0 rgba(255,255,255,.72); }
     .market-insight-rating-filters .rating-rule:hover .rating-score,
     .market-insight-rating-filters .rating-rule.active .rating-score { color:var(--brand-strong); }
-    .market-insight-rating-filters .rating-rule-icon { display:grid; place-items:center; width:17px; height:17px; border-radius:50%; background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.74)); color:var(--brand-strong); font-size:10px; line-height:1; }
+    .market-insight-rating-filters .rating-rule-icon { display:grid; place-items:center; width:17px; height:17px; border-radius:50%; background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.74)); color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:10px; line-height:1; }
+    .market-insight-rating-filters .rating-rule:hover .rating-rule-icon:not(.inverse),
+    .market-insight-rating-filters .rating-rule.active .rating-rule-icon:not(.inverse) { color:var(--brand-strong); }
     .market-insight-rating-filters .rating-rule-icon.inverse { background:color-mix(in srgb,var(--panel-2) 78%,var(--brand-soft)); color:color-mix(in srgb,var(--muted) 82%,var(--brand-strong)); font-size:12px; font-weight:800; }
     .market-insight-rating-filters .rating-rule.active .rating-rule-icon.inverse { background:color-mix(in srgb,var(--brand-soft) 76%,rgba(255,255,255,.68)); color:var(--brand-strong); }
     .market-insight-rating-filters .rating-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:rgba(255,255,255,.72); color:var(--muted); font-size:9.5px; font-weight:750; line-height:1; }
