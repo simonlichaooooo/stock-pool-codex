@@ -4208,8 +4208,9 @@
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
     .market-insight-rating-copy { flex:0 0 auto; margin-left:auto; text-align:right; }
     .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
-    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:10px; margin-top:15px; color:var(--brand-strong); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:18px; font-weight:620; letter-spacing:1.5px; line-height:1.4; white-space:nowrap; opacity:.46; user-select:none; }
+    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:10px; margin-top:15px; color:color-mix(in srgb,var(--brand-strong) 46%,transparent); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:18px; font-style:italic; font-weight:620; letter-spacing:1.5px; line-height:1.4; white-space:nowrap; user-select:none; }
     .market-insight-rating-motto::before { content:""; flex:0 0 26px; width:26px; height:1px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand-strong)); opacity:.72; }
+    .market-insight-rating-motto-accent { display:inline-block; margin:0 1px; color:color-mix(in srgb,var(--brand-strong) 84%,transparent); font-size:1.34em; font-style:italic; font-weight:780; letter-spacing:.5px; line-height:.8; transform:translateY(1px); }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -6452,7 +6453,7 @@
               </div></div>
             </div>
           </div>
-          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto">别研究太细，跟着炒就行，勤翻面，别骄傲！</div></div>
+          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true"><b class="market-insight-rating-motto-accent">别</b>研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
         </section>
         <div class="market-insight-meta">
           <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${index.id === "watchlist" ? "股票" : "成分股"}</span>
