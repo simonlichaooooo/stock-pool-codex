@@ -4212,13 +4212,14 @@
     .market-insight-dual-sort .market-insight-sort.active { color:var(--brand-strong); font-weight:750; }
     .market-insight-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
-    .market-insight-rating-panel { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:10px; padding:12px 14px; border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.78)); border-radius:8px; background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.76)),color-mix(in srgb,var(--panel) 90%,var(--brand-soft))); box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.88); backdrop-filter:blur(12px) saturate(120%); -webkit-backdrop-filter:blur(12px) saturate(120%); }
+    .market-insight-rating-panel { display:flex; align-items:stretch; justify-content:space-between; gap:24px; margin-bottom:10px; padding:12px 14px; border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.78)); border-radius:8px; background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.76)),color-mix(in srgb,var(--panel) 90%,var(--brand-soft))); box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.88); backdrop-filter:blur(12px) saturate(120%); -webkit-backdrop-filter:blur(12px) saturate(120%); }
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
-    .market-insight-rating-copy { flex:0 0 auto; margin-left:auto; text-align:right; }
+    .market-insight-rating-copy { display:flex; flex:0 0 auto; align-self:stretch; flex-direction:column; align-items:flex-end; justify-content:space-between; margin-left:auto; text-align:right; }
     .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
     .market-insight-rating-motto { display:inline-flex; align-items:center; gap:10px; margin-top:15px; color:color-mix(in srgb,var(--brand-strong) 46%,transparent); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:18px; font-style:italic; font-weight:620; letter-spacing:1.5px; line-height:1.4; white-space:nowrap; user-select:none; }
     .market-insight-rating-motto::before { content:""; flex:0 0 26px; width:26px; height:1px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand-strong)); opacity:.72; }
     .market-insight-rating-motto-accent { display:inline-block; margin:0 1px; color:color-mix(in srgb,var(--brand-strong) 84%,transparent); font-size:1.34em; font-style:italic; font-weight:780; letter-spacing:.5px; line-height:.8; transform:translateY(1px); }
+    .market-insight-rating-motto-exclamation { display:inline-block; margin-left:3px; color:color-mix(in srgb,var(--brand-strong) 84%,transparent); font-size:1.7em; font-weight:850; letter-spacing:-2px; line-height:.6; transform:translateY(3px); }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -4244,7 +4245,7 @@
     .market-insight-rating-filters .rating-rule.active .rating-rule-icon.inverse { background:color-mix(in srgb,var(--brand-soft) 76%,rgba(255,255,255,.68)); color:var(--brand-strong); }
     .market-insight-rating-filters .rating-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:rgba(255,255,255,.72); color:var(--muted); font-size:9.5px; font-weight:750; line-height:1; }
     .market-insight-rating-filters button.active .rating-count { background:var(--brand); color:#fff; }
-    .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; min-height:20px; padding:0 7px; border:1px solid color-mix(in srgb,var(--brand) 17%,rgba(255,255,255,.76)); border-radius:999px; background:color-mix(in srgb,var(--brand-soft) 28%,rgba(255,255,255,.60)); vertical-align:middle; white-space:nowrap; }
+    .market-insight-rating-badge { display:inline-flex; flex:0 0 auto; align-items:center; vertical-align:middle; white-space:nowrap; }
     .market-insight-rating-badge .rating-score { color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:10px; letter-spacing:.7px; line-height:1; text-shadow:0 1px 0 rgba(255,255,255,.72); }
     .market-insight-rule-star { display:inline-grid; flex:0 0 auto; place-items:center; width:17px; height:17px; margin-right:5px; border-radius:50%; background:color-mix(in srgb,var(--brand-soft) 68%,rgba(255,255,255,.74)); color:color-mix(in srgb,var(--brand) 84%,var(--muted)); font-size:10px; line-height:1; text-shadow:0 1px 0 rgba(255,255,255,.72); }
     .market-insight-metric span.market-insight-rule-star { display:inline-grid; align-self:center; }
@@ -4366,7 +4367,7 @@
       .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
       .market-insight-rating-main { flex-direction:column; gap:5px; }
-      .market-insight-rating-copy { margin-left:0; text-align:left; }
+      .market-insight-rating-copy { align-items:flex-end; margin-left:0; text-align:right; }
       .market-insight-rating-standard, .market-insight-rating-motto { white-space:normal; }
       .market-insight-rating-filter-groups { align-items:flex-start; margin-left:0; }
       .market-insight-rating-filter-row, .market-insight-rating-filters { justify-content:flex-start; }
@@ -6497,7 +6498,7 @@
               ${filterTree.length ? `<div class="market-insight-filter-tree" aria-label="筛选结果路径">${filterTree.map((item, depth) => `<div class="market-insight-filter-tree-node" style="--depth:${depth}"><strong>${escapeHtml(MARKET_INSIGHT_RATING_RULES[item.ruleIndex]?.label || "筛选条件")}</strong><span class="market-insight-filter-tree-count">${item.count}只</span></div>`).join("")}</div>` : ""}
             </div>
           </div>
-          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
+          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！！！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲<span class="market-insight-rating-motto-exclamation">！！！</span></span></div></div>
         </section>
         <section class="table-panel horizontal-data-table market-insight-table portfolio-table">
           <div class="table-scroll">
@@ -6518,7 +6519,7 @@
                 const connectRatio = marketInsightConnectRatio(row);
                 const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr>
-                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}<span class="market-insight-rating-badge" title="${rating.score}星"><span class="rating-score" aria-label="${rating.score}星">${rating.score ? "★".repeat(rating.score) : "0星"}</span></span></div></td>
+                  <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}${rating.score ? `<span class="market-insight-rating-badge" title="${rating.score}星"><span class="rating-score" aria-label="${rating.score}星">${"★".repeat(rating.score)}</span></span>` : ""}</div></td>
                   ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
