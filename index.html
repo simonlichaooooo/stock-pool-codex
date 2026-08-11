@@ -5891,6 +5891,7 @@
           stockConnectShares:connect?.total_holding_shares ?? row.stockConnectShares,
           stockConnectIssuedShares:connect?.issued_shares ?? null,
           stockConnectRatio:connect?.holding_ratio_pct ?? row.stockConnectRatio,
+          shortChange5wShares,
           shortDecline5wShares,
           shortChange5wPct,
           connectIncrease5wShares,
@@ -6408,9 +6409,10 @@
         number(row.biasMetrics?.ma5?.bias) > 0,
         [30, 40, 50].every((period) => number(row.biasMetrics?.[`ma${period}`]?.bias) > 0),
         number(row.shortDecline5wShares) > 0,
-        number(row.connectIncrease5wShares) > 0
+        number(row.connectIncrease5wShares) > 0,
+        number(row.shortChange5wShares) > 0
       ];
-      return { rules, score:rules.filter(Boolean).length };
+      return { rules, score:rules.slice(0, 5).filter(Boolean).length };
     }
 
     const MARKET_INSIGHT_RATING_RULES = [
@@ -6418,7 +6420,8 @@
       { label:"5周乖离正", title:"5周乖离率为正" },
       { label:"中长期乖离正", title:"30、40、50周乖离率均为正" },
       { label:"空头平仓", title:"5周空头平仓" },
-      { label:"港股通增持", title:"5周港股通持仓增加" }
+      { label:"港股通增持", title:"5周港股通持仓增加" },
+      { label:"空头加空", title:"近5周空头仓位增长" }
     ];
 
     function marketInsightExcessCell(value, star = false) {
