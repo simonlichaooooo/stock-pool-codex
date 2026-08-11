@@ -6358,6 +6358,10 @@
       return Number(row.order);
     }
 
+    function defaultMarketInsightSort(indexId = state.marketInsightIndexId) {
+      return { key:["all", "watchlist"].includes(indexId) ? "marketCap" : "indexWeight", dir:"desc" };
+    }
+
     function sortedMarketInsightRows(rows) {
       const { key, dir } = state.marketInsightSort;
       return [...rows].sort((a, b) => {
@@ -6454,7 +6458,7 @@
               </div></div>
             </div>
           </div>
-          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true"><b class="market-insight-rating-motto-accent">别</b>研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
+          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲！</span></div></div>
         </section>
         <section class="table-panel horizontal-data-table market-insight-table portfolio-table">
           <div class="table-scroll">
@@ -9623,7 +9627,7 @@
         if (indexId !== state.marketInsightIndexId) {
           state.marketInsightIndexId = indexId;
           state.marketInsightPage = 1;
-          state.marketInsightSort = { key:["all", "watchlist"].includes(indexId) ? "marketCap" : "indexWeight", dir:"desc" };
+          state.marketInsightSort = defaultMarketInsightSort(indexId);
           state.marketInsightRatingFilter = "all";
           state.marketInsightRuleFilters = [];
           state.marketInsightSearch = "";
@@ -9638,7 +9642,7 @@
         state.marketInsightIndexId = indexId;
         state.marketInsightSearch = event.currentTarget.dataset.query || "";
         state.marketInsightPage = 1;
-        state.marketInsightSort = { key:"indexWeight", dir:"desc" };
+        state.marketInsightSort = defaultMarketInsightSort(indexId);
         state.marketInsightRatingFilter = "all";
         state.marketInsightRuleFilters = [];
         state.marketInsightLoaded = false;
@@ -9648,7 +9652,9 @@
       }
       if (action === "sortMarketInsight") {
         const key = event.currentTarget.dataset.sortKey || "excess5w";
-        state.marketInsightSort = { key, dir:state.marketInsightSort.key === key && state.marketInsightSort.dir === "desc" ? "asc" : "desc" };
+        if (state.marketInsightSort.key !== key) state.marketInsightSort = { key, dir:"desc" };
+        else if (state.marketInsightSort.dir === "desc") state.marketInsightSort = { key, dir:"asc" };
+        else state.marketInsightSort = defaultMarketInsightSort();
         state.marketInsightPage = 1;
         render();
       }
