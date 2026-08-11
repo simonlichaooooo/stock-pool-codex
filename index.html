@@ -4197,6 +4197,7 @@
     .market-insight-sort:active { display:inline-flex; align-items:center; justify-content:flex-end; gap:5px; width:100%; padding:0; border:0 !important; border-radius:0; outline:0; box-shadow:none !important; background:transparent !important; color:inherit; font:inherit; font-weight:inherit; white-space:nowrap; text-decoration:none !important; cursor:pointer; }
     .market-insight-sort::after { content:"↕"; color:var(--muted); font-size:10px; }
     .market-insight-sort.active::after { content:attr(data-sort-arrow); color:var(--brand-strong); }
+    .market-insight-table th.sticky-col .market-insight-sort { justify-content:flex-start; }
     .market-insight-dual-sort { display:grid; gap:3px; min-width:118px; }
     .market-insight-dual-sort .market-insight-sort { min-height:18px; font-size:12px; line-height:1.2; }
     .market-insight-dual-sort .market-insight-sort + .market-insight-sort { color:var(--muted); font-size:10.5px; font-weight:600; }
@@ -4207,8 +4208,8 @@
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
     .market-insight-rating-copy { flex:0 0 auto; margin-left:auto; text-align:right; }
     .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
-    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:9px; margin-top:13px; font-family:"STKaiti","KaiTi","Kaiti SC",serif; font-size:15px; font-weight:700; letter-spacing:2.1px; line-height:1.45; white-space:nowrap; user-select:none; background:linear-gradient(100deg,var(--brand-strong),color-mix(in srgb,var(--brand) 62%,var(--muted))); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 1px 0 rgba(255,255,255,.72)); }
-    .market-insight-rating-motto::before { content:""; flex:0 0 20px; width:20px; height:2px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand)); box-shadow:6px 3px 0 -1px color-mix(in srgb,var(--brand) 32%,transparent); }
+    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:10px; margin-top:15px; color:var(--brand-strong); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:18px; font-weight:620; letter-spacing:1.5px; line-height:1.4; white-space:nowrap; opacity:.46; user-select:none; }
+    .market-insight-rating-motto::before { content:""; flex:0 0 26px; width:26px; height:1px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand-strong)); opacity:.72; }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
@@ -4260,7 +4261,9 @@
     .market-insight-chart .right-axis-label { fill:#64748b; }
     .market-insight-chart .right-axis-title { fill:#64748b; font-weight:750; }
     .market-insight-chart .series-line.percentile { stroke-width:1.6; stroke-dasharray:7 5; }
-    .market-insight-chart-hit { cursor:crosshair; }
+    .market-insight-chart-hit,
+    .market-insight-chart-hit:focus,
+    .market-insight-chart-hit:focus-visible { outline:none !important; stroke:none !important; -webkit-tap-highlight-color:transparent; cursor:crosshair; }
     .market-insight-chart-crosshair { position:absolute; z-index:4; display:none; pointer-events:none; background:color-mix(in srgb,var(--brand-strong) 52%,var(--muted)); opacity:.62; }
     .market-insight-chart-stage.crosshair-visible .market-insight-chart-crosshair { display:block; }
     .market-insight-chart-stage.crosshair-pinned .market-insight-chart-crosshair { opacity:.76; }
@@ -6349,6 +6352,7 @@
       if (key === "connectChange5w") return numeric(row.connectChange5wPct);
       if (key === "marketCap") return numeric(row.latestMarketCapCny);
       if (key === "indexWeight") return numeric(row.indexWeight ?? row.latestMarketCapCny);
+      if (key === "rating") return marketInsightRating(row).score;
       return Number(row.order);
     }
 
@@ -6462,7 +6466,7 @@
           <div class="table-scroll">
             <table>
               <thead><tr>
-                <th class="sticky-col">股票名称</th>
+                <th class="sticky-col">${marketInsightSortHeader("股票名称", "rating")}</th>
                 <th class="num">${marketInsightSortHeader("5周超额收益", "excess5w")}</th>
                 <th class="num">${marketInsightBiasSortHeader(5)}</th>
                 <th class="num">${marketInsightBiasSortHeader(30)}</th>
@@ -9290,6 +9294,9 @@
         target.addEventListener("focus", showTooltip);
         target.addEventListener("blur", hideTooltip);
         target.addEventListener("click", (event) => {
+          event.preventDefault();
+          target.blur?.();
+          window.getSelection?.()?.removeAllRanges();
           const chart = target.closest("[data-market-chart]");
           if (!chart) return;
           const data = JSON.parse(target.dataset.marketChartPoint || "{}");
