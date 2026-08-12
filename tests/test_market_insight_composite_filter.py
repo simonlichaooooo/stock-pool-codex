@@ -38,15 +38,29 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertNotIn("hk_market_insight_metrics_weekly?", custom_loader)
         self.assertNotIn("fetchEastmoneyWeeklySeries", custom_loader)
 
-    def test_market_insight_list_reads_precomputed_speeds(self):
-        loader = HTML.split("async function loadPersistedMarketInsightMetrics", 1)[1].split(
+    def test_market_insight_list_reads_precomputed_universe(self):
+        loader = HTML.split("function marketInsightUniverseIndexFilter", 1)[1].split(
             "function calculateMarketInsightBiasHistory", 1
         )[0]
+        self.assertIn("current_hk_market_insight_filter_universe", loader)
         for period in (5, 30, 40, 50):
             self.assertIn(f"bias_speed_{period}w_pct", loader)
             self.assertIn(f'speed:value("bias_speed_{period}w_pct")', loader)
-        self.assertNotIn("recentMetrics", loader)
+        for field in ("short_ratio_pct", "short_change_5w_pct", "connect_holding_ratio_pct", "connect_change_5w_pct"):
+            self.assertIn(field, loader)
         self.assertNotIn("hk_market_insight_metrics_weekly?", loader)
+        self.assertNotIn("hk_short_positions_weekly?", loader)
+        self.assertNotIn("hk_stock_connect_holdings_daily?", loader)
+
+    def test_market_insight_initial_load_uses_one_cached_database_universe(self):
+        refresh = HTML.split("async function refreshMarketInsight", 1)[1].split(
+            "function journalStorageKey", 1
+        )[0]
+        self.assertEqual(refresh.count("fetchPersistedMarketInsightUniverse("), 1)
+        self.assertNotIn("loadLatestMarketInsightRatios", refresh)
+        self.assertNotIn("loadPersistedMarketInsightMetrics", refresh)
+        self.assertIn("marketInsightUniverseCache", HTML)
+        self.assertNotIn("scheduleVisibleMarketInsightRatioRefresh", HTML)
 
     def test_custom_filter_controls_match_rating_filters(self):
         view = HTML.split("function renderMarketInsightView()", 1)[1].split(
