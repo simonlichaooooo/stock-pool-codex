@@ -6234,33 +6234,16 @@
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
       const baseCodes = MARKET_INSIGHT_BASE_INDEXES.map((item) => item.code);
       const indexFilter = ["ALL", "WATCHLIST"].includes(indexCode) ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
-      const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=${indexFilter}&select=index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=3000`);
-      const earliestLatestWeek = (metrics || []).map((item) => item.week_date).filter(Boolean).sort()[0];
-      const historyStart = earliestLatestWeek ? new Date(`${earliestLatestWeek}T00:00:00`) : new Date();
-      historyStart.setDate(historyStart.getDate() - 21);
-      const recentMetrics = await supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=${indexFilter}&week_date=gte.${historyStart.toISOString().slice(0, 10)}&select=index_code,stock_code,week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct&order=week_date.desc&limit=3000`);
+      const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=${indexFilter}&select=index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=3000`);
       const byIndexAndCode = new Map((metrics || []).map((item) => [`${item.index_code}:${item.stock_code}`, item]));
       const byCode = new Map();
       (metrics || []).forEach((item) => { if (!byCode.has(item.stock_code)) byCode.set(item.stock_code, item); });
-      const historyByIndexAndCode = new Map();
-      (recentMetrics || []).forEach((item) => {
-        const key = `${item.index_code}:${item.stock_code}`;
-        if (!historyByIndexAndCode.has(key)) historyByIndexAndCode.set(key, []);
-        historyByIndexAndCode.get(key).push(item);
-      });
       return rows.map((row) => {
         const stockCode = String(row.rawCode).padStart(5, "0");
         const sourceIndex = MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === row.primaryIndexId);
         const metric = byIndexAndCode.get(`${sourceIndex?.code || indexCode}:${stockCode}`) || byCode.get(stockCode);
         if (!metric) return row;
-        const historyKey = `${metric.index_code}:${metric.stock_code}`;
-        const previousMetric = (historyByIndexAndCode.get(historyKey) || []).find((item) => item.week_date < metric.week_date);
         const value = (field) => metric[field] === null || metric[field] === undefined ? null : Number(metric[field]);
-        const speed = (field) => {
-          const latest = value(field);
-          const previous = previousMetric?.[field] === null || previousMetric?.[field] === undefined ? NaN : Number(previousMetric[field]);
-          return Number.isFinite(latest) && Number.isFinite(previous) ? latest - previous : null;
-        };
         const latestPrice = value("close_price");
         const issuedShares = marketInsightIssuedShares({ ...row, latestPrice });
         const latestMarketCapCny = Number.isFinite(latestPrice) && latestPrice > 0 && Number(issuedShares) > 0
@@ -6271,10 +6254,10 @@
           latestPrice,
           latestMarketCapCny,
           biasMetrics: {
-            ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y"), speed:speed("bias_5w_pct") },
-            ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y"), speed:speed("bias_30w_pct") },
-            ma40:{ bias:value("bias_40w_pct"), percentile:value("percentile_40w_2y"), speed:speed("bias_40w_pct") },
-            ma50:{ bias:value("bias_50w_pct"), percentile:value("percentile_50w_2y"), speed:speed("bias_50w_pct") }
+            ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y"), speed:value("bias_speed_5w_pct") },
+            ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y"), speed:value("bias_speed_30w_pct") },
+            ma40:{ bias:value("bias_40w_pct"), percentile:value("percentile_40w_2y"), speed:value("bias_speed_40w_pct") },
+            ma50:{ bias:value("bias_50w_pct"), percentile:value("percentile_50w_2y"), speed:value("bias_speed_50w_pct") }
           },
           fiveWeekReturn:value("five_week_return_pct"),
           indexFiveWeekReturn:value("index_five_week_return_pct"),

@@ -38,6 +38,16 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertNotIn("hk_market_insight_metrics_weekly?", custom_loader)
         self.assertNotIn("fetchEastmoneyWeeklySeries", custom_loader)
 
+    def test_market_insight_list_reads_precomputed_speeds(self):
+        loader = HTML.split("async function loadPersistedMarketInsightMetrics", 1)[1].split(
+            "function calculateMarketInsightBiasHistory", 1
+        )[0]
+        for period in (5, 30, 40, 50):
+            self.assertIn(f"bias_speed_{period}w_pct", loader)
+            self.assertIn(f'speed:value("bias_speed_{period}w_pct")', loader)
+        self.assertNotIn("recentMetrics", loader)
+        self.assertNotIn("hk_market_insight_metrics_weekly?", loader)
+
     def test_custom_filter_controls_match_rating_filters(self):
         view = HTML.split("function renderMarketInsightView()", 1)[1].split(
             'section class="table-panel horizontal-data-table', 1
