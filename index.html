@@ -4527,6 +4527,7 @@
       marketInsightRatingFilter: "all",
       marketInsightRuleFilters: [],
       marketInsightSearch: "",
+      marketInsightVisibleRatioTimer: null,
       marketInsightWatchlistCodes: [],
       portfolios: [],
       activePortfolioId: "",
@@ -5929,6 +5930,39 @@
       });
     }
 
+    async function refreshVisibleMarketInsightRatios() {
+      if (!state.session?.access_token || state.session.access_token === "local-demo" || state.mainView !== "marketInsight") return;
+      const visibleCodes = [...document.querySelectorAll("[data-market-insight-code]")].map((row) => row.dataset.marketInsightCode).filter(Boolean);
+      if (!visibleCodes.length) return;
+      const visibleCodeSet = new Set(visibleCodes);
+      const sourceRows = (state.marketInsightRows || []).filter((row) => visibleCodeSet.has(row.rawCode));
+      if (!sourceRows.length) return;
+      try {
+        const hydratedRows = await loadLatestMarketInsightRatios(sourceRows);
+        const hydratedByCode = new Map(hydratedRows.map((row) => [row.rawCode, row]));
+        const activeSearch = document.activeElement?.matches?.("[data-input='marketInsightSearch']") ? document.activeElement : null;
+        const selection = activeSearch ? [activeSearch.selectionStart, activeSearch.selectionEnd] : null;
+        state.marketInsightRows = (state.marketInsightRows || []).map((row) => hydratedByCode.get(row.rawCode) || row);
+        if (state.marketInsightCache[state.marketInsightIndexId]?.length) state.marketInsightCache[state.marketInsightIndexId] = [...state.marketInsightRows];
+        render();
+        if (activeSearch) {
+          const nextSearch = document.querySelector("[data-input='marketInsightSearch']");
+          nextSearch?.focus({ preventScroll:true });
+          if (nextSearch && selection.every(Number.isInteger)) nextSearch.setSelectionRange(...selection);
+        }
+      } catch (error) {
+        console.warn("当前列表的持仓比例补载失败。", error);
+      }
+    }
+
+    function scheduleVisibleMarketInsightRatioRefresh(delay = 120) {
+      if (state.marketInsightVisibleRatioTimer) clearTimeout(state.marketInsightVisibleRatioTimer);
+      state.marketInsightVisibleRatioTimer = setTimeout(() => {
+        state.marketInsightVisibleRatioTimer = null;
+        refreshVisibleMarketInsightRatios();
+      }, delay);
+    }
+
     async function loadPersistedMarketInsightMetrics(rows, indexCode) {
       if (!state.session?.access_token || state.session.access_token === "local-demo" || !rows.length) return rows;
       const baseCodes = MARKET_INSIGHT_BASE_INDEXES.map((item) => item.code);
@@ -6528,7 +6562,7 @@
                 const shortRatio = marketInsightShortRatio(row);
                 const connectRatio = marketInsightConnectRatio(row);
                 const rating = ratings.get(row.id) || marketInsightRating(row);
-                return `<tr>
+                return `<tr data-market-insight-code="${escapeHtml(row.rawCode)}">
                   <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}${rating.score ? `<span class="market-insight-rating-badge" title="${rating.score}星"><span class="rating-score" aria-label="${rating.score}星">${"★".repeat(rating.score)}</span></span>` : ""}</div></td>
                   ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
@@ -9452,6 +9486,7 @@
           const selectionStart = input.selectionStart;
           const selectionEnd = input.selectionEnd;
           render();
+          scheduleVisibleMarketInsightRatioRefresh();
           const nextInput = document.querySelector("[data-input='marketInsightSearch']");
           if (!nextInput) return;
           nextInput.focus({ preventScroll:true });
@@ -9728,7 +9763,11 @@
         state.marketInsightPage = 1;
         render();
       }
-      if (action === "marketInsightPage") { state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1); render(); }
+      if (action === "marketInsightPage") {
+        state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1);
+        render();
+        scheduleVisibleMarketInsightRatioRefresh(0);
+      }
       if (action === "marketInsightDetailRange") {
         const nextRange = event.currentTarget.dataset.range || "2Y";
         if (nextRange !== state.marketInsightDetailRange) {
