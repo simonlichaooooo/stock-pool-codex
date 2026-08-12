@@ -47,6 +47,14 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertNotIn("<span>自定义筛选</span>", view)
         self.assertIn('data-action="openMarketInsightCustomFilter"', view)
         self.assertIn('data-action="openMarketInsightCustomManager"', view)
+        actions_index = view.index('class="market-insight-custom-filter-actions"')
+        rating_main_index = view.index('class="market-insight-rating-main"')
+        custom_row_index = view.index('class="market-insight-custom-filter-row"')
+        self.assertLess(actions_index, rating_main_index)
+        self.assertLess(actions_index, custom_row_index)
+
+    def test_market_insight_inner_scroll_is_taller(self):
+        self.assertIn(".market-insight-table .table-scroll { max-height:calc(100vh - 140px); }", HTML)
 
     def test_custom_filters_can_be_edited_and_require_delete_confirmation(self):
         self.assertIn("function renderMarketInsightCustomManagerModal()", HTML)
