@@ -4,6 +4,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).parents[1]
 SQL = (ROOT / "supabase" / "market-insight-composite-filter.sql").read_text(encoding="utf-8")
+CUSTOM_FILTER_SQL = (ROOT / "supabase" / "market-insight-custom-filters.sql").read_text(encoding="utf-8")
 HTML = (ROOT / "index.html").read_text(encoding="utf-8")
 
 
@@ -53,6 +54,22 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertIn('data-action="requestDeleteMarketInsightCustomFilter"', HTML)
         self.assertIn('data-action="confirmDeleteMarketInsightCustomFilter"', HTML)
         self.assertNotIn('data-action="deleteMarketInsightCustomFilter"', HTML)
+
+    def test_custom_filter_definitions_are_persisted_for_each_user(self):
+        for field in ("user_id", "name", "conditions", "is_active", "sort_order"):
+            self.assertIn(field, CUSTOM_FILTER_SQL)
+        self.assertIn("references auth.users(id) on delete cascade", CUSTOM_FILTER_SQL)
+        self.assertIn("enable row level security", CUSTOM_FILTER_SQL)
+        self.assertIn("user_id = auth.uid()", CUSTOM_FILTER_SQL)
+        self.assertIn("grant select, insert, update, delete", CUSTOM_FILTER_SQL)
+
+    def test_frontend_loads_and_mutates_persisted_custom_filters(self):
+        self.assertIn("async function loadMarketInsightCustomFilters()", HTML)
+        self.assertIn("async function persistMarketInsightCustomFilter(filter, isActive)", HTML)
+        self.assertIn("async function persistMarketInsightCustomFilterActive(filterId, isActive)", HTML)
+        self.assertIn("async function deletePersistedMarketInsightCustomFilter(filterId)", HTML)
+        self.assertIn("/rest/v1/market_insight_custom_filters", HTML)
+        self.assertIn("loadMarketInsightCustomFilters()", HTML.split("async function afterProfileReady", 1)[1])
 
     def test_rating_copy_and_motto_are_in_requested_rows(self):
         view = HTML.split("function renderMarketInsightView()", 1)[1].split(
