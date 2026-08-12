@@ -4309,7 +4309,9 @@
     .market-insight-range button { min-height:28px; padding:0 11px; border-color:transparent; background:transparent; color:var(--muted); }
     .market-insight-range button.active { border-color:#a9c9c4; background:var(--panel); color:var(--brand-strong); font-weight:750; }
     .market-insight-chart-legend { display:flex; gap:8px 16px; flex-wrap:wrap; margin-bottom:8px; color:var(--muted); font-size:11px; }
-    .market-insight-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .market-insight-chart-legend button { display:inline-flex; align-items:center; gap:6px; min-height:24px; padding:2px 7px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+    .market-insight-chart-legend button:hover { background:var(--panel-2); color:var(--text); }
+    .market-insight-chart-legend button.hidden { opacity:.42; text-decoration:line-through; }
     .market-insight-chart-legend i { width:18px; height:0; border-top:2px solid var(--legend-color); }
     .market-insight-chart-legend i.dashed { border-top-style:dashed; }
     .market-insight-chart-legend i.dotted { border-top-style:dotted; }
@@ -4517,6 +4519,7 @@
       marketInsightDetailLoading: false,
       marketInsightDetailError: "",
       marketInsightDetailRange: "2Y",
+      marketInsightHiddenChartSeries: { bias:["bias-5", "bias-speed-5", "bias-40", "bias-speed-40", "bias-50", "bias-speed-50"] },
       marketInsightAiAnalysis: null,
       marketInsightAiMeta: null,
       marketInsightAiLoading: false,
@@ -6048,8 +6051,10 @@
       return result;
     }
 
-    function renderMarketInsightChart(series, { includeZero = false, tooltipRows = [], trendStages = [], extrema = [] } = {}) {
-      const validSeries = (series || []).map((item) => ({ ...item, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
+    function renderMarketInsightChart(series, { includeZero = false, tooltipRows = [], trendStages = [], extrema = [], chartId = "" } = {}) {
+      const allSeries = (series || []).map((item) => ({ ...item, key:item.key || item.label, values: (item.values || []).filter((point) => point?.date && Number.isFinite(Number(point.value))) })).filter((item) => item.values.length);
+      const hiddenSeries = new Set(state.marketInsightHiddenChartSeries?.[chartId] || []);
+      const validSeries = allSeries.filter((item) => !hiddenSeries.has(item.key));
       if (!validSeries.length) return `<div class="market-insight-chart-empty">暂无可用比例数据。<br>请确认该股票已有对应的历史持仓记录。</div>`;
       const timestamps = validSeries.flatMap((item) => item.values.map((point) => new Date(`${point.date}T00:00:00`).getTime())).filter(Number.isFinite);
       const leftSeries = validSeries.filter((item) => item.axis !== "right"), rightSeries = validSeries.filter((item) => item.axis === "right");
@@ -6096,7 +6101,8 @@
         const d = values.map((point, index) => `${index ? "L" : "M"}${x(point.date).toFixed(2)},${y(Number(point.value)).toFixed(2)}`).join(" ");
         return values.length > 1 ? `<path class="trend-stage-line" d="${d}" stroke="${stage.color}"></path>` : "";
       }).join("");
-      const effectiveTooltips = tooltipRows.length ? tooltipRows : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); if (!point) return []; const suffix = item.unit ? ` ${item.unit}` : "%"; return [{ label:item.label, value:`${Number(point.value).toFixed(2)}${suffix}` }]; }) }));
+      const visibleLabels = new Set(validSeries.map((item) => item.label));
+      const effectiveTooltips = tooltipRows.length ? tooltipRows.map((item) => ({ ...item, entries:(item.entries || []).filter((entry) => visibleLabels.has(entry.label)) })) : [...new Set(validSeries.flatMap((item) => item.values.map((point) => point.date)))].sort().map((day) => ({ date:day, entries:validSeries.flatMap((item) => { const point = item.values.find((value) => value.date === day); if (!point) return []; const suffix = item.unit ? ` ${item.unit}` : "%"; return [{ label:item.label, value:`${Number(point.value).toFixed(2)}${suffix}` }]; }) }));
       const hitWidth = Math.max(6, (width - left - right) / Math.max(1, effectiveTooltips.length));
       const hitAreas = effectiveTooltips.map((item) => `<rect class="market-insight-chart-hit" data-market-chart-point="${escapeHtml(JSON.stringify(item))}" x="${(x(item.date) - hitWidth / 2).toFixed(2)}" y="${top}" width="${hitWidth.toFixed(2)}" height="${height - top - bottom}" fill="transparent"></rect>`).join("");
       const extremaMarkers = extrema.length ? validSeries.slice(0, 1).flatMap((item) => {
@@ -6109,7 +6115,7 @@
         });
       }).join("") : "";
       const dateText = (time) => new Date(time).toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit" });
-      return `<div class="market-insight-chart-legend">${validSeries.map((item) => `<span><i class="${item.dashed ? "dashed" : item.dotted ? "dotted" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text>${rightValues.length ? `<text class="axis-label right-axis-title" x="${width - 4}" y="${top + 4}" text-anchor="end">${escapeHtml(rightSeries[0]?.unit || "价格")}</text>` : ""}</svg><i class="market-insight-chart-crosshair vertical" aria-hidden="true"></i><i class="market-insight-chart-crosshair horizontal" aria-hidden="true"></i><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
+      return `<div class="market-insight-chart-legend">${allSeries.map((item) => `<button class="${hiddenSeries.has(item.key) ? "hidden" : ""}" data-action="toggleMarketInsightChartSeries" data-chart-id="${escapeHtml(chartId)}" data-series-key="${escapeHtml(item.key)}" aria-pressed="${!hiddenSeries.has(item.key)}" title="点击显示或隐藏"><i class="${item.dashed ? "dashed" : item.dotted ? "dotted" : ""}" style="--legend-color:${item.color}"></i>${escapeHtml(item.label)}</button>`).join("")}</div><div class="market-insight-chart-wrap"><div class="market-insight-chart-stage" data-market-chart><svg class="market-insight-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="历史时间走势图">${trendBands}${grids}${paths}${trendPaths}${extremaMarkers}${hitAreas}<text class="axis-label" x="${left}" y="${height - 10}">${escapeHtml(dateText(minTime))}</text><text class="axis-label" x="${width - right}" y="${height - 10}" text-anchor="end">${escapeHtml(dateText(maxTime))}</text>${rightValues.length ? `<text class="axis-label right-axis-title" x="${width - 4}" y="${top + 4}" text-anchor="end">${escapeHtml(rightSeries[0]?.unit || "价格")}</text>` : ""}</svg><i class="market-insight-chart-crosshair vertical" aria-hidden="true"></i><i class="market-insight-chart-crosshair horizontal" aria-hidden="true"></i><div class="market-insight-chart-tooltip" data-market-chart-tooltip></div></div></div>`;
     }
 
     function marketInsightRangeValues(values) {
@@ -6252,15 +6258,20 @@
       const bias = detail.biasHistory || {};
       const periods = [5, 30, 40, 50];
       const palette = { 5:"#7c5ce0", 30:"#0f9f8f", 40:"#3b82f6", 50:"#d68b16" };
-      const biasSeries = periods.map((period) => ({ label:`${period}周乖离率`, color:palette[period], dashed:period === 5, values:marketInsightRangeValues(bias[`ma${period}`] || []) }));
-      const priceSeries = { label:"股价", color:"#64748b", dotted:true, axis:"right", unit:stock?.currency || "HKD", values:marketInsightRangeValues(detail.priceHistory || []) };
-      const biasChartSeries = biasSeries.some((item) => item.values.length) && priceSeries.values.length ? [...biasSeries, priceSeries] : biasSeries;
-      const biasMaps = Object.fromEntries(periods.flatMap((period) => [[`ma${period}`, new Map((bias[`ma${period}`] || []).map((item) => [item.date, item.value]))], [`p${period}`, new Map((bias[`p${period}`] || []).map((item) => [item.date, item.value]))]]));
+      const speedHistory = Object.fromEntries(periods.map((period) => {
+        const values = bias[`ma${period}`] || [];
+        return [`v${period}`, values.slice(1).map((item, index) => ({ date:item.date, value:Number(item.value) - Number(values[index].value) })).filter((item) => Number.isFinite(item.value))];
+      }));
+      const biasSeries = periods.map((period) => ({ key:`bias-${period}`, label:`${period}周乖离率`, color:palette[period], values:marketInsightRangeValues(bias[`ma${period}`] || []) }));
+      const speedSeries = periods.map((period) => ({ key:`bias-speed-${period}`, label:`${period}周速度`, color:palette[period], dashed:true, values:marketInsightRangeValues(speedHistory[`v${period}`] || []) }));
+      const priceSeries = { key:"price", label:"股价", color:"#64748b", dotted:true, axis:"right", unit:stock?.currency || "HKD", values:marketInsightRangeValues(detail.priceHistory || []) };
+      const biasChartSeries = biasSeries.some((item) => item.values.length) && priceSeries.values.length ? [...biasSeries, ...speedSeries, priceSeries] : [...biasSeries, ...speedSeries];
+      const biasMaps = Object.fromEntries(periods.flatMap((period) => [[`ma${period}`, new Map((bias[`ma${period}`] || []).map((item) => [item.date, item.value]))], [`p${period}`, new Map((bias[`p${period}`] || []).map((item) => [item.date, item.value]))], [`v${period}`, new Map((speedHistory[`v${period}`] || []).map((item) => [item.date, item.value]))]]));
       const priceMap = new Map(priceSeries.values.map((item) => [item.date, item.value]));
       const biasDates = [...new Set(biasChartSeries.flatMap((item) => item.values.map((point) => point.date)))].sort();
       const biasTooltips = biasDates.map((day) => ({ date:day, entries:[...periods.flatMap((period) => {
-        const value = biasMaps[`ma${period}`].get(day), percentile = biasMaps[`p${period}`].get(day);
-        return Number.isFinite(value) ? [{ label:`${period}周`, value:`${value > 0 ? "+" : ""}${Number(value).toFixed(2)}% · 2年分位值 ${Number.isFinite(percentile) ? `${Number(percentile).toFixed(0)}%` : "--"}` }] : [];
+        const value = biasMaps[`ma${period}`].get(day), percentile = biasMaps[`p${period}`].get(day), speed = biasMaps[`v${period}`].get(day);
+        return [...(Number.isFinite(value) ? [{ label:`${period}周乖离率`, value:`${value > 0 ? "+" : ""}${Number(value).toFixed(2)}% · 2年分位值 ${Number.isFinite(percentile) ? `${Number(percentile).toFixed(0)}%` : "--"}` }] : []), ...(Number.isFinite(speed) ? [{ label:`${period}周速度`, value:`${speed > 0 ? "+" : ""}${Number(speed).toFixed(2)}%` }] : [])];
       }), ...(Number.isFinite(Number(priceMap.get(day))) ? [{ label:"股价", value:`${Number(priceMap.get(day)).toFixed(2)} ${priceSeries.unit}` }] : [])] }));
       const shortSeries = [{ label:"空头持仓比例", color:"#d94a5a", values:marketInsightRangeValues(detail.shortHistory || []) }];
       const connectSeries = [{ label:"港股通持仓比例", color:"#7565d8", values:marketInsightRangeValues(detail.connectHistory || []) }];
@@ -6269,7 +6280,7 @@
       const shortTrend = marketInsightTrendAnalysis(shortSeries[0].values);
       const connectTrend = marketInsightTrendAnalysis(connectSeries[0].values);
       const rangeControls = `<div class="market-insight-range" role="group" aria-label="图表时间范围">${[["3Y","3年"],["2Y","2年"],["1Y","1年"],["YTD","今年以来"]].map(([value,label]) => `<button class="${state.marketInsightDetailRange === value ? "active" : ""}" data-action="marketInsightDetailRange" data-range="${value}">${label}</button>`).join("")}</div>`;
-      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div><div class="market-insight-detail-name-row"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><span class="market-insight-detail-code">${escapeHtml(stock?.code || "")}</span></div><p class="market-insight-detail-subtitle">市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>左轴为5周、30周、40周、50周乖离率，右轴为前复权周线股价；股价使用灰蓝色点线，移动鼠标可查看数值与对应2年分位值。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasChartSeries, { tooltipRows:biasTooltips })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
+      return `<aside class="market-insight-detail-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(stock?.name || "股票")}市场洞察详情"><button class="market-insight-detail-scrim" data-action="closeMarketInsightDetail" aria-label="点击遮罩关闭详情" title="关闭详情"></button><div class="market-insight-detail-panel"><section class="market-insight-head market-insight-detail-head"><div class="market-insight-detail-title"><div><div class="market-insight-detail-name-row"><h2>${escapeHtml(stock?.name || "股票详情")}</h2><span class="market-insight-detail-code">${escapeHtml(stock?.code || "")}</span></div><p class="market-insight-detail-subtitle">市场洞察历史详情</p></div></div><div class="market-insight-actions">${rangeControls}${state.marketInsightDetailLoading ? `<span class="market-insight-loading">正在加载历史数据</span>` : ""}<button class="market-insight-detail-close" data-action="closeMarketInsightDetail" aria-label="关闭详情" title="关闭详情"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div></section><div class="market-insight-detail-body">${state.marketInsightDetailError ? `<div class="market-insight-meta"><span class="loss">${escapeHtml(state.marketInsightDetailError)}</span></div>` : ""}<div class="market-insight-charts"><section class="market-insight-chart-card"><h3>乖离率走势</h3><p>默认展示30周乖离率、30周速度与股价；速度 = 当周乖离率 − 前一周乖离率。点击图例可显示或隐藏曲线。</p>${state.marketInsightDetailLoading && !detail.biasHistory ? `<div class="market-insight-chart-empty">正在加载周线数据…</div>` : renderMarketInsightChart(biasChartSeries, { tooltipRows:biasTooltips, chartId:"bias" })}</section><section class="market-insight-chart-card"><h3>空头持仓比例走势</h3><p>左轴为空头持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.shortHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(shortChartSeries, { trendStages:shortTrend.stages, extrema:shortTrend.extrema, chartId:"short" })}${renderMarketInsightChartAi("空头与股价关系解读", "short_position")}</section><section class="market-insight-chart-card"><h3>港股通持仓比例走势</h3><p>左轴为港股通持仓比例，右轴为前复权周线股价；彩色分段仅依据持仓比例的真实高低点。</p>${state.marketInsightDetailLoading && !detail.connectHistory ? `<div class="market-insight-chart-empty">正在加载历史数据…</div>` : renderMarketInsightChart(connectChartSeries, { trendStages:connectTrend.stages, extrema:connectTrend.extrema, chartId:"connect" })}${renderMarketInsightChartAi("港股通与股价关系解读", "stock_connect")}</section></div></div></div></aside>`;
     }
 
     async function openMarketInsightDetail(rawCode) {
@@ -6280,6 +6291,7 @@
       state.marketInsightDetailLoading = true;
       state.marketInsightDetailError = "";
       state.marketInsightDetailRange = "2Y";
+      state.marketInsightHiddenChartSeries = { bias:["bias-5", "bias-speed-5", "bias-40", "bias-speed-40", "bias-50", "bias-speed-50"] };
       state.marketInsightAiAnalysis = null;
       state.marketInsightAiMeta = null;
       state.marketInsightAiLoading = false;
@@ -9793,6 +9805,19 @@
         state.marketInsightPage = Math.max(1, Number(event.currentTarget.dataset.page) || 1);
         render();
         scheduleVisibleMarketInsightRatioRefresh(0);
+      }
+      if (action === "toggleMarketInsightChartSeries") {
+        const chartId = event.currentTarget.dataset.chartId || "";
+        const seriesKey = event.currentTarget.dataset.seriesKey || "";
+        const hidden = new Set(state.marketInsightHiddenChartSeries?.[chartId] || []);
+        if (hidden.has(seriesKey)) hidden.delete(seriesKey);
+        else {
+          const visibleCount = event.currentTarget.closest(".market-insight-chart-legend")?.querySelectorAll("button:not(.hidden)").length || 0;
+          if (visibleCount <= 1) return;
+          hidden.add(seriesKey);
+        }
+        state.marketInsightHiddenChartSeries = { ...state.marketInsightHiddenChartSeries, [chartId]:[...hidden] };
+        render();
       }
       if (action === "marketInsightDetailRange") {
         const nextRange = event.currentTarget.dataset.range || "2Y";
