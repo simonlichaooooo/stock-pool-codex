@@ -62,6 +62,16 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertIn("marketInsightUniverseCache", HTML)
         self.assertNotIn("scheduleVisibleMarketInsightRatioRefresh", HTML)
 
+    def test_market_insight_universe_is_prefetched_and_persisted(self):
+        self.assertIn('MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v1"', HTML)
+        self.assertIn("MARKET_INSIGHT_UNIVERSE_CACHE_MS = 30 * 60 * 1000", HTML)
+        self.assertIn("function readCachedMarketInsightUniverse()", HTML)
+        self.assertIn("function writeCachedMarketInsightUniverse(rows)", HTML)
+        profile_ready = HTML.split("async function afterProfileReady", 1)[1].split(
+            "async function init()", 1
+        )[0]
+        self.assertIn('fetchPersistedMarketInsightUniverse("ALL")', profile_ready)
+
     def test_custom_filter_controls_match_rating_filters(self):
         view = HTML.split("function renderMarketInsightView()", 1)[1].split(
             'section class="table-panel horizontal-data-table', 1

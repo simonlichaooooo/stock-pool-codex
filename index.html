@@ -4662,6 +4662,8 @@
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
     const MARKET_INSIGHT_WATCHLIST_STORAGE_PREFIX = "stockpool.marketInsightWatchlist.";
+    const MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v1";
+    const MARKET_INSIGHT_UNIVERSE_CACHE_MS = 30 * 60 * 1000;
     const THEME_STORAGE_KEY = "stockpool.colorTheme.v1";
     const DEFAULT_THEME_ID = "glacier";
     const COLOR_THEMES = [
@@ -4676,6 +4678,7 @@
     let marketCapRefreshInFlight = false;
     let portfolioQuoteRefreshTimer = null;
     let portfolioQuoteRefreshInFlight = false;
+    let marketInsightUniverseInFlight = null;
     const biasMetricCache = new Map();
     const biasMetricInFlight = new Map();
     const BIAS_METRIC_CACHE_MS = 15 * 60 * 1000;
@@ -6132,17 +6135,43 @@
       return ["ALL", "WATCHLIST"].includes(indexCode) ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
     }
 
+    function readCachedMarketInsightUniverse() {
+      const cached = readJson(MARKET_INSIGHT_UNIVERSE_STORAGE_KEY, null);
+      if (!cached || !Array.isArray(cached.rows) || Date.now() - Number(cached.savedAt) > MARKET_INSIGHT_UNIVERSE_CACHE_MS) return [];
+      return cached.rows;
+    }
+
+    function writeCachedMarketInsightUniverse(rows) {
+      try { writeJson(MARKET_INSIGHT_UNIVERSE_STORAGE_KEY, { savedAt:Date.now(), rows }); }
+      catch (error) { console.warn("市场洞察本地缓存写入失败。", error); }
+    }
+
     async function fetchPersistedMarketInsightUniverse(indexCode, { force = false } = {}) {
       if (!state.session?.access_token || state.session.access_token === "local-demo") return [];
       const broadIndex = ["ALL", "WATCHLIST"].includes(indexCode);
-      const cachedAll = state.marketInsightUniverseCache.ALL;
+      let cachedAll = state.marketInsightUniverseCache.ALL;
+      if (!force && !cachedAll?.length) {
+        cachedAll = readCachedMarketInsightUniverse();
+        if (cachedAll.length) state.marketInsightUniverseCache.ALL = cachedAll;
+      }
       if (!force && cachedAll?.length) return broadIndex ? cachedAll : cachedAll.filter((item) => item.index_code === indexCode);
       if (!force && state.marketInsightUniverseCache[indexCode]?.length) return state.marketInsightUniverseCache[indexCode];
+      if (!force && marketInsightUniverseInFlight) {
+        const prefetched = await marketInsightUniverseInFlight;
+        return broadIndex ? prefetched : prefetched.filter((item) => item.index_code === indexCode);
+      }
       const indexFilter = marketInsightUniverseIndexFilter(indexCode);
-      const fields = "index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality,short_report_date,short_ratio_pct,short_previous_report_date,short_previous_ratio_pct,short_change_5w_pct,connect_holding_date,connect_holding_ratio_pct,connect_previous_holding_date,connect_previous_holding_ratio_pct,connect_change_5w_pct";
-      const universe = await supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?index_code=${indexFilter}&select=${fields}&limit=3000`);
-      state.marketInsightUniverseCache[broadIndex ? "ALL" : indexCode] = universe || [];
-      return universe || [];
+      const fields = "index_code,stock_code,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,short_ratio_pct,short_change_5w_pct,connect_holding_ratio_pct,connect_change_5w_pct";
+      const request = supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?index_code=${indexFilter}&select=${fields}&limit=3000`);
+      if (broadIndex) marketInsightUniverseInFlight = request;
+      try {
+        const universe = await request || [];
+        state.marketInsightUniverseCache[broadIndex ? "ALL" : indexCode] = universe;
+        if (broadIndex) writeCachedMarketInsightUniverse(universe);
+        return universe;
+      } finally {
+        if (broadIndex && marketInsightUniverseInFlight === request) marketInsightUniverseInFlight = null;
+      }
     }
 
     function applyPersistedMarketInsightUniverse(rows, universe, indexCode) {
@@ -6169,8 +6198,6 @@
           stockConnectRatio:value("connect_holding_ratio_pct"),
           shortChange5wPct:value("short_change_5w_pct"),
           connectChange5wPct:value("connect_change_5w_pct"),
-          shortReportDate:metric.short_report_date || null,
-          connectHoldingDate:metric.connect_holding_date || null,
           biasMetrics: {
             ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y"), speed:value("bias_speed_5w_pct") },
             ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y"), speed:value("bias_speed_30w_pct") },
@@ -6180,7 +6207,6 @@
           fiveWeekReturn:value("five_week_return_pct"),
           indexFiveWeekReturn:value("index_five_week_return_pct"),
           excess5w:value("excess_five_week_return_pct"),
-          metricWeekDate:metric.week_date,
           metricStored:true
         };
       });
@@ -12546,6 +12572,7 @@
 
     async function afterProfileReady(initialStocksPromise = null) {
       loadMarketInsightWatchlist();
+      fetchPersistedMarketInsightUniverse("ALL").catch((error) => console.warn("市场洞察后台预取失败。", error));
       const stocksReady = initialStocksPromise || loadStocks();
       const auxiliaryReady = Promise.allSettled([
         loadPortfolios(),
