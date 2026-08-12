@@ -37,6 +37,16 @@ class MarketInsightFilterMetricsTest(unittest.TestCase):
         self.assertEqual(prices[-1], ("2026-08-12", 121))
         self.assertAlmostEqual(MODULE.monthly_returns(prices)["2026-08-01"], 10)
 
+    def test_monthly_prices_backfill_current_month_from_daily_when_omitted(self):
+        monthly_payload = {"data": {"hk00700": {"qfqmonth": [
+            ["2026-06-30", "0", "100"], ["2026-07-31", "0", "110"],
+        ]}}}
+        with mock.patch.object(MODULE, "json_request", return_value=monthly_payload), \
+                mock.patch.object(MODULE, "fetch_current_month_price", return_value=("2026-08-12", 121)), \
+                mock.patch.object(MODULE, "current_hong_kong_month", return_value="2026-08"):
+            prices = MODULE.fetch_monthly_prices("00700")
+        self.assertEqual(prices[-1], ("2026-08-12", 121))
+
     def test_percentile_and_speed_calculations(self):
         values = [float(value) for value in range(104)]
         percentiles = MODULE.rolling_percentiles(values, 104)
@@ -107,6 +117,17 @@ class MarketInsightFilterMetricsTest(unittest.TestCase):
         self.assertAlmostEqual(rows[0]["index_return_pct"], 5)
         self.assertAlmostEqual(rows[0]["excess_return_pct"], 5)
         self.assertAlmostEqual(rows[1]["excess_return_pct"], 8)
+
+    def test_monthly_return_quality_can_fall_back_for_only_current_month(self):
+        prices = [("2026-06-30", 100), ("2026-07-31", 110), ("2026-08-12", 121)]
+        index_returns = {"2026-07-01": 5, "2026-08-01": 4}
+        rows = MODULE.monthly_return_rows("HSTECH", "00700", prices, index_returns, {
+            "2026-07-01": "official_index",
+            "2026-08-01": "constituent_equal_weight",
+        })
+        self.assertEqual(rows[-2]["index_return_quality"], "official_index")
+        self.assertEqual(rows[-1]["index_return_quality"], "constituent_equal_weight")
+        self.assertAlmostEqual(rows[-1]["excess_return_pct"], 6)
 
 
 if __name__ == "__main__":

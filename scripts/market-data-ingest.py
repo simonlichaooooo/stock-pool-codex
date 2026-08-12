@@ -88,6 +88,10 @@ def completed_weekly_prices(prices: list[tuple[str, float]], cutoff: date) -> li
     return [(day, close) for day, close in prices if day <= cutoff.isoformat()]
 
 
+def current_hong_kong_month() -> str:
+    return datetime.now(HONG_KONG_TZ).date().strftime("%Y-%m")
+
+
 class SupabaseRest:
     def __init__(self, *, required: bool = True):
         self.base_url = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -588,12 +592,37 @@ def fetch_monthly_prices(stock_code: str, count: int = 120) -> list[tuple[str, f
                 if row[0] and close > 0:
                     result.append((str(row[0]), close))
             if len(result) >= 2:
-                return normalized_monthly_prices(result)
+                normalized = normalized_monthly_prices(result)
+                current_month = current_hong_kong_month()
+                if normalized[-1][0][:7] < current_month:
+                    current = fetch_current_month_price(stock_code)
+                    if current is not None:
+                        normalized = normalized_monthly_prices([*normalized, current])
+                return normalized
             last_error = RuntimeError(f"Monthly prices returned too few rows for {stock_code}: {len(result)}")
         except Exception as error:
             last_error = error
         time.sleep(0.6 * (attempt + 1))
     raise RuntimeError(f"Monthly prices unavailable for {stock_code}: {last_error}")
+
+
+def fetch_current_month_price(stock_code: str) -> tuple[str, float] | None:
+    """Fetch a recent adjusted daily close when the monthly endpoint omits MTD."""
+    symbol = f"hk{normalize_code(stock_code)}"
+    params = f"{symbol},day,,,12,qfq"
+    payload = json_request(f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={params}")
+    data = (payload.get("data") or {}).get(symbol) or {}
+    rows = data.get("qfqday") or data.get("day") or []
+    current_month = current_hong_kong_month()
+    observations = []
+    for row in rows:
+        try:
+            day, close = str(row[0]), float(row[2])
+        except (IndexError, TypeError, ValueError):
+            continue
+        if day.startswith(current_month) and close > 0:
+            observations.append((day, close))
+    return max(observations, default=None)
 
 
 def fetch_index_monthly_prices(quote_id: str) -> list[tuple[str, float]]:
@@ -779,7 +808,8 @@ def monthly_returns(prices: list[tuple[str, float]]) -> dict[str, float]:
 
 def monthly_return_rows(index_code: str, stock_code: str,
                         prices: list[tuple[str, float]],
-                        index_returns: dict[str, float], quality: str) -> list[dict]:
+                        index_returns: dict[str, float],
+                        quality: str | dict[str, str]) -> list[dict]:
     normalized = normalized_monthly_prices(prices)
     stock_returns = monthly_returns(normalized)
     rows = []
@@ -801,7 +831,8 @@ def monthly_return_rows(index_code: str, stock_code: str,
                 stock_return - index_return
                 if stock_return is not None and index_return is not None else None
             ),
-            "index_return_quality": quality,
+            "index_return_quality": quality.get(month_start, "constituent_equal_weight")
+                if isinstance(quality, dict) else quality,
             "price_source": "tencent_monthly",
         })
     return rows
@@ -1002,10 +1033,24 @@ def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, worke
     index_failures = {}
     for item in indexes.values():
         index_code = item["code"]
-        quality = "official_index"
+        # Always calculate the constituent fallback. Official index returns override
+        # it month by month, so a provider that omits the unfinished current month
+        # cannot leave every MTD excess return null.
+        grouped: dict[str, list[float]] = {}
+        for member in item["members"]:
+            prices = prices_by_code.get(normalize_code(member["code"]))
+            if not prices:
+                continue
+            for month_start, value in monthly_returns(prices).items():
+                grouped.setdefault(month_start, []).append(value)
+        fallback_returns = {
+            month_start: sum(values) / len(values)
+            for month_start, values in grouped.items() if values
+        }
+        official_returns: dict[str, float] = {}
         try:
             index_prices = fetch_index_monthly_prices(item["quoteId"])
-            index_returns = monthly_returns(index_prices)
+            official_returns = monthly_returns(index_prices)
             all_index_price_rows.extend({
                 "index_code": index_code,
                 "month_start": f"{day[:7]}-01",
@@ -1016,24 +1061,19 @@ def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, worke
         except Exception as error:
             print(f"WARN {index_code}: official index monthly prices unavailable, "
                   f"using equal-weight constituents: {error}", file=sys.stderr)
-            quality = "constituent_equal_weight"
             index_failures[index_code] = str(error)
-            grouped: dict[str, list[float]] = {}
-            for member in item["members"]:
-                prices = prices_by_code.get(normalize_code(member["code"]))
-                if not prices:
-                    continue
-                for month_start, value in monthly_returns(prices).items():
-                    grouped.setdefault(month_start, []).append(value)
-            index_returns = {
-                month_start: sum(values) / len(values)
-                for month_start, values in grouped.items() if values
-            }
+        index_returns = {**fallback_returns, **official_returns}
+        quality_by_month = {
+            month_start: "official_index" if month_start in official_returns
+                else "constituent_equal_weight"
+            for month_start in index_returns
+        }
         for member in item["members"]:
             code = normalize_code(member["code"])
             prices = prices_by_code.get(code)
             if prices:
-                all_rows.extend(monthly_return_rows(index_code, code, prices, index_returns, quality))
+                all_rows.extend(monthly_return_rows(
+                    index_code, code, prices, index_returns, quality_by_month))
 
     if not all_rows:
         raise RuntimeError("No monthly market insight rows were calculated")
