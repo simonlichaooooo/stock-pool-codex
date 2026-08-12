@@ -27,6 +27,16 @@ class MarketInsightFilterMetricsTest(unittest.TestCase):
         self.assertEqual(len(prices), 6)
         self.assertEqual(prices[-1][1], 106)
 
+    def test_index_monthly_prices_retry_and_normalize_current_month(self):
+        payload = {"data": {"klines": [
+            "2026-06-30,0,100", "2026-07-31,0,110", "2026-08-12,0,121",
+        ]}}
+        with mock.patch.object(MODULE, "json_request", side_effect=[ConnectionError("reset"), payload]), \
+                mock.patch.object(MODULE.time, "sleep"):
+            prices = MODULE.fetch_index_monthly_prices("124.HSTECH")
+        self.assertEqual(prices[-1], ("2026-08-12", 121))
+        self.assertAlmostEqual(MODULE.monthly_returns(prices)["2026-08-01"], 10)
+
     def test_percentile_and_speed_calculations(self):
         values = [float(value) for value in range(104)]
         percentiles = MODULE.rolling_percentiles(values, 104)
@@ -76,6 +86,27 @@ class MarketInsightFilterMetricsTest(unittest.TestCase):
         self.assertEqual(coverage["stocks_calculated"], 1)
         self.assertEqual(coverage["all_2y_percentiles_coverage_pct"], 100)
         self.assertEqual(coverage["standard_excess_returns_coverage_pct"], 100)
+
+    def test_monthly_return_rows_align_stock_and_index_by_calendar_month(self):
+        prices = [
+            ("2022-12-30", 90),
+            ("2023-01-31", 99),
+            ("2023-02-28", 108.9),
+        ]
+        index_prices = [
+            ("2022-12-30", 100),
+            ("2023-01-30", 105),
+            ("2023-02-27", 107.1),
+        ]
+        rows = MODULE.monthly_return_rows(
+            "HSTECH", "00700", prices, MODULE.monthly_returns(index_prices), "official_index"
+        )
+        self.assertEqual([row["month_start"] for row in rows], ["2023-01-01", "2023-02-01"])
+        self.assertEqual(rows[0]["period_end"], "2023-01-31")
+        self.assertAlmostEqual(rows[0]["stock_return_pct"], 10)
+        self.assertAlmostEqual(rows[0]["index_return_pct"], 5)
+        self.assertAlmostEqual(rows[0]["excess_return_pct"], 5)
+        self.assertAlmostEqual(rows[1]["excess_return_pct"], 8)
 
 
 if __name__ == "__main__":

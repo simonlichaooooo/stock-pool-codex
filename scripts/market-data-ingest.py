@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ingest official HSCI, SFC short-position and Southbound holding data into Supabase."""
+"""Ingest market constituents, positions, holdings and insight metrics into Supabase."""
 
 from __future__ import annotations
 
@@ -546,6 +546,7 @@ def fetch_index_weekly_prices(quote_id: str) -> list[tuple[str, float]]:
         "secid": quote_id, "fields1": "f1,f2,f3,f4,f5,f6",
         "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
         "klt": "102", "fqt": "1", "beg": "20190101", "end": end,
+        "ut": "fa5fd1943c7b386f172d6893dbfba10b",
     })
     last_error: Exception | None = None
     for attempt in range(4):
@@ -566,6 +567,63 @@ def fetch_index_weekly_prices(quote_id: str) -> list[tuple[str, float]]:
             last_error = error
         time.sleep(0.8 * (attempt + 1))
     raise RuntimeError(f"Index weekly prices unavailable for {quote_id}: {last_error}")
+
+
+def fetch_monthly_prices(stock_code: str, count: int = 120) -> list[tuple[str, float]]:
+    """Return adjusted monthly closes, including the latest month-to-date observation."""
+    symbol = f"hk{normalize_code(stock_code)}"
+    params = f"{symbol},month,,,{count}"
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            payload = json_request(f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={params}")
+            data = (payload.get("data") or {}).get(symbol) or {}
+            rows = data.get("qfqmonth") or data.get("month") or []
+            result = []
+            for row in rows:
+                try:
+                    close = float(row[2])
+                except (IndexError, TypeError, ValueError):
+                    continue
+                if row[0] and close > 0:
+                    result.append((str(row[0]), close))
+            if len(result) >= 2:
+                return normalized_monthly_prices(result)
+            last_error = RuntimeError(f"Monthly prices returned too few rows for {stock_code}: {len(result)}")
+        except Exception as error:
+            last_error = error
+        time.sleep(0.6 * (attempt + 1))
+    raise RuntimeError(f"Monthly prices unavailable for {stock_code}: {last_error}")
+
+
+def fetch_index_monthly_prices(quote_id: str) -> list[tuple[str, float]]:
+    """Return official index monthly closes, including the latest month-to-date close."""
+    end = date.today().strftime("%Y%m%d")
+    params = urllib.parse.urlencode({
+        "secid": quote_id, "fields1": "f1,f2,f3,f4,f5,f6",
+        "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
+        "klt": "103", "fqt": "1", "beg": "20190101", "end": end,
+        "ut": "fa5fd1943c7b386f172d6893dbfba10b",
+    })
+    last_error: Exception | None = None
+    for attempt in range(4):
+        try:
+            payload = json_request(
+                f"https://push2his.eastmoney.com/api/qt/stock/kline/get?{params}",
+                headers={"Referer": "https://quote.eastmoney.com/"},
+            )
+            result = []
+            for line in ((payload.get("data") or {}).get("klines") or []):
+                parts = str(line).split(",")
+                if len(parts) >= 3 and float(parts[2]) > 0:
+                    result.append((parts[0], float(parts[2])))
+            if len(result) >= 2:
+                return normalized_monthly_prices(result)
+            last_error = RuntimeError(f"Index monthly prices returned too few rows for {quote_id}: {len(result)}")
+        except Exception as error:
+            last_error = error
+        time.sleep(0.8 * (attempt + 1))
+    raise RuntimeError(f"Index monthly prices unavailable for {quote_id}: {last_error}")
 
 
 def fetch_issued_shares_history(stock_code: str, start: date, end: date) -> list[dict]:
@@ -695,6 +753,79 @@ def period_returns(prices: list[tuple[str, float]], weeks: int) -> dict[str, flo
 
 def five_week_returns(prices: list[tuple[str, float]]) -> dict[str, float]:
     return period_returns(prices, 5)
+
+
+def normalized_monthly_prices(prices: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    """Keep the latest valid observation in each calendar month."""
+    by_month: dict[str, tuple[str, float]] = {}
+    for day, close in prices:
+        month = str(day)[:7]
+        if len(month) != 7 or close <= 0:
+            continue
+        previous = by_month.get(month)
+        if previous is None or day > previous[0]:
+            by_month[month] = (day, close)
+    return sorted(by_month.values())
+
+
+def monthly_returns(prices: list[tuple[str, float]]) -> dict[str, float]:
+    """Map YYYY-MM-01 to the return from the prior month's close."""
+    normalized = normalized_monthly_prices(prices)
+    return {
+        f"{day[:7]}-01": (close / normalized[index - 1][1] - 1) * 100
+        for index, (day, close) in enumerate(normalized) if index >= 1
+    }
+
+
+def monthly_return_rows(index_code: str, stock_code: str,
+                        prices: list[tuple[str, float]],
+                        index_returns: dict[str, float], quality: str) -> list[dict]:
+    normalized = normalized_monthly_prices(prices)
+    stock_returns = monthly_returns(normalized)
+    rows = []
+    for day, close in normalized:
+        month_start = f"{day[:7]}-01"
+        if month_start < METRIC_START.replace(day=1).isoformat():
+            continue
+        stock_return = stock_returns.get(month_start)
+        index_return = index_returns.get(month_start)
+        rows.append({
+            "index_code": index_code,
+            "stock_code": normalize_code(stock_code),
+            "month_start": month_start,
+            "period_end": day,
+            "close_price": close,
+            "stock_return_pct": stock_return,
+            "index_return_pct": index_return,
+            "excess_return_pct": (
+                stock_return - index_return
+                if stock_return is not None and index_return is not None else None
+            ),
+            "index_return_quality": quality,
+            "price_source": "tencent_monthly",
+        })
+    return rows
+
+
+def monthly_metric_coverage(rows: list[dict], indexes: dict) -> dict[str, dict]:
+    latest_month = max((row["month_start"] for row in rows), default=None)
+    summary: dict[str, dict] = {}
+    for item in indexes.values():
+        index_code = item["code"]
+        index_rows = [row for row in rows if row["index_code"] == index_code]
+        current_rows = [row for row in index_rows if row["month_start"] == latest_month]
+        expected = len(item["members"])
+        covered = sum(row.get("excess_return_pct") is not None for row in current_rows)
+        official = sum(row.get("index_return_quality") == "official_index" for row in current_rows)
+        summary[index_code] = {
+            "stocks_expected": expected,
+            "stocks_in_latest_month": len(current_rows),
+            "latest_month": latest_month,
+            "stocks_with_excess_return": covered,
+            "excess_return_coverage_pct": round(covered / expected * 100, 2) if expected else 0,
+            "stocks_with_official_index_return": official,
+        }
+    return summary
 
 
 def metric_rows(index_code: str, stock_code: str, prices: list[tuple[str, float]],
@@ -847,6 +978,91 @@ def ingest_weekly_metrics(client: SupabaseRest, *, dry_run: bool = False, worker
     return written
 
 
+def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, workers: int = 10) -> int:
+    """Persist calendar-month stock/index/excess returns for database filtering."""
+    started = datetime.now(timezone.utc).isoformat()
+    with open(MARKET_INSIGHTS_FILE, encoding="utf-8") as handle:
+        indexes = json.load(handle)["constituents"]["indexes"]
+    codes = sorted({normalize_code(member["code"]) for item in indexes.values() for member in item["members"]})
+    prices_by_code: dict[str, list[tuple[str, float]]] = {}
+    failures = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(fetch_monthly_prices, code): code for code in codes}
+        for completed, future in enumerate(concurrent.futures.as_completed(futures), 1):
+            code = futures[future]
+            try:
+                prices_by_code[code] = future.result()
+            except Exception as error:  # one suspended/new listing must not discard the monthly snapshot
+                failures[code] = str(error)
+            if completed % 50 == 0 or completed == len(futures):
+                print(f"Monthly prices: {completed}/{len(futures)}")
+
+    all_rows = []
+    all_index_price_rows = []
+    index_failures = {}
+    for item in indexes.values():
+        index_code = item["code"]
+        quality = "official_index"
+        try:
+            index_prices = fetch_index_monthly_prices(item["quoteId"])
+            index_returns = monthly_returns(index_prices)
+            all_index_price_rows.extend({
+                "index_code": index_code,
+                "month_start": f"{day[:7]}-01",
+                "period_end": day,
+                "close_price": close,
+                "price_source": "eastmoney_index_monthly",
+            } for day, close in index_prices)
+        except Exception as error:
+            print(f"WARN {index_code}: official index monthly prices unavailable, "
+                  f"using equal-weight constituents: {error}", file=sys.stderr)
+            quality = "constituent_equal_weight"
+            index_failures[index_code] = str(error)
+            grouped: dict[str, list[float]] = {}
+            for member in item["members"]:
+                prices = prices_by_code.get(normalize_code(member["code"]))
+                if not prices:
+                    continue
+                for month_start, value in monthly_returns(prices).items():
+                    grouped.setdefault(month_start, []).append(value)
+            index_returns = {
+                month_start: sum(values) / len(values)
+                for month_start, values in grouped.items() if values
+            }
+        for member in item["members"]:
+            code = normalize_code(member["code"])
+            prices = prices_by_code.get(code)
+            if prices:
+                all_rows.extend(monthly_return_rows(index_code, code, prices, index_returns, quality))
+
+    if not all_rows:
+        raise RuntimeError("No monthly market insight rows were calculated")
+    coverage = monthly_metric_coverage(all_rows, indexes)
+    if dry_run:
+        written = len(all_rows)
+        index_prices_written = len(all_index_price_rows)
+    else:
+        index_prices_written = client.upsert(
+            "market_index_monthly_prices", all_index_price_rows,
+            "index_code,month_start", chunk_size=500) if all_index_price_rows else 0
+        written = client.upsert(
+            "hk_market_insight_monthly_returns", all_rows,
+            "index_code,stock_code,month_start", chunk_size=500)
+        client.insert_run(
+            "monthly_metrics", started, METRIC_START.replace(day=1), date.today(),
+            "partial" if failures or index_failures else "success", written,
+            {"stocks_requested": len(codes), "stocks_loaded": len(prices_by_code),
+             "failed_stocks": failures, "indexes": list(indexes),
+             "index_price_rows": index_prices_written,
+             "failed_index_prices": index_failures,
+             "monthly_metric_coverage": coverage},
+        )
+    print(f"Stored index monthly prices: {index_prices_written} rows; failed indexes: {len(index_failures)}")
+    print(f"Stored monthly market insight returns: {written} rows; failed stocks: {len(failures)}")
+    print("Monthly metric coverage: " + json.dumps(coverage, ensure_ascii=False, sort_keys=True))
+    return written
+
+
 def parse_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
 
@@ -873,6 +1089,9 @@ def main() -> int:
     metrics = subparsers.add_parser("metrics")
     metrics.add_argument("--workers", type=int, default=10)
 
+    monthly_metrics = subparsers.add_parser("monthly-metrics")
+    monthly_metrics.add_argument("--workers", type=int, default=10)
+
     shares = subparsers.add_parser("issued-shares")
     shares.add_argument("--start", type=parse_date, default=date(2023, 1, 1))
     shares.add_argument("--end", type=parse_date, default=date.today())
@@ -890,6 +1109,8 @@ def main() -> int:
         ingest_stock_connect(client, start, args.end, pause=args.pause, dry_run=args.dry_run)
     elif args.command == "metrics":
         ingest_weekly_metrics(client, dry_run=args.dry_run, workers=args.workers)
+    elif args.command == "monthly-metrics":
+        ingest_monthly_metrics(client, dry_run=args.dry_run, workers=args.workers)
     elif args.command == "issued-shares":
         ingest_issued_shares(client, args.start, args.end, dry_run=args.dry_run, workers=args.workers)
     return 0

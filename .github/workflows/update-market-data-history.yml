@@ -8,6 +8,8 @@ on:
     - cron: "0 12 * * 1-5"
     # 香港时间周五 19:00：周线收盘后计算并持久化市场洞察指标。
     - cron: "0 11 * * 5"
+    # 香港时间工作日 20:30：更新当月及历史月度超额收益。
+    - cron: "30 12 * * 1-5"
   workflow_dispatch:
     inputs:
       dataset:
@@ -18,6 +20,7 @@ on:
         options:
           - metrics
           - filter-metrics
+          - monthly-metrics
           - all
           - both
           - short
@@ -76,6 +79,9 @@ jobs:
       - name: Run scheduled weekly metrics update
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 11 * * 5'
         run: python scripts/market-data-ingest.py metrics
+      - name: Run scheduled monthly metrics update
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '30 12 * * 1-5'
+        run: python scripts/market-data-ingest.py monthly-metrics
       - name: Run scheduled official HKEX share-capital update
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 10 * * 5'
         run: python scripts/hkex-share-capital.py --start "$(date -u -d '70 days ago' +%F)" --batch-size 0
@@ -94,6 +100,9 @@ jobs:
           fi
           if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "metrics" ] || [ "$DISPATCH_DATASET" = "filter-metrics" ]; then
             python scripts/market-data-ingest.py metrics
+          fi
+          if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "filter-metrics" ] || [ "$DISPATCH_DATASET" = "monthly-metrics" ]; then
+            python scripts/market-data-ingest.py monthly-metrics
           fi
           if [ "$DISPATCH_DATASET" = "all" ] || [ "$DISPATCH_DATASET" = "official-shares" ]; then
             python scripts/hkex-share-capital.py --start "$DISPATCH_START" "${END_ARGS[@]}" --batch-size 0
