@@ -37,6 +37,34 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertNotIn("hk_market_insight_metrics_weekly?", custom_loader)
         self.assertNotIn("fetchEastmoneyWeeklySeries", custom_loader)
 
+    def test_custom_filter_controls_match_rating_filters(self):
+        view = HTML.split("function renderMarketInsightView()", 1)[1].split(
+            'section class="table-panel horizontal-data-table', 1
+        )[0]
+        self.assertIn("market-insight-custom-filter-list", view)
+        self.assertIn('class="rating-rule ${state.marketInsightCustomActiveIds.includes(filter.id)', view)
+        self.assertNotIn("<span>自定义筛选</span>", view)
+        self.assertIn('data-action="openMarketInsightCustomFilter"', view)
+        self.assertIn('data-action="openMarketInsightCustomManager"', view)
+
+    def test_custom_filters_can_be_edited_and_require_delete_confirmation(self):
+        self.assertIn("function renderMarketInsightCustomManagerModal()", HTML)
+        self.assertIn('data-action="editMarketInsightCustomFilter"', HTML)
+        self.assertIn('data-action="requestDeleteMarketInsightCustomFilter"', HTML)
+        self.assertIn('data-action="confirmDeleteMarketInsightCustomFilter"', HTML)
+        self.assertNotIn('data-action="deleteMarketInsightCustomFilter"', HTML)
+
+    def test_rating_copy_and_motto_are_in_requested_rows(self):
+        view = HTML.split("function renderMarketInsightView()", 1)[1].split(
+            'section class="table-panel horizontal-data-table', 1
+        )[0]
+        refresh_index = view.index('data-action="refreshMarketInsight"')
+        motto_index = view.index('class="market-insight-rating-motto"')
+        score_row_index = view.index('class="market-insight-rating-filter-row market-insight-rating-score-row"')
+        standard_index = view.index('class="market-insight-rating-standard"')
+        self.assertLess(refresh_index, motto_index)
+        self.assertLess(score_row_index, standard_index)
+
 
 if __name__ == "__main__":
     unittest.main()

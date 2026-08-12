@@ -4197,7 +4197,7 @@
     .market-insight-search { position:relative; display:flex; align-items:center; }
     .market-insight-search-icon { position:absolute; z-index:1; left:11px; display:grid; place-items:center; width:20px; height:20px; color:var(--brand-strong); pointer-events:none; }
     .market-insight-search-icon svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
-    .market-insight-search input { width:350px; min-height:40px; padding-left:39px; }
+    .market-insight-search input { width:320px; min-height:40px; padding-left:39px; }
     .market-insight-search-results { position:absolute; z-index:20; top:calc(100% + 5px); right:0; width:280px; padding:5px; border:1px solid var(--line); border-radius:6px; background:var(--panel); box-shadow:0 10px 24px rgba(16,24,40,.16); }
     .market-insight-search-results button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:36px; padding:6px 9px; border:0; background:transparent; color:var(--text); text-align:left; }
     .market-insight-search-results button:hover { background:var(--panel-2); }
@@ -4216,9 +4216,17 @@
     .market-insight-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
     .market-insight-pagination button { min-height:28px; padding:0 10px; }
     .market-insight-rating-panel { display:flex; align-items:stretch; justify-content:space-between; gap:24px; margin-bottom:10px; padding:12px 14px; border:1px solid color-mix(in srgb,var(--brand) 22%,rgba(255,255,255,.78)); border-radius:8px; background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 30%,rgba(255,255,255,.76)),color-mix(in srgb,var(--panel) 90%,var(--brand-soft))); box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.88); backdrop-filter:blur(12px) saturate(120%); -webkit-backdrop-filter:blur(12px) saturate(120%); }
-    .market-insight-custom-filter-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding-top:9px; margin-top:7px; border-top:1px solid var(--line); }
-    .market-insight-custom-filter-row > span { color:var(--muted); font-size:11px; font-weight:750; }
-    .market-insight-custom-filter-modal { width:min(920px,100%); }
+    .market-insight-custom-filter-row { display:flex; align-items:center; gap:8px; width:100%; min-height:42px; padding-top:10px; margin-top:7px; border-top:1px dashed color-mix(in srgb,var(--brand) 22%,var(--line)); }
+    .market-insight-custom-filter-list { display:flex; flex:1 1 auto; align-items:center; gap:6px; min-width:0; flex-wrap:wrap; }
+    .market-insight-custom-filter-actions { display:flex; flex:0 0 auto; align-items:center; gap:6px; margin-left:auto; }
+    button.market-insight-custom-action { display:inline-flex; align-items:center; justify-content:center; min-height:31px; padding:0 11px; border:1px solid color-mix(in srgb,var(--brand) 22%,var(--line)); border-radius:999px; background:color-mix(in srgb,var(--panel) 82%,var(--brand-soft)); color:var(--brand-strong); box-shadow:inset 0 1px 0 rgba(255,255,255,.82); font-size:11px; font-weight:750; }
+    button.market-insight-custom-action:hover:not(:disabled) { border-color:color-mix(in srgb,var(--brand) 42%,var(--line)); background:color-mix(in srgb,var(--brand-soft) 58%,var(--panel)); }
+    button.market-insight-custom-action.add { border-color:color-mix(in srgb,var(--brand) 38%,var(--line)); background:linear-gradient(135deg,color-mix(in srgb,var(--brand-soft) 86%,#fff),rgba(255,255,255,.72)); }
+    .market-insight-custom-filter-modal { width:min(940px,100%); }
+    .market-insight-custom-filter-modal .simple-modal-body { gap:12px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel-2) 64%,#fff),var(--panel)); }
+    .market-insight-custom-modal-intro { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:11px 12px; border:1px solid color-mix(in srgb,var(--brand) 15%,var(--line)); border-radius:7px; background:color-mix(in srgb,var(--brand-soft) 28%,var(--panel)); color:var(--muted); font-size:11px; line-height:1.6; }
+    .market-insight-custom-modal-intro strong { flex:0 0 auto; color:var(--brand-strong); font-size:12px; }
+    .market-insight-custom-condition-add { justify-self:end; }
     .market-insight-custom-condition { display:grid; grid-template-columns:minmax(150px,1.05fr) minmax(220px,1.5fr) 100px minmax(105px,.72fr) 34px; gap:8px; align-items:end; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); }
     .market-insight-custom-condition label { display:grid; gap:5px; color:var(--muted); font-size:11px; }
     .market-insight-custom-period-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; align-items:end; }
@@ -4228,16 +4236,25 @@
     .market-insight-percent-input input { padding-right:28px; }
     .market-insight-percent-input span { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
     .market-insight-custom-status { color:var(--muted); font-size:11px; }
-    @media (max-width:760px) { .market-insight-custom-condition { grid-template-columns:1fr 1fr; } .market-insight-custom-period-fields { grid-template-columns:1fr; } }
+    .market-insight-custom-manager-modal { width:min(720px,100%); }
+    .market-insight-custom-manager-list { display:grid; gap:9px; }
+    .market-insight-custom-manager-item { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 13px; border:1px solid color-mix(in srgb,var(--brand) 17%,var(--line)); border-radius:8px; background:color-mix(in srgb,var(--panel-2) 74%,var(--panel)); }
+    .market-insight-custom-manager-copy { min-width:0; }
+    .market-insight-custom-manager-copy strong { display:block; color:var(--text); font-size:13px; }
+    .market-insight-custom-manager-copy p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.55; }
+    .market-insight-custom-manager-actions { display:flex; flex:0 0 auto; align-items:center; gap:6px; }
+    .market-insight-custom-manager-actions .danger { color:#b42318; border-color:#f0c3bf; background:#fff7f6; }
+    .market-insight-custom-delete-backdrop { z-index:50; }
+    @media (max-width:760px) { .market-insight-custom-condition { grid-template-columns:1fr 1fr; } .market-insight-custom-period-fields { grid-template-columns:1fr; } .market-insight-custom-modal-intro,.market-insight-custom-manager-item { flex-direction:column; } .market-insight-custom-manager-actions { align-self:flex-end; } }
     .market-insight-rating-main { display:flex; flex:1 1 auto; align-items:flex-start; gap:12px; min-width:0; }
-    .market-insight-rating-copy { display:flex; flex:0 0 auto; align-self:stretch; flex-direction:column; align-items:flex-end; justify-content:space-between; margin-left:auto; text-align:right; }
-    .market-insight-rating-standard { color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
-    .market-insight-rating-motto { display:inline-flex; align-items:center; gap:10px; margin-top:15px; color:color-mix(in srgb,var(--brand-strong) 46%,transparent); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:18px; font-style:italic; font-weight:620; letter-spacing:1.5px; line-height:1.4; white-space:nowrap; user-select:none; }
-    .market-insight-rating-motto::before { content:""; flex:0 0 26px; width:26px; height:1px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand-strong)); opacity:.72; }
+    .market-insight-rating-standard { align-self:center; margin-left:8px; color:var(--muted); font-size:10.5px; line-height:1.6; white-space:nowrap; }
+    .market-insight-rating-motto { display:inline-flex; flex:0 0 auto; align-items:center; gap:6px; margin-left:6px; color:color-mix(in srgb,var(--brand-strong) 48%,transparent); font-family:"Avenir Next","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif; font-size:12px; font-style:italic; font-weight:620; letter-spacing:.3px; line-height:1.35; white-space:nowrap; user-select:none; }
+    .market-insight-rating-motto::before { content:""; flex:0 0 16px; width:16px; height:1px; border-radius:999px; background:linear-gradient(90deg,transparent,var(--brand-strong)); opacity:.72; }
     .market-insight-rating-motto-accent { display:inline-block; margin:0 1px; color:color-mix(in srgb,var(--brand-strong) 84%,transparent); font-size:1.34em; font-style:italic; font-weight:780; letter-spacing:.5px; line-height:.8; transform:translateY(1px); }
     .market-insight-rating-motto-exclamation { display:inline-block; margin-left:2px; color:color-mix(in srgb,var(--brand-strong) 84%,transparent); font-size:1.7em; font-weight:850; letter-spacing:-1px; line-height:.6; transform:translateY(3px); }
     .market-insight-rating-filter-groups { display:flex; flex:1 1 auto; flex-direction:column; align-items:flex-start; gap:7px; min-width:0; max-width:100%; }
     .market-insight-rating-filter-row { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex-wrap:wrap; }
+    .market-insight-rating-score-row { gap:8px; }
     .market-insight-rating-filters { display:flex; justify-content:flex-start; gap:6px; flex-wrap:wrap; }
     .market-insight-rule-filter-row { width:100%; max-width:100%; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin; }
     .market-insight-rule-filter-row .market-insight-rating-filters { flex-wrap:nowrap; }
@@ -4390,10 +4407,13 @@
       .market-insight-search-results { left:0; right:auto; width:100%; }
       .market-insight-rating-panel { align-items:stretch; flex-direction:column; }
       .market-insight-rating-main { flex-direction:column; gap:5px; }
-      .market-insight-rating-copy { align-items:flex-end; margin-left:0; text-align:right; }
       .market-insight-rating-standard, .market-insight-rating-motto { white-space:normal; }
+      .market-insight-rating-motto { width:100%; margin:2px 0 0; justify-content:flex-end; text-align:right; }
       .market-insight-rating-filter-groups { align-items:flex-start; margin-left:0; }
       .market-insight-rating-filter-row, .market-insight-rating-filters { justify-content:flex-start; }
+      .market-insight-custom-filter-row { align-items:flex-start; flex-wrap:wrap; }
+      .market-insight-custom-filter-list { flex-basis:100%; }
+      .market-insight-custom-filter-actions { margin-left:auto; }
       .market-insight-table table { width:100%; min-width:0; }
       .market-insight-table .sticky-col, .market-insight-table .market-insight-metric { min-width:0; }
       .market-insight-table td { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -4548,6 +4568,8 @@
       marketInsightCustomFilters: [],
       marketInsightCustomActiveIds: [],
       marketInsightCustomFilterModal: null,
+      marketInsightCustomManagerOpen: false,
+      marketInsightCustomDeleteConfirm: null,
       marketInsightCustomHistory: null,
       marketInsightCustomLoading: false,
       marketInsightCustomError: "",
@@ -5764,6 +5786,8 @@
           ${renderPortfolioModal()}
           ${renderJournalModal()}
           ${renderMarketInsightCustomFilterModal()}
+          ${renderMarketInsightCustomManagerModal()}
+          ${renderMarketInsightCustomDeleteConfirm()}
           ${renderThemeDock()}
         </div>
       `;
@@ -6584,7 +6608,19 @@
       const modal = state.marketInsightCustomFilterModal;
       if (!modal) return "";
       const conditions = modal.conditions || [];
-      return `<div class="simple-modal-backdrop"><section class="simple-modal market-insight-custom-filter-modal" role="dialog" aria-modal="true" aria-label="添加自定义筛选"><div class="simple-modal-head"><h2>添加自定义筛选</h2><button class="icon" data-action="closeMarketInsightCustomFilter" aria-label="关闭">×</button></div><form data-form="marketInsightCustomFilter"><div class="simple-modal-body"><label class="field"><span>筛选器名称</span><input name="name" maxlength="30" value="${escapeHtml(modal.name || "")}" placeholder="例如：中期趋势加速" required></label><div class="muted">以下指标必须同时满足。数值统一按百分比输入；分位值需同时指定乖离率周数和分位回看年限。</div><div data-custom-conditions>${conditions.map((condition, index) => `<div class="market-insight-custom-condition" data-condition-index="${index}"><label>指标<select name="metric-${index}" data-input="marketInsightCustomMetric" data-index="${index}">${MARKET_INSIGHT_CUSTOM_METRICS.map(([value,label]) => `<option value="${value}" ${condition.metric === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>${marketInsightCustomPeriodFields(condition,index)}<label>条件<select name="operator-${index}"><option value="gt" ${condition.operator === "gt" ? "selected" : ""}>大于</option><option value="lt" ${condition.operator === "lt" ? "selected" : ""}>小于</option><option value="eq" ${condition.operator === "eq" ? "selected" : ""}>等于</option></select></label><label>数值<div class="market-insight-percent-input"><input type="number" step="0.01" name="value-${index}" value="${escapeHtml(condition.value)}" required><span>%</span></div></label><button type="button" class="icon" data-action="removeMarketInsightCustomCondition" data-index="${index}" aria-label="删除条件">×</button></div>`).join("")}</div><button type="button" class="secondary" data-action="addMarketInsightCustomCondition">+添加指标</button>${modal.error ? `<div class="simple-modal-error">${escapeHtml(modal.error)}</div>` : ""}</div><div class="simple-modal-foot"><button type="button" data-action="closeMarketInsightCustomFilter">取消</button><button class="primary" type="submit">保存筛选器</button></div></form></section></div>`;
+      const editing = Boolean(modal.filterId);
+      const title = editing ? "修改筛选" : "添加筛选";
+      return `<div class="simple-modal-backdrop"><section class="simple-modal market-insight-custom-filter-modal" role="dialog" aria-modal="true" aria-label="${title}"><div class="simple-modal-head"><h2>${title}</h2><button class="icon" data-action="closeMarketInsightCustomFilter" aria-label="关闭">×</button></div><form data-form="marketInsightCustomFilter"><div class="simple-modal-body"><label class="field"><span>筛选器名称</span><input name="name" maxlength="30" value="${escapeHtml(modal.name || "")}" placeholder="例如：中期趋势加速" required></label><div class="market-insight-custom-modal-intro"><strong>全部条件同时满足</strong><span>数值统一按百分比输入；乖离率分位值需同时指定乖离率周数和分位回看年限。</span></div><div data-custom-conditions>${conditions.map((condition, index) => `<div class="market-insight-custom-condition" data-condition-index="${index}"><label>指标<select name="metric-${index}" data-input="marketInsightCustomMetric" data-index="${index}">${MARKET_INSIGHT_CUSTOM_METRICS.map(([value,label]) => `<option value="${value}" ${condition.metric === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>${marketInsightCustomPeriodFields(condition,index)}<label>条件<select name="operator-${index}"><option value="gt" ${condition.operator === "gt" ? "selected" : ""}>大于</option><option value="lt" ${condition.operator === "lt" ? "selected" : ""}>小于</option><option value="eq" ${condition.operator === "eq" ? "selected" : ""}>等于</option></select></label><label>数值<div class="market-insight-percent-input"><input type="number" step="0.01" name="value-${index}" value="${escapeHtml(condition.value)}" required><span>%</span></div></label><button type="button" class="icon" data-action="removeMarketInsightCustomCondition" data-index="${index}" aria-label="删除条件">×</button></div>`).join("")}</div><button type="button" class="secondary market-insight-custom-condition-add" data-action="addMarketInsightCustomCondition">+ 添加指标</button>${modal.error ? `<div class="simple-modal-error">${escapeHtml(modal.error)}</div>` : ""}</div><div class="simple-modal-foot"><button type="button" data-action="closeMarketInsightCustomFilter">取消</button><button class="primary" type="submit">${editing ? "保存修改" : "保存筛选"}</button></div></form></section></div>`;
+    }
+    function renderMarketInsightCustomManagerModal() {
+      if (!state.marketInsightCustomManagerOpen) return "";
+      const filters = state.marketInsightCustomFilters || [];
+      return `<div class="simple-modal-backdrop"><section class="simple-modal market-insight-custom-manager-modal" role="dialog" aria-modal="true" aria-label="管理自定义筛选"><div class="simple-modal-head"><h2>管理筛选</h2><button class="icon" data-action="closeMarketInsightCustomManager" aria-label="关闭">×</button></div><div class="simple-modal-body"><div class="market-insight-custom-manager-list">${filters.map((filter) => `<div class="market-insight-custom-manager-item"><div class="market-insight-custom-manager-copy"><strong>${escapeHtml(filter.name)}</strong><p>${escapeHtml(marketInsightCustomFilterSummary(filter))}</p></div><div class="market-insight-custom-manager-actions"><button data-action="editMarketInsightCustomFilter" data-filter-id="${escapeHtml(filter.id)}">编辑</button><button class="danger" data-action="requestDeleteMarketInsightCustomFilter" data-filter-id="${escapeHtml(filter.id)}">删除</button></div></div>`).join("")}</div></div><div class="simple-modal-foot"><button data-action="closeMarketInsightCustomManager">完成</button></div></section></div>`;
+    }
+    function renderMarketInsightCustomDeleteConfirm() {
+      const filter = state.marketInsightCustomDeleteConfirm;
+      if (!filter) return "";
+      return `<div class="simple-modal-backdrop market-insight-custom-delete-backdrop"><section class="confirm-panel" role="alertdialog" aria-modal="true" aria-label="确认删除筛选"><div class="confirm-head"><h3>删除筛选</h3><button class="icon" data-action="cancelDeleteMarketInsightCustomFilter" aria-label="关闭">×</button></div><div class="confirm-body"><p>确认删除“${escapeHtml(filter.name)}”吗？删除后无法恢复。</p><div class="confirm-actions"><button data-action="cancelDeleteMarketInsightCustomFilter">取消</button><button class="danger-primary" data-action="confirmDeleteMarketInsightCustomFilter">确认删除</button></div></div></section></div>`;
     }
     function syncMarketInsightCustomModalFromForm() {
       const modal = state.marketInsightCustomFilterModal, form = document.querySelector("[data-form='marketInsightCustomFilter']");
@@ -6695,21 +6731,21 @@
             <label class="market-insight-search"><span class="market-insight-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></span><input type="search" data-input="marketInsightSearch" value="${escapeHtml(state.marketInsightSearch)}" placeholder="搜索股票名称或代码" aria-label="搜索股票名称或代码">${query && !searchedRows.length && globalMatches.length ? `<div class="market-insight-search-results">${globalMatches.map((item) => `<button data-action="selectMarketInsightSearchResult" data-index-id="${item.indexId}" data-query="${escapeHtml(item.rawCode)}"><span>${escapeHtml(item.name)} · ${escapeHtml(item.code)}</span><small>${escapeHtml(item.indexName)}</small></button>`).join("")}</div>` : ""}</label>
             <div class="market-insight-index-tabs" role="tablist" aria-label="选择指数">${MARKET_INSIGHT_INDEXES.map((item) => `<button class="${item.id === index.id ? "active" : ""}" data-action="selectMarketInsightIndex" data-index-id="${item.id}" ${state.marketInsightLoading ? "disabled" : ""}>${escapeHtml(item.name)}</button>`).join("")}</div>
             <button class="primary stock-add-button market-insight-refresh" data-action="refreshMarketInsight" ${state.marketInsightLoading ? "disabled" : ""}><span class="market-insight-refresh-icon" aria-hidden="true">↻</span>${state.marketInsightLoading ? "刷新中…" : "刷新数据"}</button>
+            <div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！！！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲<span class="market-insight-rating-motto-exclamation">!!!</span></span></div>
           </div>
         </section>
         <section class="market-insight-rating-panel">
           <div class="market-insight-rating-main"><div class="market-insight-rating-filter-groups">
-              <div class="market-insight-rating-filter-row"><div class="market-insight-rating-filters" role="group" aria-label="总星级筛选">
+              <div class="market-insight-rating-filter-row market-insight-rating-score-row"><div class="market-insight-rating-filters" role="group" aria-label="总星级筛选">
                 ${[5, 4, 3].map((score) => `<button class="rating-rule rating-score-button ${state.marketInsightRatingFilter === String(score) ? "active" : ""}" data-action="filterMarketInsightRating" data-rating="${score}" aria-label="${score}星，${ratingCounts[score]}只" aria-pressed="${state.marketInsightRatingFilter === String(score)}" title="${score}星股票"><span class="rating-score" aria-hidden="true">${"★".repeat(score)}</span><span class="rating-count">${ratingCounts[score]}</span></button>`).join("")}
-              </div></div>
+              </div><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓 · 5周港股通增持。</div></div>
               <div class="market-insight-rating-filter-row market-insight-rule-filter-row"><div class="market-insight-rating-filters" role="group" aria-label="单项评定筛选，可多选">
                 ${MARKET_INSIGHT_RATING_RULES.map((rule, ruleIndex) => `<button class="rating-rule ${selectedRuleFilters.includes(ruleIndex) ? "active" : ""}" data-action="filterMarketInsightRule" data-rule-index="${ruleIndex}" aria-pressed="${selectedRuleFilters.includes(ruleIndex)}" title="${escapeHtml(rule.title)}"><span class="rating-rule-icon ${rule.inverse ? "inverse" : ""}" aria-hidden="true">${escapeHtml(rule.icon || "★")}</span><span>${escapeHtml(rule.label)}</span><span class="rating-count">${ruleCounts[ruleIndex]}</span></button>`).join("")}
               </div></div>
-              <div class="market-insight-custom-filter-row"><span>自定义筛选</span>${state.marketInsightCustomFilters.map((filter) => `<button class="rating-rule ${state.marketInsightCustomActiveIds.includes(filter.id) ? "active" : ""}" data-action="toggleMarketInsightCustomFilter" data-filter-id="${escapeHtml(filter.id)}" aria-pressed="${state.marketInsightCustomActiveIds.includes(filter.id)}" title="${escapeHtml(marketInsightCustomFilterSummary(filter))}" ${state.marketInsightCustomLoading ? "disabled" : ""}>${escapeHtml(filter.name)}${state.marketInsightCustomActiveIds.includes(filter.id) && state.marketInsightCustomLoading ? " · 筛选中" : ""}</button><button class="icon" data-action="deleteMarketInsightCustomFilter" data-filter-id="${escapeHtml(filter.id)}" aria-label="删除${escapeHtml(filter.name)}" ${state.marketInsightCustomLoading ? "disabled" : ""}>×</button>`).join("")}<button class="secondary" data-action="openMarketInsightCustomFilter" ${state.marketInsightCustomLoading ? "disabled" : ""}>+添加筛选</button>${state.marketInsightCustomLoading ? `<span class="market-insight-custom-status">正在由数据库执行复合筛选…</span>` : state.marketInsightCustomError ? `<span class="market-insight-custom-status loss">${escapeHtml(state.marketInsightCustomError)}</span>` : activeCustomFilters.length && state.marketInsightCustomHistory === true ? `<span class="market-insight-custom-status">数据库已按全部条件同时满足筛出 ${filteredRows.length} 只${customMissingRows ? `；${customMissingRows} 只数据不足未纳入` : ""}</span>` : ""}</div>
+              <div class="market-insight-custom-filter-row"><div class="market-insight-rating-filters market-insight-custom-filter-list" role="group" aria-label="自定义筛选，可多选">${state.marketInsightCustomFilters.map((filter) => `<button class="rating-rule ${state.marketInsightCustomActiveIds.includes(filter.id) ? "active" : ""}" data-action="toggleMarketInsightCustomFilter" data-filter-id="${escapeHtml(filter.id)}" aria-pressed="${state.marketInsightCustomActiveIds.includes(filter.id)}" title="${escapeHtml(marketInsightCustomFilterSummary(filter))}" ${state.marketInsightCustomLoading ? "disabled" : ""}><span class="rating-rule-icon" aria-hidden="true">★</span><span>${escapeHtml(filter.name)}${state.marketInsightCustomActiveIds.includes(filter.id) && state.marketInsightCustomLoading ? " · 筛选中" : ""}</span></button>`).join("")}${state.marketInsightCustomLoading ? `<span class="market-insight-custom-status">正在由数据库执行复合筛选…</span>` : state.marketInsightCustomError ? `<span class="market-insight-custom-status loss">${escapeHtml(state.marketInsightCustomError)}</span>` : activeCustomFilters.length && state.marketInsightCustomHistory === true ? `<span class="market-insight-custom-status">数据库已按全部条件同时满足筛出 ${filteredRows.length} 只${customMissingRows ? `；${customMissingRows} 只数据不足未纳入` : ""}</span>` : ""}</div><div class="market-insight-custom-filter-actions"><button class="market-insight-custom-action add" data-action="openMarketInsightCustomFilter" ${state.marketInsightCustomLoading ? "disabled" : ""}>+ 添加筛选</button><button class="market-insight-custom-action" data-action="openMarketInsightCustomManager" ${!state.marketInsightCustomFilters.length || state.marketInsightCustomLoading ? "disabled" : ""}>修改</button></div></div>
               ${filterTree.length ? `<div class="market-insight-filter-tree" aria-label="筛选结果路径">${filterTree.map((item, depth) => `<div class="market-insight-filter-tree-node" style="--depth:${depth}"><strong>${escapeHtml(MARKET_INSIGHT_RATING_RULES[item.ruleIndex]?.label || "筛选条件")}</strong><span class="market-insight-filter-tree-count">${item.count}只</span></div>`).join("")}</div>` : ""}
             </div>
           </div>
-          <div class="market-insight-rating-copy"><div class="market-insight-rating-standard">5周超额收益正 · 5周乖离率正 · 30/40/50周乖离率均正 · 5周空头平仓· 5周港股通增持。</div><div class="market-insight-rating-motto" aria-label="别研究太细，跟着炒就行，勤翻面，别骄傲！！！"><span aria-hidden="true">别研究太<b class="market-insight-rating-motto-accent">细</b>，<b class="market-insight-rating-motto-accent">跟</b>着炒就行，<b class="market-insight-rating-motto-accent">勤</b>翻面，<b class="market-insight-rating-motto-accent">别</b>骄傲<span class="market-insight-rating-motto-exclamation">!!!</span></span></div></div>
         </section>
         <section class="table-panel horizontal-data-table market-insight-table portfolio-table">
           <div class="table-scroll">
@@ -9816,14 +9852,23 @@
       const customFilterForm = document.querySelector("[data-form='marketInsightCustomFilter']");
       if (customFilterForm) customFilterForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget), conditions = (state.marketInsightCustomFilterModal?.conditions || []).map((condition,index) => ({ metric:data.get(`metric-${index}`), span:data.get(`span-${index}`), percentileWindow:data.get(`percentileWindow-${index}`) || condition.percentileWindow || "2y", month:data.get(`month-${index}`) || "", operator:data.get(`operator-${index}`), value:data.get(`value-${index}`) }));
+        const modal = state.marketInsightCustomFilterModal;
+        const data = new FormData(event.currentTarget), conditions = (modal?.conditions || []).map((condition,index) => ({ metric:data.get(`metric-${index}`), span:data.get(`span-${index}`), percentileWindow:data.get(`percentileWindow-${index}`) || condition.percentileWindow || "2y", month:data.get(`month-${index}`) || "", operator:data.get(`operator-${index}`), value:data.get(`value-${index}`) }));
         const name = String(data.get("name") || "").trim();
         const validationError = marketInsightCustomValidationError(name, conditions);
         if (validationError) { state.marketInsightCustomFilterModal.error = validationError; render(); return; }
-        const filter = { id:`custom-${Date.now()}`, name, conditions };
-        state.marketInsightCustomFilters = [...state.marketInsightCustomFilters, filter];
-        state.marketInsightCustomActiveIds = [...state.marketInsightCustomActiveIds, filter.id];
-        state.marketInsightCustomFilterModal = null; invalidateMarketInsightCustomMetrics(); render(); loadMarketInsightCustomMetrics();
+        const filter = { id:modal?.filterId || `custom-${Date.now()}`, name, conditions };
+        if (modal?.filterId) {
+          state.marketInsightCustomFilters = state.marketInsightCustomFilters.map((item) => item.id === modal.filterId ? filter : item);
+        } else {
+          state.marketInsightCustomFilters = [...state.marketInsightCustomFilters, filter];
+          state.marketInsightCustomActiveIds = [...state.marketInsightCustomActiveIds, filter.id];
+        }
+        state.marketInsightCustomFilterModal = null;
+        state.marketInsightCustomManagerOpen = Boolean(modal?.filterId);
+        invalidateMarketInsightCustomMetrics();
+        render();
+        if (state.marketInsightCustomActiveIds.length) loadMarketInsightCustomMetrics();
       });
       document.querySelectorAll("[data-input='marketInsightCustomMetric']").forEach((select) => select.addEventListener("change", (event) => {
         syncMarketInsightCustomModalFromForm();
@@ -9875,8 +9920,38 @@
 
     async function onAction(event) {
       const action = event.currentTarget.dataset.action;
-      if (action === "openMarketInsightCustomFilter") { state.marketInsightCustomFilterModal = { name:"", conditions:[marketInsightCustomDefaultCondition()], error:"" }; render(); return; }
-      if (action === "closeMarketInsightCustomFilter") { state.marketInsightCustomFilterModal = null; render(); return; }
+      if (action === "openMarketInsightCustomFilter") { state.marketInsightCustomManagerOpen = false; state.marketInsightCustomFilterModal = { filterId:"", name:"", conditions:[marketInsightCustomDefaultCondition()], error:"", returnToManager:false }; render(); return; }
+      if (action === "closeMarketInsightCustomFilter") { const returnToManager = Boolean(state.marketInsightCustomFilterModal?.returnToManager); state.marketInsightCustomFilterModal = null; state.marketInsightCustomManagerOpen = returnToManager; render(); return; }
+      if (action === "openMarketInsightCustomManager") { if (!state.marketInsightCustomFilters.length) return; state.marketInsightCustomManagerOpen = true; render(); return; }
+      if (action === "closeMarketInsightCustomManager") { state.marketInsightCustomManagerOpen = false; render(); return; }
+      if (action === "editMarketInsightCustomFilter") {
+        const filter = state.marketInsightCustomFilters.find((item) => item.id === (event.currentTarget.dataset.filterId || ""));
+        if (!filter) return;
+        state.marketInsightCustomManagerOpen = false;
+        state.marketInsightCustomFilterModal = { filterId:filter.id, name:filter.name, conditions:(filter.conditions || []).map((condition) => ({ ...condition })), error:"", returnToManager:true };
+        render();
+        return;
+      }
+      if (action === "requestDeleteMarketInsightCustomFilter") {
+        const filter = state.marketInsightCustomFilters.find((item) => item.id === (event.currentTarget.dataset.filterId || ""));
+        if (!filter) return;
+        state.marketInsightCustomDeleteConfirm = { id:filter.id, name:filter.name };
+        render();
+        return;
+      }
+      if (action === "cancelDeleteMarketInsightCustomFilter") { state.marketInsightCustomDeleteConfirm = null; render(); return; }
+      if (action === "confirmDeleteMarketInsightCustomFilter") {
+        const filterId = state.marketInsightCustomDeleteConfirm?.id || "";
+        if (!filterId) return;
+        state.marketInsightCustomFilters = state.marketInsightCustomFilters.filter((item) => item.id !== filterId);
+        state.marketInsightCustomActiveIds = state.marketInsightCustomActiveIds.filter((item) => item !== filterId);
+        state.marketInsightCustomDeleteConfirm = null;
+        if (!state.marketInsightCustomFilters.length) state.marketInsightCustomManagerOpen = false;
+        invalidateMarketInsightCustomMetrics();
+        render();
+        if (state.marketInsightCustomActiveIds.length) await loadMarketInsightCustomMetrics();
+        return;
+      }
       if (action === "addMarketInsightCustomCondition") { syncMarketInsightCustomModalFromForm(); state.marketInsightCustomFilterModal.conditions.push(marketInsightCustomDefaultCondition()); render(); return; }
       if (action === "removeMarketInsightCustomCondition") { syncMarketInsightCustomModalFromForm(); const index = Number(event.currentTarget.dataset.index); if (state.marketInsightCustomFilterModal.conditions.length > 1) state.marketInsightCustomFilterModal.conditions.splice(index,1); render(); return; }
       if (action === "toggleMarketInsightCustomFilter") {
@@ -9884,7 +9959,6 @@
         state.marketInsightCustomActiveIds = state.marketInsightCustomActiveIds.includes(id) ? state.marketInsightCustomActiveIds.filter((item) => item !== id) : [...state.marketInsightCustomActiveIds,id];
         invalidateMarketInsightCustomMetrics(); render(); await loadMarketInsightCustomMetrics(); return;
       }
-      if (action === "deleteMarketInsightCustomFilter") { const id = event.currentTarget.dataset.filterId || ""; state.marketInsightCustomFilters = state.marketInsightCustomFilters.filter((item) => item.id !== id); state.marketInsightCustomActiveIds = state.marketInsightCustomActiveIds.filter((item) => item !== id); invalidateMarketInsightCustomMetrics(); render(); if (state.marketInsightCustomActiveIds.length) await loadMarketInsightCustomMetrics(); return; }
       const stockId = event.currentTarget.dataset.id;
       const positionKey = event.currentTarget.dataset.positionKey || "";
       if (action === "toggleColorThemeMenu") {
