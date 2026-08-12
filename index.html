@@ -4169,6 +4169,9 @@
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
     .market-insight-metric small.market-insight-percentile.low { color:var(--loss); }
     .market-insight-metric small.market-insight-percentile.high { color:var(--gain); }
+    .market-insight-metric small.market-insight-bias-speed { color:var(--muted); }
+    .market-insight-metric small.market-insight-bias-speed.gain { color:var(--gain); }
+    .market-insight-metric small.market-insight-bias-speed.loss { color:var(--loss); }
     .market-insight-holding-change.increase { color:var(--loss); }
     .market-insight-holding-change.decrease { color:var(--gain); }
     .market-insight-connect-change.increase { color:var(--gain); }
@@ -5771,13 +5774,16 @@
     function marketInsightMetricCell(metric, period, star = false, starLabel = "符合星级条件") {
       const bias = metric?.bias === null || metric?.bias === undefined ? NaN : Number(metric.bias);
       const percentile = metric?.percentile === null || metric?.percentile === undefined ? NaN : Number(metric.percentile);
+      const speed = metric?.speed === null || metric?.speed === undefined ? NaN : Number(metric.speed);
+      const speedText = Number.isFinite(speed) ? `${speed > 0 ? "+" : ""}${speed.toFixed(2)}%` : "--";
+      const speedClass = speed > 0 ? "gain" : speed < 0 ? "loss" : "";
       if (!Number.isFinite(bias)) {
-        return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small></div></td>`;
+        return `<td data-label="${period}周乖离率 / 2年分位值 / 速度" class="num market-insight-metric muted"><div><span>--</span><small>2年分位值 --</small><small class="market-insight-bias-speed">速度 --</small></div></td>`;
       }
       const cls = bias > 0 ? "gain" : bias < 0 ? "loss" : "";
       const percentileText = Number.isFinite(percentile) ? `${percentile.toFixed(0)}%` : "历史不足";
       const percentileClass = Number.isFinite(percentile) ? percentile < 20 ? "low" : percentile > 70 ? "high" : "" : "";
-      return `<td data-label="${period}周乖离率 / 2年分位值" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small class="market-insight-percentile ${percentileClass}">2年分位值 ${percentileText}</small></div></td>`;
+      return `<td data-label="${period}周乖离率 / 2年分位值 / 速度" class="num market-insight-metric ${cls}"><div><span>${marketInsightRuleStar(star, starLabel)}${bias > 0 ? "+" : ""}${bias.toFixed(2)}%</span><small class="market-insight-percentile ${percentileClass}">2年分位值 ${percentileText}</small><small class="market-insight-bias-speed ${speedClass}">速度 ${speedText}</small></div></td>`;
     }
 
     function calculateMarketInsightBiases(weeklyCloses) {
@@ -5795,14 +5801,16 @@
         }
         const observations = biases.slice(-104);
         const bias = observations.at(-1);
+        const speed = biases.length >= 2 ? bias - biases.at(-2) : null;
         if (observations.length < 104) {
-          result[`ma${period}`] = { bias, percentile:null };
+          result[`ma${period}`] = { bias, percentile:null, speed };
           return;
         }
         const lower = observations.filter((value) => value < bias).length;
         const equal = observations.filter((value) => value === bias).length;
         result[`ma${period}`] = {
           bias,
+          speed,
           percentile: observations.length > 1 ? (lower + 0.5 * (equal - 1)) / (observations.length - 1) * 100 : 50
         };
       });
@@ -5968,15 +5976,32 @@
       const baseCodes = MARKET_INSIGHT_BASE_INDEXES.map((item) => item.code);
       const indexFilter = ["ALL", "WATCHLIST"].includes(indexCode) ? `in.(${baseCodes.join(",")})` : `eq.${encodeURIComponent(indexCode)}`;
       const metrics = await supabaseRequest(`/rest/v1/current_hk_market_insight_metrics?index_code=${indexFilter}&select=index_code,stock_code,week_date,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,index_return_quality&limit=3000`);
+      const earliestLatestWeek = (metrics || []).map((item) => item.week_date).filter(Boolean).sort()[0];
+      const historyStart = earliestLatestWeek ? new Date(`${earliestLatestWeek}T00:00:00`) : new Date();
+      historyStart.setDate(historyStart.getDate() - 21);
+      const recentMetrics = await supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=${indexFilter}&week_date=gte.${historyStart.toISOString().slice(0, 10)}&select=index_code,stock_code,week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct&order=week_date.desc&limit=3000`);
       const byIndexAndCode = new Map((metrics || []).map((item) => [`${item.index_code}:${item.stock_code}`, item]));
       const byCode = new Map();
       (metrics || []).forEach((item) => { if (!byCode.has(item.stock_code)) byCode.set(item.stock_code, item); });
+      const historyByIndexAndCode = new Map();
+      (recentMetrics || []).forEach((item) => {
+        const key = `${item.index_code}:${item.stock_code}`;
+        if (!historyByIndexAndCode.has(key)) historyByIndexAndCode.set(key, []);
+        historyByIndexAndCode.get(key).push(item);
+      });
       return rows.map((row) => {
         const stockCode = String(row.rawCode).padStart(5, "0");
         const sourceIndex = MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === row.primaryIndexId);
         const metric = byIndexAndCode.get(`${sourceIndex?.code || indexCode}:${stockCode}`) || byCode.get(stockCode);
         if (!metric) return row;
+        const historyKey = `${metric.index_code}:${metric.stock_code}`;
+        const previousMetric = (historyByIndexAndCode.get(historyKey) || []).find((item) => item.week_date < metric.week_date);
         const value = (field) => metric[field] === null || metric[field] === undefined ? null : Number(metric[field]);
+        const speed = (field) => {
+          const latest = value(field);
+          const previous = previousMetric?.[field] === null || previousMetric?.[field] === undefined ? NaN : Number(previousMetric[field]);
+          return Number.isFinite(latest) && Number.isFinite(previous) ? latest - previous : null;
+        };
         const latestPrice = value("close_price");
         const issuedShares = marketInsightIssuedShares({ ...row, latestPrice });
         const latestMarketCapCny = Number.isFinite(latestPrice) && latestPrice > 0 && Number(issuedShares) > 0
@@ -5987,10 +6012,10 @@
           latestPrice,
           latestMarketCapCny,
           biasMetrics: {
-            ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y") },
-            ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y") },
-            ma40:{ bias:value("bias_40w_pct"), percentile:value("percentile_40w_2y") },
-            ma50:{ bias:value("bias_50w_pct"), percentile:value("percentile_50w_2y") }
+            ma5:{ bias:value("bias_5w_pct"), percentile:value("percentile_5w_2y"), speed:speed("bias_5w_pct") },
+            ma30:{ bias:value("bias_30w_pct"), percentile:value("percentile_30w_2y"), speed:speed("bias_30w_pct") },
+            ma40:{ bias:value("bias_40w_pct"), percentile:value("percentile_40w_2y"), speed:speed("bias_40w_pct") },
+            ma50:{ bias:value("bias_50w_pct"), percentile:value("percentile_50w_2y"), speed:speed("bias_50w_pct") }
           },
           fiveWeekReturn:value("five_week_return_pct"),
           indexFiveWeekReturn:value("index_five_week_return_pct"),
@@ -6420,6 +6445,7 @@
       if (key === "excess5w") return numeric(row.excess5w);
       if (["ma5", "ma30", "ma40", "ma50"].includes(key)) return numeric(row.biasMetrics?.[key]?.bias);
       if (["p5", "p30", "p40", "p50"].includes(key)) return numeric(row.biasMetrics?.[`ma${key.slice(1)}`]?.percentile);
+      if (["v5", "v30", "v40", "v50"].includes(key)) return numeric(row.biasMetrics?.[`ma${key.slice(1)}`]?.speed);
       if (key === "shortRatio") return numeric(marketInsightShortRatio(row));
       if (key === "shortChange5w") return numeric(row.shortChange5wPct);
       if (key === "connectRatio") return numeric(marketInsightConnectRatio(row));
@@ -6459,7 +6485,7 @@
     }
 
     function marketInsightBiasSortHeader(period) {
-      return `<div class="market-insight-dual-sort">${marketInsightSortHeader(`${period}周乖离率`, `ma${period}`)}${marketInsightSortHeader("2年分位值", `p${period}`)}</div>`;
+      return `<div class="market-insight-dual-sort">${marketInsightSortHeader(`${period}周乖离率`, `ma${period}`)}${marketInsightSortHeader("2年分位值", `p${period}`)}${marketInsightSortHeader("速度", `v${period}`)}</div>`;
     }
 
     function marketInsightShortSortHeader() {
