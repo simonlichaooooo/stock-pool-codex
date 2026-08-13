@@ -1,0 +1,44 @@
+name: Update market overview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/update-market-overview.mjs"
+      - ".github/workflows/update-market-overview.yml"
+  schedule:
+    - cron: "20 11 * * 5"
+    - cron: "30 12 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-market-overview
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build market overview snapshot
+        run: node scripts/update-market-overview.mjs
+      - name: Commit updated overview
+        run: |
+          if git diff --quiet -- data/market-insights.json; then
+            echo "No overview changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/market-insights.json
+          git commit -m "chore: update market overview"
+          git push
