@@ -139,7 +139,10 @@ function weeklyLastDates(dates) {
 const scopes = {};
 for (const scopeId of ["all", "hstech", "hsli", "hsmi", "hssi"]) {
   const codes = [...scopeMembers[scopeId]];
-  const scopeWeeklyDates = weeklyDates.filter((date) => weekRowsForScope(scopeId, date).size).slice(-104);
+  // 行情源偶尔会为单只股票写入非标准周日期。只有覆盖当前范围至少六成股票的
+  // 日期才可作为市场截面，避免 1/500 之类的残缺周污染广度、连续性和环比。
+  const minimumWeeklyCoverage = Math.max(1, Math.ceil(codes.length * .6));
+  const scopeWeeklyDates = weeklyDates.filter((date) => weekRowsForScope(scopeId, date).size >= minimumWeeklyCoverage).slice(-104);
   const breadthTrend = scopeWeeklyDates.map((date) => {
     const rows = weekRowsForScope(scopeId, date);
     const eligible = [...rows].filter(([, row]) => number(row.bias_5w_pct) !== null);
