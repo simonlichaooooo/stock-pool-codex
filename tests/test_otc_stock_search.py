@@ -29,6 +29,29 @@ class OtcStockSearchTests(unittest.TestCase):
         self.assertIn("const quoteId = item.QuoteID", normalizer)
         self.assertIn("quoteId,", normalizer)
 
+    def test_stock_pool_marks_pink_sheet_results(self):
+        labeler = HTML.split("function stockMarketLabel", 1)[1].split(
+            "function todayString", 1
+        )[0]
+        stock_pool_search = HTML.split("async function onStockSearch", 1)[1].split(
+            "function applyCatalog", 1
+        )[0]
+        self.assertIn('stock?.exchange === "OTC"', labeler)
+        self.assertIn("美股", HTML.split("function marketLabel", 1)[1].split("function stockMarketLabel", 1)[0])
+        self.assertIn("stockMarketLabel(stock)", stock_pool_search)
+
+    def test_stock_pool_preserves_otc_identity_when_selected_and_saved(self):
+        apply_catalog = HTML.split("function applyCatalog", 1)[1].split(
+            "async function saveStock", 1
+        )[0]
+        save_stock = HTML.split("async function saveStock", 1)[1].split(
+            "function ", 1
+        )[0]
+        self.assertIn("state.form.exchange = stock.exchange", apply_catalog)
+        self.assertIn('state.form.quoteId = stock.quoteId || ""', apply_catalog)
+        self.assertIn("...normalizeShareholderReturnFields(state.form)", save_stock)
+        self.assertIn("payloadForStockRecord(payload)", save_stock)
+
 
 if __name__ == "__main__":
     unittest.main()

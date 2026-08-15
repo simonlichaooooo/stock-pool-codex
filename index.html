@@ -5267,6 +5267,11 @@
       return ({ CN: "A股", HK: "H股", US: "美股" })[market] || market || "--";
     }
 
+    function stockMarketLabel(stock) {
+      const label = marketLabel(stock?.market);
+      return stock?.exchange === "OTC" || stock?.securityName === "粉单" ? `${label} · 粉单` : label;
+    }
+
     function todayString() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -12387,7 +12392,7 @@
       box.innerHTML = results.length
         ? results.map((stock, index) => `
           <button class="result-item" data-catalog="${index}">
-            <span><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)} · ${marketLabel(stock.market)}</span></span>
+            <span><strong>${escapeHtml(stock.name)}</strong><span>${escapeHtml(stock.code)} · ${escapeHtml(stockMarketLabel(stock))}</span></span>
             ${stock.quoteId ? "" : `<span>${money(stock.marketCapCny, defaultCurrencyFor(stock))}</span>`}
           </button>
         `).join("")
