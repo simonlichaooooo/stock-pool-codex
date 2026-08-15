@@ -5307,13 +5307,18 @@
     }
 
     function isUsStockSearchItem(item) {
-      if (item.Classify !== "UsStock") return false;
-      if (item.MarketType !== "7" && item.SecurityTypeName !== "美股") return false;
-      if (!["105", "106", "107"].includes(String(item.MktNum || ""))) return false;
+      const marketNumber = String(item.MktNum || "");
+      const isListedStock = item.Classify === "UsStock"
+        && (item.MarketType === "7" || item.SecurityTypeName === "美股")
+        && ["105", "106", "107"].includes(marketNumber);
+      const isOtcStock = item.Classify === "OTCBB"
+        && marketNumber === "153"
+        && (item.SecurityTypeName === "粉单" || String(item.SecurityType || "") === "26");
+      if (!isListedStock && !isOtcStock) return false;
       const typeUS = String(item.TypeUS || "");
       const code = String(item.Code || "");
       if (code.includes("_")) return false;
-      return ["1", "3"].includes(typeUS) || ["7", "20"].includes(String(item.SecurityType || ""));
+      return isOtcStock || ["1", "3"].includes(typeUS) || ["7", "20"].includes(String(item.SecurityType || ""));
     }
 
     function normalizeSearchItem(item) {
@@ -5330,6 +5335,7 @@
         exchange = "HKEX";
       } else if (isUsStockSearchItem(item)) {
         market = "US";
+        if (classify === "OTCBB") exchange = "OTC";
       } else {
         return null;
       }
