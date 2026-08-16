@@ -6358,6 +6358,15 @@
       return (values || []).filter((item) => item.date >= cutoffText);
     }
 
+    function marketInsightStoredConnectRatio(row) {
+      if (!row || !["complete", "official_aggregate"].includes(row.completeness)) return null;
+      if (row.ratio_quality === "missing_denominator") return null;
+      const rawRatio = row.holding_ratio_pct;
+      if (rawRatio === null || rawRatio === undefined || rawRatio === "") return null;
+      const ratio = Number(rawRatio);
+      return Number.isFinite(ratio) && ratio >= 0 ? ratio : null;
+    }
+
     function marketInsightTrendAnalysis(values) {
       const points = (values || []).filter((item) => item?.date && Number.isFinite(Number(item.value))).map((item) => ({ date:item.date, value:Number(item.value) })).sort((a, b) => a.date.localeCompare(b.date));
       if (points.length < 2) return { points, stages:[], extrema:[] };
@@ -6533,7 +6542,7 @@
       const selectedIndex = marketInsightRowIndex(stock);
       const metricsPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_market_insight_metrics_weekly?index_code=eq.${encodeURIComponent(selectedIndex.code)}&stock_code=eq.${encodeURIComponent(stockCode)}&select=week_date,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y&order=week_date.asc&limit=2000`) : Promise.resolve([]);
       const shortPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_short_positions_weekly?stock_code=eq.${encodeURIComponent(stockCode)}&select=report_date,short_shares,issued_shares,short_ratio_pct&order=report_date.asc&limit=2000`) : Promise.resolve([]);
-      const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
+      const connectPromise = canLoadDatabase ? supabaseRequest(`/rest/v1/hk_stock_connect_holdings_daily?stock_code=eq.${encodeURIComponent(stockCode)}&select=holding_date,total_holding_shares,issued_shares,holding_ratio_pct,completeness,ratio_quality&order=holding_date.asc&limit=2000`) : Promise.resolve([]);
       const [weeklyResult, quoteResult, metricsResult, shortResult, connectResult] = await Promise.allSettled([weeklyPromise, quotePromise, metricsPromise, shortPromise, connectPromise]);
       const issuedShares = quoteResult.status === "fulfilled" ? marketInsightIssuedShares({ ...stock, ...quoteResult.value }) : marketInsightIssuedShares(stock);
       const ratioValue = (storedRatio, shares, storedIssuedShares) => {
@@ -6551,8 +6560,11 @@
         });
       }
       const shortHistory = shortResult.status === "fulfilled" ? shortResult.value.map((row) => ({ date:row.report_date, value:ratioValue(row.short_ratio_pct, row.short_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [];
-      const connectHistory = connectResult.status === "fulfilled" ? connectResult.value.map((row) => ({ date:row.holding_date, value:ratioValue(row.holding_ratio_pct, row.total_holding_shares, row.issued_shares) })).filter((row) => Number.isFinite(row.value)) : [];
-      const currentConnectRatio = marketInsightConnectRatio(stock);
+      const connectHistory = connectResult.status === "fulfilled" ? connectResult.value.flatMap((row) => {
+        const value = marketInsightStoredConnectRatio(row);
+        return Number.isFinite(value) ? [{ date:row.holding_date, value }] : [];
+      }) : [];
+      const currentConnectRatio = stock?.stockConnectRatio === null || stock?.stockConnectRatio === undefined || stock?.stockConnectRatio === "" ? NaN : Number(stock.stockConnectRatio);
       if (!connectHistory.length && Number.isFinite(currentConnectRatio)) connectHistory.push({ date:state.marketInsightSnapshot?.stockConnect?.asOf || new Date().toISOString().slice(0, 10), value:currentConnectRatio });
       const priceHistory = weeklyResult.status === "fulfilled" ? weeklyResult.value.map((row) => ({ date:row.date, value:Number(row.close) })).filter((row) => row.date && Number.isFinite(row.value) && row.value > 0) : [];
       state.marketInsightDetail = {
