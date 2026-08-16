@@ -31,6 +31,13 @@ class StockDrawerLayoutTests(unittest.TestCase):
             HTML,
         )
 
+    def test_all_stock_editor_number_inputs_hide_native_stepper_controls(self):
+        self.assertIn('.drawer input[type="number"] {', HTML)
+        self.assertIn("appearance: textfield;", HTML)
+        self.assertIn('.drawer input[type="number"]::-webkit-inner-spin-button,', HTML)
+        self.assertIn('.drawer input[type="number"]::-webkit-outer-spin-button {', HTML)
+        self.assertIn("-webkit-appearance: none;", HTML)
+
 
 if __name__ == "__main__":
     unittest.main()

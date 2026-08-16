@@ -669,6 +669,15 @@
       font-feature-settings: "tnum";
     }
     input[type="number"], .numeric-input { text-align: right; }
+    .drawer input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    .drawer input[type="number"]::-webkit-inner-spin-button,
+    .drawer input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
     button.secondary { background: #f8fafc; color: #344054; }
     button.icon {
       width: 30px;
