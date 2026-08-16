@@ -1053,7 +1053,7 @@
     }
     .segment-row {
       display: grid;
-      grid-template-columns: 112px 112px 52px 76px minmax(0, 1fr) 16px;
+      grid-template-columns: 132px 112px 52px 76px minmax(0, 1fr) 16px;
       gap: 8px;
       align-items: end;
     }
@@ -1091,7 +1091,7 @@
       background: transparent;
       color: #b42318;
     }
-    .segment-row .amount-field { grid-template-columns: minmax(0, 1fr) 44px; }
+    .segment-row .amount-field { grid-template-columns: minmax(0, 1fr) 58px; }
     .segment-row .amount-field select {
       padding-inline: 2px;
       font-size: 9.5px;
@@ -1123,7 +1123,7 @@
       box-shadow: var(--shadow-soft);
       align-self: start;
       margin-top: 0 !important;
-      top: 16px;
+      top: 0;
       min-height: calc(100vh - 132px);
       display: flex;
       flex-direction: column;
@@ -9652,7 +9652,7 @@
                 </div>
                 <div class="result-panel">
                   <div class="side-note-box">
-                    <label>个人研究备注</label>
+                    <label>研究备注</label>
                     <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="支持 Markdown：记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
                   </div>
                   <div class="valuation-summary-block">

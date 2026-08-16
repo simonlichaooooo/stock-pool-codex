@@ -9,14 +9,18 @@ class StockDrawerLayoutTests(unittest.TestCase):
     def test_editor_is_wider_while_research_note_is_twenty_percent_narrower(self):
         self.assertIn(".valuation-layout { grid-template-columns: max-content 400px;", HTML)
         self.assertIn("width: 640px !important;", HTML)
+        result_panel = HTML.split(".result-panel {", 2)[2].split("}", 1)[0]
+        self.assertIn("top: 0;", result_panel)
+        self.assertIn("<label>研究备注</label>", HTML)
+        self.assertNotIn("<label>个人研究备注</label>", HTML)
 
     def test_segment_fields_use_requested_proportions(self):
         self.assertIn(
-            "grid-template-columns: 112px 112px 52px 76px minmax(0, 1fr) 16px;",
+            "grid-template-columns: 132px 112px 52px 76px minmax(0, 1fr) 16px;",
             HTML,
         )
         self.assertIn(
-            ".segment-row .amount-field { grid-template-columns: minmax(0, 1fr) 44px; }",
+            ".segment-row .amount-field { grid-template-columns: minmax(0, 1fr) 58px; }",
             HTML,
         )
         self.assertIn("font-size: 9.5px;", HTML)
