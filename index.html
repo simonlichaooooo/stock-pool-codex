@@ -893,11 +893,11 @@
       background: #912018;
       border-color: #912018;
     }
-    .valuation-layout { grid-template-columns: max-content 500px; gap: 24px; align-items: start; justify-content: start; }
+    .valuation-layout { grid-template-columns: max-content 400px; gap: 24px; align-items: start; justify-content: start; }
     .valuation-form { width: max-content !important; max-width: 100% !important; display: grid; gap: 12px; background: transparent; border: 0; padding: 0; box-shadow: none; }
     .section-card {
       position: relative;
-      width: 520px !important;
+      width: 640px !important;
       max-width: 100% !important;
       background: white;
       border: 1px solid var(--line);
@@ -1053,7 +1053,7 @@
     }
     .segment-row {
       display: grid;
-      grid-template-columns: 64px 150px 50px 72px minmax(0, 1fr) 16px;
+      grid-template-columns: 112px 112px 52px 76px minmax(0, 1fr) 16px;
       gap: 8px;
       align-items: end;
     }
@@ -1090,6 +1090,11 @@
       border: 0;
       background: transparent;
       color: #b42318;
+    }
+    .segment-row .amount-field { grid-template-columns: minmax(0, 1fr) 44px; }
+    .segment-row .amount-field select {
+      padding-inline: 2px;
+      font-size: 9.5px;
     }
     .segment-total {
       display: grid;
@@ -3440,6 +3445,7 @@
       gap:10px;
       pointer-events:none;
     }
+    body:has(.drawer.open, .history-modal.open, .simple-modal-backdrop, .market-insight-detail-drawer) .theme-dock { display:none; }
     .theme-orb {
       position:relative;
       width:48px;
