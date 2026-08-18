@@ -17,8 +17,11 @@ class PortfolioPrivacyVisibilityTests(unittest.TestCase):
         table = HTML.split("function renderPortfolioTable", 1)[1].split(
             "function portfolioValuationVersions", 1
         )[0]
-        self.assertIn("const holdingProfitCell = `${holdingProfitText}", table)
-        self.assertNotIn('state.portfolioPrivacyMode\n              ? "****"', table)
+        self.assertIn("const holdingProfitCell = state.portfolioPrivacyMode", table)
+        self.assertIn("holdingReturn.toFixed(2)}%", table)
+        privacy_branch = table.split("const holdingProfitCell = state.portfolioPrivacyMode", 1)[1].split(": `${holdingProfitText}", 1)[0]
+        self.assertNotIn("holdingProfitText", privacy_branch)
+        self.assertNotIn('"****"', privacy_branch)
         self.assertNotIn('const holdingProfitClass = state.portfolioPrivacyMode', table)
 
     def test_option_cost_and_holding_profit_also_remain_visible(self):
@@ -30,7 +33,10 @@ class PortfolioPrivacyVisibilityTests(unittest.TestCase):
         )[0]
         self.assertIn('${formatPortfolioCost(cost)}</td>', option_row)
         self.assertNotIn('portfolioPrivate(formatPortfolioCost(cost))', option_row)
-        self.assertNotIn('portfolioPrivate(`${holdingProfit', option_row)
+        self.assertIn("const holdingProfitCell=state.portfolioPrivacyMode", option_row)
+        self.assertIn("holdingReturn.toFixed(2)}%", option_row)
+        option_privacy_branch = option_row.split("const holdingProfitCell=state.portfolioPrivacyMode", 1)[1].split(": `${holdingProfit", 1)[0]
+        self.assertNotIn("formatPortfolioNumber(holdingProfit)", option_privacy_branch)
 
 
 if __name__ == "__main__":
