@@ -73,12 +73,24 @@ class StockDrawerLayoutTests(unittest.TestCase):
     def test_research_note_management_and_auto_save_controls(self):
         self.assertIn('class="drawer-head-valuation"', HTML)
         self.assertIn('data-drawer-valuation="upside"', HTML)
+        self.assertIn('class="drawer-head-valuation-title"', HTML)
+        self.assertIn("font-size:15px;", HTML)
+        self.assertIn(".drawer-head-valuation b.gain { color:var(--gain); }", HTML)
+        self.assertIn(".drawer-head-valuation b.loss { color:var(--loss); }", HTML)
+        self.assertIn(".drawer-body { padding-bottom:16px; }", HTML)
         self.assertNotIn('class="valuation-summary-block"', HTML)
         self.assertIn('data-action="toggleResearchNotesManaging"', HTML)
         self.assertIn('data-note-auto-save', HTML)
         self.assertIn('window.setTimeout(() => autoSaveResearchNote(requestId), 2000)', HTML)
         self.assertIn("async function backToResearchNotes()", HTML)
         self.assertIn("已于 ${minute}分：${second}秒为你自动保存", HTML)
+        self.assertIn("position:sticky;", HTML)
+        self.assertIn("bottom:0;", HTML)
+
+    def test_pool_and_portfolio_stock_names_are_emphasized(self):
+        self.assertIn(".stock-pool-table tbody .stock-name,", HTML)
+        self.assertIn(".portfolio-table tbody .stock-name {", HTML)
+        self.assertIn("font-weight:760;", HTML)
 
 
 if __name__ == "__main__":

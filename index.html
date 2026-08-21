@@ -4735,25 +4735,38 @@
     }
 
     /* Stock research notes: keep the editor compact around its controls and dedicate the available height to writing. */
+    .drawer-body { padding-bottom:16px; }
     .drawer-head-valuation {
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:5px;
+      gap:7px;
       margin-left:auto;
+    }
+    .drawer-head-valuation-title {
+      color:var(--brand-strong);
+      font-size:12px;
+      font-weight:780;
+      letter-spacing:.2px;
+      white-space:nowrap;
     }
     .drawer-head-valuation span {
       display:grid;
-      grid-template-columns:auto auto;
-      align-items:baseline;
-      gap:5px;
-      min-width:112px;
-      padding:4px 7px;
-      border-radius:4px;
-      background:color-mix(in srgb,var(--panel-2) 70%,transparent);
+      grid-template-columns:1fr;
+      align-items:center;
+      gap:1px;
+      min-width:122px;
+      padding:5px 9px;
+      border:1px solid color-mix(in srgb,var(--brand) 18%,var(--line));
+      border-radius:6px;
+      background:linear-gradient(145deg,color-mix(in srgb,var(--brand-soft) 48%,white),rgba(255,255,255,.86));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 2px 7px color-mix(in srgb,var(--brand) 8%,transparent);
     }
-    .drawer-head-valuation small { color:var(--muted); font-size:10px; font-weight:500; white-space:nowrap; }
-    .drawer-head-valuation b { color:var(--text); font-size:12px; font-weight:740; white-space:nowrap; }
+    .drawer-head-valuation small { color:var(--muted); font-size:10.5px; font-weight:600; line-height:1.15; white-space:nowrap; }
+    .drawer-head-valuation b { color:var(--text); font-size:15px; font-weight:820; line-height:1.2; white-space:nowrap; }
+    .drawer-head-valuation b.valuation-key { color:var(--brand-strong); }
+    .drawer-head-valuation b.gain { color:var(--gain); }
+    .drawer-head-valuation b.loss { color:var(--loss); }
     .result-panel {
       padding:10px;
       gap:6px;
@@ -4801,7 +4814,11 @@
       justify-content:flex-end;
       gap:8px;
       min-height:33px;
-      padding-top:8px;
+      padding:8px 0 3px;
+      position:sticky;
+      bottom:0;
+      z-index:2;
+      background:var(--panel);
     }
     .research-note-auto-save {
       margin-right:auto;
@@ -4811,6 +4828,14 @@
       white-space:nowrap;
     }
     .research-note-editor-actions { display:flex; gap:4px; }
+    .stock-pool-table tbody .stock-name,
+    .portfolio-table tbody .stock-name {
+      color:var(--text);
+      font-size:13.5px;
+      font-weight:760;
+      line-height:1.3;
+      letter-spacing:.1px;
+    }
     .markdown-toolbar { gap:2px; padding:2px 3px; }
     .markdown-toolbar button { min-width:27px; min-height:24px; padding:1px 6px; font-size:11px; }
     .markdown-toolbar .markdown-divider-icon { font-size:13px; }
@@ -9823,10 +9848,11 @@
                 <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
               </div>
               <div class="drawer-head-valuation" aria-label="估值测算">
-                <span><small>前瞻市值</small><b data-drawer-valuation="marketCap">${metricMoney(c.expectedMarketCapCny, currency)}</b></span>
-                <span><small>Upside</small><b data-drawer-valuation="upside">${percent(c.upside)}</b></span>
-                <span><small>Forward PE</small><b data-drawer-valuation="forwardPE">${c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--"}</b></span>
-                <span><small>股东回报率</small><b data-drawer-valuation="shareholderReturn">${percent(c.shareholderReturnRate)}</b></span>
+                <strong class="drawer-head-valuation-title">估值测算</strong>
+                <span><small>前瞻市值</small><b class="valuation-key" data-drawer-valuation="marketCap">${metricMoney(c.expectedMarketCapCny, currency)}</b></span>
+                <span><small>Upside</small><b class="${Number(c.upside) >= 0 ? "gain" : "loss"}" data-drawer-valuation="upside">${percent(c.upside)}</b></span>
+                <span><small>Forward PE</small><b class="valuation-key" data-drawer-valuation="forwardPE">${c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--"}</b></span>
+                <span><small>股东回报率</small><b class="${Number(c.shareholderReturnRate) >= 0 ? "gain" : "loss"}" data-drawer-valuation="shareholderReturn">${percent(c.shareholderReturnRate)}</b></span>
               </div>
               <button class="icon" data-action="closeDrawer" title="关闭">×</button>
             </div>
@@ -12894,6 +12920,10 @@
         shareholderReturn:percent(c.shareholderReturnRate)
       };
       document.querySelectorAll("[data-drawer-valuation]").forEach((node) => { node.textContent = headerValues[node.dataset.drawerValuation] || "--"; });
+      const upsideNode = document.querySelector('[data-drawer-valuation="upside"]');
+      const returnNode = document.querySelector('[data-drawer-valuation="shareholderReturn"]');
+      if (upsideNode) upsideNode.className = Number(c.upside) >= 0 ? "gain" : "loss";
+      if (returnNode) returnNode.className = Number(c.shareholderReturnRate) >= 0 ? "gain" : "loss";
     }
 
     async function onStockSearch(event) {
