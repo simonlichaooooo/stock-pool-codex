@@ -1035,7 +1035,28 @@
     .markdown-toolbar .markdown-bold { font-weight: 800; }
     .markdown-toolbar .markdown-divider-icon { font-size: 15px; letter-spacing: -1px; }
     .markdown-toolbar-separator { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
-    .drawer textarea.markdown-note { min-height: 180px; }
+    .drawer .markdown-note {
+      min-height: 180px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
+      outline: none;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .drawer .markdown-note:focus { border-color: var(--brand); box-shadow: var(--focus); }
+    .drawer .markdown-note:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+    .drawer .markdown-note h1,
+    .drawer .markdown-note h2,
+    .drawer .markdown-note h3 { margin: .55em 0 .3em; line-height: 1.3; }
+    .drawer .markdown-note h1 { font-size: 22px; }
+    .drawer .markdown-note h2 { font-size: 19px; }
+    .drawer .markdown-note h3 { font-size: 16px; }
+    .drawer .markdown-note p { margin: .35em 0; }
+    .drawer .markdown-note hr { margin: 14px 0; border: 0; border-top: 1px solid var(--line); }
     .drawer textarea.auto-grow-note {
       min-height: 30px;
       resize: vertical;
@@ -9714,7 +9735,7 @@
                         <span class="markdown-toolbar-separator" aria-hidden="true"></span>
                         <button type="button" class="markdown-divider-icon" data-action="formatResearchNote" data-markdown-format="divider" title="插入分割线" aria-label="插入分割线">—</button>
                       </div>
-                      <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
+                      <div class="markdown-note" contenteditable="true" role="textbox" aria-multiline="true" aria-label="研究备注内容" data-rich-field="myNote" data-placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${markdownToEditorHtml(form.myNote || "")}</div>
                     </div>
                   </div>
                   <div class="valuation-summary-block">
@@ -10027,6 +10048,13 @@
           if (el.matches("textarea.auto-grow-note")) autoGrowTextarea(el);
         });
         el.addEventListener("change", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
+      });
+      document.querySelectorAll("[data-rich-field]").forEach((editor) => {
+        editor.addEventListener("input", () => updateRichFormField(editor.dataset.richField, editor));
+        editor.addEventListener("blur", () => updateRichFormField(editor.dataset.richField, editor));
+      });
+      document.querySelectorAll("[data-markdown-format]").forEach((button) => {
+        button.addEventListener("mousedown", (event) => event.preventDefault());
       });
       document.querySelectorAll("textarea.auto-grow-note").forEach(autoGrowTextarea);
       document.querySelectorAll("[data-amount]").forEach((el) => {
@@ -12259,46 +12287,80 @@
       state.formDirty = Boolean(state.form && formSnapshot(state.form) !== state.formInitialSnapshot);
     }
 
+    function markdownInlineToEditorHtml(value) {
+      return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    }
+
+    function markdownToEditorHtml(markdown) {
+      const source = String(markdown || "");
+      if (!source.trim()) return "";
+      const lines = source.replace(/\r\n?/g, "\n").split("\n");
+      const html = [];
+      let listOpen = false;
+      const closeList = () => { if (listOpen) { html.push("</ul>"); listOpen = false; } };
+      lines.forEach((line) => {
+        const listMatch = line.match(/^[-*]\s+(.+)$/);
+        if (listMatch) {
+          if (!listOpen) { html.push("<ul>"); listOpen = true; }
+          html.push(`<li>${markdownInlineToEditorHtml(listMatch[1])}</li>`);
+          return;
+        }
+        closeList();
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) html.push(`<h${heading[1].length}>${markdownInlineToEditorHtml(heading[2])}</h${heading[1].length}>`);
+        else if (/^\s*---+\s*$/.test(line)) html.push("<hr>");
+        else if (line) html.push(`<p>${markdownInlineToEditorHtml(line)}</p>`);
+        else html.push("<p><br></p>");
+      });
+      closeList();
+      return html.join("");
+    }
+
+    function editorInlineToMarkdown(node) {
+      if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+      if (node.nodeType !== Node.ELEMENT_NODE) return "";
+      const tag = node.tagName.toLowerCase();
+      if (tag === "br") return "\n";
+      const content = [...node.childNodes].map(editorInlineToMarkdown).join("");
+      return tag === "strong" || tag === "b" ? `**${content}**` : content;
+    }
+
+    function editorHtmlToMarkdown(editor) {
+      const blocks = [...editor.childNodes].map((node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+        if (node.nodeType !== Node.ELEMENT_NODE) return "";
+        const tag = node.tagName.toLowerCase();
+        if (/^h[1-3]$/.test(tag)) return `${"#".repeat(Number(tag[1]))} ${editorInlineToMarkdown(node)}`;
+        if (tag === "hr") return "---";
+        if (tag === "ul" || tag === "ol") return [...node.children].map((item, index) => `${tag === "ol" ? `${index + 1}.` : "-"} ${editorInlineToMarkdown(item)}`).join("\n");
+        return editorInlineToMarkdown(node);
+      });
+      return blocks.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    }
+
+    function updateRichFormField(key, editor) {
+      if (!state.form || !editor) return;
+      state.form[key] = editorHtmlToMarkdown(editor);
+      markFormDirty();
+    }
+
     function formatResearchNote(format) {
-      const textarea = document.querySelector('textarea[data-field="myNote"]');
-      if (!textarea || !state.form) return;
-      const value = textarea.value;
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
-      const selected = value.slice(start, end);
-      let replacement = selected;
-      let selectionStart = start;
-      let selectionEnd = end;
-
-      if (format === "bold") {
-        const content = selected || "加粗文字";
-        replacement = `**${content}**`;
-        selectionStart = start + 2;
-        selectionEnd = selectionStart + content.length;
-      } else if (/^h[1-3]$/.test(format)) {
-        const level = Number(format.slice(1));
-        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-        const lineEndIndex = value.indexOf("\n", end);
-        const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
-        const lines = value.slice(lineStart, lineEnd).split("\n");
-        replacement = lines.map((line) => `${"#".repeat(level)} ${line.replace(/^#{1,6}\s+/, "") || "标题"}`).join("\n");
-        textarea.setRangeText(replacement, lineStart, lineEnd, "select");
-        selectionStart = lineStart + replacement.length;
-        selectionEnd = selectionStart;
-      } else if (format === "divider") {
-        const insertAt = end;
-        const before = value.slice(0, insertAt);
-        const after = value.slice(insertAt);
-        replacement = `${before && !before.endsWith("\n") ? "\n" : ""}---${after && !after.startsWith("\n") ? "\n" : ""}`;
-        textarea.setRangeText(replacement, insertAt, insertAt, "end");
-        selectionStart = insertAt + replacement.length;
-        selectionEnd = selectionStart;
-      } else return;
-
-      if (!/^h[1-3]$/.test(format) && format !== "divider") textarea.setRangeText(replacement, start, end, "end");
-      textarea.dispatchEvent(new Event("input", { bubbles:true }));
-      textarea.focus();
-      textarea.setSelectionRange(selectionStart, selectionEnd);
+      const editor = document.querySelector('[data-rich-field="myNote"]');
+      if (!editor || !state.form) return;
+      editor.focus();
+      const selection = window.getSelection();
+      if (!selection?.rangeCount || !editor.contains(selection.anchorNode)) {
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+      if (format === "bold") document.execCommand("bold", false);
+      else if (/^h[1-3]$/.test(format)) document.execCommand("formatBlock", false, format.toUpperCase());
+      else if (format === "divider") document.execCommand("insertHorizontalRule", false);
+      else return;
+      updateRichFormField("myNote", editor);
     }
 
     function updateFormField(key, value) {

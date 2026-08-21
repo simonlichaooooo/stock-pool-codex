@@ -43,7 +43,14 @@ class StockDrawerLayoutTests(unittest.TestCase):
         for markdown_format in ("bold", "h1", "h2", "h3", "divider"):
             self.assertIn(f'data-markdown-format="{markdown_format}"', HTML)
         self.assertIn("function formatResearchNote(format)", HTML)
-        self.assertIn('textarea[data-field="myNote"]', HTML)
+        self.assertIn('contenteditable="true"', HTML)
+        self.assertIn('data-rich-field="myNote"', HTML)
+        self.assertNotIn('<textarea class="markdown-note"', HTML)
+        self.assertIn("function markdownToEditorHtml(markdown)", HTML)
+        self.assertIn("function editorHtmlToMarkdown(editor)", HTML)
+        self.assertIn('document.execCommand("bold", false)', HTML)
+        self.assertIn('document.execCommand("formatBlock", false, format.toUpperCase())', HTML)
+        self.assertIn('document.execCommand("insertHorizontalRule", false)', HTML)
 
 
 if __name__ == "__main__":
