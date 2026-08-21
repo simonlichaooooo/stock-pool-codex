@@ -1009,6 +1009,32 @@
       max-width: none !important;
       line-height: 1.6;
     }
+    .markdown-editor { display: grid; gap: 8px; }
+    .markdown-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+    .markdown-toolbar button {
+      min-width: 30px;
+      min-height: 28px;
+      padding: 3px 8px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text);
+      box-shadow: none;
+      font-size: 12px;
+    }
+    .markdown-toolbar button:hover { background: var(--soft); }
+    .markdown-toolbar .markdown-bold { font-weight: 800; }
+    .markdown-toolbar .markdown-divider-icon { font-size: 15px; letter-spacing: -1px; }
+    .markdown-toolbar-separator { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
     .drawer textarea.markdown-note { min-height: 180px; }
     .drawer textarea.auto-grow-note {
       min-height: 30px;
@@ -9678,7 +9704,18 @@
                 <div class="result-panel">
                   <div class="side-note-box">
                     <label>研究备注</label>
-                    <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="支持 Markdown：记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
+                    <div class="markdown-editor">
+                      <div class="markdown-toolbar" role="toolbar" aria-label="研究备注字体编辑">
+                        <button type="button" class="markdown-bold" data-action="formatResearchNote" data-markdown-format="bold" title="加粗" aria-label="加粗">B</button>
+                        <span class="markdown-toolbar-separator" aria-hidden="true"></span>
+                        <button type="button" data-action="formatResearchNote" data-markdown-format="h1" title="一级标题" aria-label="一级标题">H1</button>
+                        <button type="button" data-action="formatResearchNote" data-markdown-format="h2" title="二级标题" aria-label="二级标题">H2</button>
+                        <button type="button" data-action="formatResearchNote" data-markdown-format="h3" title="三级标题" aria-label="三级标题">H3</button>
+                        <span class="markdown-toolbar-separator" aria-hidden="true"></span>
+                        <button type="button" class="markdown-divider-icon" data-action="formatResearchNote" data-markdown-format="divider" title="插入分割线" aria-label="插入分割线">—</button>
+                      </div>
+                      <textarea class="markdown-note" data-field="myNote" data-markdown="true" placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${escapeHtml(form.myNote || "")}</textarea>
+                    </div>
                   </div>
                   <div class="valuation-summary-block">
                     <h3>估值测算</h3>
@@ -10649,6 +10686,7 @@
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
+      if (action === "formatResearchNote") formatResearchNote(event.currentTarget.dataset.markdownFormat || "");
       if (action === "saveStock") saveStock();
       if (action === "openDeleteConfirm") openDeleteConfirm(stockId);
       if (action === "closeDeleteConfirm") closeDeleteConfirm();
@@ -12219,6 +12257,48 @@
 
     function markFormDirty() {
       state.formDirty = Boolean(state.form && formSnapshot(state.form) !== state.formInitialSnapshot);
+    }
+
+    function formatResearchNote(format) {
+      const textarea = document.querySelector('textarea[data-field="myNote"]');
+      if (!textarea || !state.form) return;
+      const value = textarea.value;
+      const start = textarea.selectionStart ?? value.length;
+      const end = textarea.selectionEnd ?? start;
+      const selected = value.slice(start, end);
+      let replacement = selected;
+      let selectionStart = start;
+      let selectionEnd = end;
+
+      if (format === "bold") {
+        const content = selected || "加粗文字";
+        replacement = `**${content}**`;
+        selectionStart = start + 2;
+        selectionEnd = selectionStart + content.length;
+      } else if (/^h[1-3]$/.test(format)) {
+        const level = Number(format.slice(1));
+        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+        const lineEndIndex = value.indexOf("\n", end);
+        const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
+        const lines = value.slice(lineStart, lineEnd).split("\n");
+        replacement = lines.map((line) => `${"#".repeat(level)} ${line.replace(/^#{1,6}\s+/, "") || "标题"}`).join("\n");
+        textarea.setRangeText(replacement, lineStart, lineEnd, "select");
+        selectionStart = lineStart + replacement.length;
+        selectionEnd = selectionStart;
+      } else if (format === "divider") {
+        const insertAt = end;
+        const before = value.slice(0, insertAt);
+        const after = value.slice(insertAt);
+        replacement = `${before && !before.endsWith("\n") ? "\n" : ""}---${after && !after.startsWith("\n") ? "\n" : ""}`;
+        textarea.setRangeText(replacement, insertAt, insertAt, "end");
+        selectionStart = insertAt + replacement.length;
+        selectionEnd = selectionStart;
+      } else return;
+
+      if (!/^h[1-3]$/.test(format) && format !== "divider") textarea.setRangeText(replacement, start, end, "end");
+      textarea.dispatchEvent(new Event("input", { bubbles:true }));
+      textarea.focus();
+      textarea.setSelectionRange(selectionStart, selectionEnd);
     }
 
     function updateFormField(key, value) {

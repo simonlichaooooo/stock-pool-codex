@@ -38,6 +38,13 @@ class StockDrawerLayoutTests(unittest.TestCase):
         self.assertIn('.drawer input[type="number"]::-webkit-outer-spin-button {', HTML)
         self.assertIn("-webkit-appearance: none;", HTML)
 
+    def test_research_note_has_markdown_formatting_toolbar(self):
+        self.assertIn('aria-label="研究备注字体编辑"', HTML)
+        for markdown_format in ("bold", "h1", "h2", "h3", "divider"):
+            self.assertIn(f'data-markdown-format="{markdown_format}"', HTML)
+        self.assertIn("function formatResearchNote(format)", HTML)
+        self.assertIn('textarea[data-field="myNote"]', HTML)
+
 
 if __name__ == "__main__":
     unittest.main()
