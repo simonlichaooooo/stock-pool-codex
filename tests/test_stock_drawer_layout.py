@@ -88,6 +88,11 @@ class StockDrawerLayoutTests(unittest.TestCase):
         self.assertIn("已于 ${minute}分：${second}秒为你自动保存", HTML)
         self.assertIn("position:sticky;", HTML)
         self.assertIn("bottom:0;", HTML)
+        self.assertIn("grid-template-rows:auto auto minmax(0,1fr) auto;", HTML)
+        self.assertIn("padding-bottom:40px;", HTML)
+        self.assertIn("gap:8px;", HTML)
+        self.assertIn("height:auto;", HTML)
+        self.assertIn("box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 16%,transparent);", HTML)
 
     def test_pool_and_portfolio_stock_names_are_emphasized(self):
         self.assertIn(".stock-pool-table tbody .stock-name,", HTML)

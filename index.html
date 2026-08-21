@@ -4785,8 +4785,9 @@
     .side-note-box > .markdown-editor {
       flex:1;
       min-height:0;
+      padding-bottom:40px;
       grid-template-rows:auto auto minmax(0,1fr) auto;
-      gap:4px;
+      gap:8px;
     }
     .research-note-editor-head { min-height:26px; gap:5px; }
     .research-note-editor-head strong { font-size:12px; line-height:1.25; }
@@ -4824,7 +4825,7 @@
       justify-content:flex-end;
       gap:8px;
       min-height:33px;
-      padding:8px 0 3px;
+      padding:6px 0 3px;
       position:sticky;
       bottom:0;
       z-index:2;
@@ -4852,11 +4853,15 @@
     .markdown-toolbar-separator { height:14px; margin:0 1px; }
     .drawer .markdown-note {
       min-height:0;
-      height:100%;
+      height:auto;
       padding:8px 9px;
       overflow-y:auto;
       font-size:12px;
       line-height:1.45;
+    }
+    .drawer .markdown-note:focus {
+      border-color:color-mix(in srgb,var(--brand) 72%,var(--line));
+      box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 16%,transparent);
     }
     .drawer .markdown-note h1,
     .drawer .markdown-note h2,
@@ -4876,7 +4881,7 @@
       .result-panel { height:calc(100vh - 132px); max-height:calc(100vh - 132px); }
     }
     @media (max-width:1100px) {
-      .side-note-box > .markdown-editor { flex:none; grid-template-rows:auto auto 320px auto; }
+      .side-note-box > .markdown-editor { flex:none; padding-bottom:0; grid-template-rows:auto auto 320px auto; }
       .drawer-head-valuation { overflow-x:auto; justify-content:flex-start; }
     }
     @media (max-width: 760px) {
