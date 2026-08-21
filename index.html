@@ -4736,6 +4736,7 @@
 
     /* Stock research notes: keep the editor compact around its controls and dedicate the available height to writing. */
     .drawer-body { padding-bottom:16px; }
+    .drawer-head { align-items:center; }
     .drawer-head-valuation {
       display:flex;
       align-items:center;
@@ -4743,12 +4744,21 @@
       gap:7px;
       margin-left:auto;
     }
-    .drawer-head-valuation-title {
-      color:var(--brand-strong);
-      font-size:12px;
-      font-weight:780;
-      letter-spacing:.2px;
-      white-space:nowrap;
+    .drawer-head-valuation + .icon {
+      position:relative;
+      align-self:center;
+      margin-left:4px;
+    }
+    .drawer-head-valuation + .icon::before {
+      content:"";
+      position:absolute;
+      top:50%;
+      left:-11px;
+      width:1px;
+      height:30px;
+      background:color-mix(in srgb,var(--line) 78%,transparent);
+      transform:translateY(-50%);
+      pointer-events:none;
     }
     .drawer-head-valuation span {
       display:grid;
@@ -9848,7 +9858,6 @@
                 <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
               </div>
               <div class="drawer-head-valuation" aria-label="估值测算">
-                <strong class="drawer-head-valuation-title">估值测算</strong>
                 <span><small>前瞻市值</small><b class="valuation-key" data-drawer-valuation="marketCap">${metricMoney(c.expectedMarketCapCny, currency)}</b></span>
                 <span><small>Upside</small><b class="${Number(c.upside) >= 0 ? "gain" : "loss"}" data-drawer-valuation="upside">${percent(c.upside)}</b></span>
                 <span><small>Forward PE</small><b class="valuation-key" data-drawer-valuation="forwardPE">${c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--"}</b></span>

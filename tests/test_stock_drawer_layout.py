@@ -73,7 +73,9 @@ class StockDrawerLayoutTests(unittest.TestCase):
     def test_research_note_management_and_auto_save_controls(self):
         self.assertIn('class="drawer-head-valuation"', HTML)
         self.assertIn('data-drawer-valuation="upside"', HTML)
-        self.assertIn('class="drawer-head-valuation-title"', HTML)
+        self.assertNotIn('class="drawer-head-valuation-title"', HTML)
+        self.assertIn(".drawer-head-valuation + .icon::before {", HTML)
+        self.assertIn("height:30px;", HTML)
         self.assertIn("font-size:15px;", HTML)
         self.assertIn(".drawer-head-valuation b.gain { color:var(--gain); }", HTML)
         self.assertIn(".drawer-head-valuation b.loss { color:var(--loss); }", HTML)
