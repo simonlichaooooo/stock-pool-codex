@@ -63,6 +63,13 @@ class StockDrawerLayoutTests(unittest.TestCase):
         self.assertIn("max-height: 260px;", HTML)
         self.assertIn("overflow-y: auto;", HTML)
 
+    def test_research_note_editor_uses_fixed_internal_scroll_layout(self):
+        self.assertIn("grid-template-rows:auto auto minmax(0,1fr) auto;", HTML)
+        self.assertIn("height:calc(100vh - 132px);", HTML)
+        self.assertIn(".drawer .markdown-note {", HTML)
+        self.assertIn("font-size:12px;", HTML)
+        self.assertNotIn('<div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>', HTML)
+
 
 if __name__ == "__main__":
     unittest.main()
