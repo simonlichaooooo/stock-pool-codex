@@ -1035,6 +1035,47 @@
     .markdown-toolbar .markdown-bold { font-weight: 800; }
     .markdown-toolbar .markdown-divider-icon { font-size: 15px; letter-spacing: -1px; }
     .markdown-toolbar-separator { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
+    .research-note-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .research-note-head > label { margin: 0; }
+    .research-note-add { min-height: 28px; padding: 0 9px; font-size: 12px; }
+    .research-note-list {
+      display: grid;
+      gap: 6px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+    .research-note-list-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 8px 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+    .research-note-open {
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--text);
+      font-weight: 750;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .research-note-open:hover { background: transparent; color: var(--brand); }
+    .research-note-date { color: var(--muted); font-size: 11px; font-weight: 400; white-space: nowrap; }
+    .research-note-delete { width: 26px; min-width: 26px; min-height: 26px; padding: 0; color: var(--muted); }
+    .research-note-empty { padding: 22px 12px; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); text-align: center; font-size: 12px; }
+    .research-note-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .research-note-editor-head strong { font-size: 13px; }
+    .research-note-editor-actions { display: flex; justify-content: flex-end; gap: 6px; }
     .drawer .markdown-note {
       min-height: 180px;
       padding: 10px 11px;
@@ -4934,6 +4975,7 @@
       formDirty: false,
       saving: false,
       drawerError: "",
+      activeResearchNoteId: "",
       deleteConfirm: {
         open: false,
         stockId: "",
@@ -9646,7 +9688,8 @@
         shareholderReturnRemark: "",
         forecastYear: "2026E",
         investmentNote: "",
-        myNote: ""
+        myNote: "",
+        researchNotes: []
       };
     }
 
@@ -9724,19 +9767,7 @@
                 </div>
                 <div class="result-panel">
                   <div class="side-note-box">
-                    <label>研究备注</label>
-                    <div class="markdown-editor">
-                      <div class="markdown-toolbar" role="toolbar" aria-label="研究备注字体编辑">
-                        <button type="button" class="markdown-bold" data-action="formatResearchNote" data-markdown-format="bold" title="加粗" aria-label="加粗">B</button>
-                        <span class="markdown-toolbar-separator" aria-hidden="true"></span>
-                        <button type="button" data-action="formatResearchNote" data-markdown-format="h1" title="一级标题" aria-label="一级标题">H1</button>
-                        <button type="button" data-action="formatResearchNote" data-markdown-format="h2" title="二级标题" aria-label="二级标题">H2</button>
-                        <button type="button" data-action="formatResearchNote" data-markdown-format="h3" title="三级标题" aria-label="三级标题">H3</button>
-                        <span class="markdown-toolbar-separator" aria-hidden="true"></span>
-                        <button type="button" class="markdown-divider-icon" data-action="formatResearchNote" data-markdown-format="divider" title="插入分割线" aria-label="插入分割线">—</button>
-                      </div>
-                      <div class="markdown-note" contenteditable="true" role="textbox" aria-multiline="true" aria-label="研究备注内容" data-rich-field="myNote" data-placeholder="记录投资假设、风险点、跟踪事项或财报观察。">${markdownToEditorHtml(form.myNote || "")}</div>
-                    </div>
+                    ${renderResearchNotes(form)}
                   </div>
                   <div class="valuation-summary-block">
                     <h3>估值测算</h3>
@@ -10714,6 +10745,11 @@
       if (action === "selectPortfolioStock") selectPortfolioStock(Number(event.currentTarget.dataset.index), event.currentTarget.dataset.side || "");
       if (action === "newStock") openDrawer();
       if (action === "closeDrawer") closeDrawer();
+      if (action === "newResearchNote") newResearchNote();
+      if (action === "editResearchNote") editResearchNote(event.currentTarget.dataset.noteId || "");
+      if (action === "backToResearchNotes") { state.activeResearchNoteId = ""; render(); }
+      if (action === "saveResearchNote") await saveResearchNote();
+      if (action === "deleteResearchNote") await deleteResearchNote(event.currentTarget.dataset.noteId || "");
       if (action === "formatResearchNote") formatResearchNote(event.currentTarget.dataset.markdownFormat || "");
       if (action === "saveStock") saveStock();
       if (action === "openDeleteConfirm") openDeleteConfirm(stockId);
@@ -12259,7 +12295,8 @@
     function openDrawer(stockId = null) {
       const stock = state.stocks.find((item) => item.id === stockId);
       state.editingId = stockId;
-      state.form = normalizeShareholderReturnFields(stock ? { ...stock } : emptyForm());
+      state.form = normalizeResearchNotes(normalizeShareholderReturnFields(stock ? { ...stock } : emptyForm()));
+      state.activeResearchNoteId = "";
       state.formInitialSnapshot = formSnapshot(state.form);
       state.formDirty = false;
       state.drawerError = "";
@@ -12274,6 +12311,7 @@
       state.formInitialSnapshot = "";
       state.formDirty = false;
       state.drawerError = "";
+      state.activeResearchNoteId = "";
       render();
     }
 
@@ -12285,6 +12323,110 @@
 
     function markFormDirty() {
       state.formDirty = Boolean(state.form && formSnapshot(state.form) !== state.formInitialSnapshot);
+    }
+
+    function normalizeResearchNotes(form) {
+      const fallbackTime = form.updatedAt || form.createdAt || new Date().toISOString();
+      let notes = Array.isArray(form.researchNotes) ? form.researchNotes : [];
+      notes = notes.filter((note) => String(note?.content || "").trim()).map((note, index) => ({
+        id: String(note.id || `note-${form.id || "draft"}-${index + 1}`),
+        content: String(note.content || ""),
+        createdAt: note.createdAt || note.updatedAt || fallbackTime,
+        updatedAt: note.updatedAt || note.createdAt || fallbackTime
+      }));
+      if (!notes.length && String(form.myNote || "").trim()) notes = [{
+        id: `note-${form.id || "legacy"}-legacy`,
+        content: String(form.myNote),
+        createdAt: fallbackTime,
+        updatedAt: fallbackTime
+      }];
+      return { ...form, researchNotes:notes };
+    }
+
+    function sortedResearchNotes(form = state.form) {
+      return [...(form?.researchNotes || [])].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    }
+
+    function researchNoteTitle(content) {
+      const firstLine = String(content || "").split(/\r?\n/).map((line) => line.trim()).find(Boolean) || "未命名备注";
+      return firstLine.replace(/^#{1,6}\s*/, "").replace(/^[-*]\s+/, "").replace(/\*\*/g, "").trim() || "未命名备注";
+    }
+
+    function activeResearchNote() {
+      return state.form?.researchNotes?.find((note) => note.id === state.activeResearchNoteId) || null;
+    }
+
+    function renderResearchNotes(form) {
+      const active = activeResearchNote();
+      if (active) return `
+        <div class="markdown-editor">
+          <div class="research-note-editor-head"><strong>${escapeHtml(researchNoteTitle(active.content))}</strong><button type="button" data-action="backToResearchNotes">返回列表</button></div>
+          <div class="markdown-toolbar" role="toolbar" aria-label="研究备注字体编辑">
+            <button type="button" class="markdown-bold" data-action="formatResearchNote" data-markdown-format="bold" title="加粗" aria-label="加粗">B</button>
+            <span class="markdown-toolbar-separator" aria-hidden="true"></span>
+            <button type="button" data-action="formatResearchNote" data-markdown-format="h1" title="一级标题" aria-label="一级标题">H1</button>
+            <button type="button" data-action="formatResearchNote" data-markdown-format="h2" title="二级标题" aria-label="二级标题">H2</button>
+            <button type="button" data-action="formatResearchNote" data-markdown-format="h3" title="三级标题" aria-label="三级标题">H3</button>
+            <span class="markdown-toolbar-separator" aria-hidden="true"></span>
+            <button type="button" class="markdown-divider-icon" data-action="formatResearchNote" data-markdown-format="divider" title="插入分割线" aria-label="插入分割线">—</button>
+          </div>
+          <div class="markdown-note" contenteditable="true" role="textbox" aria-multiline="true" aria-label="研究备注内容" data-rich-field="researchNote" data-placeholder="第一行将作为备注标题。">${markdownToEditorHtml(active.content)}</div>
+          <div class="research-note-editor-actions"><button type="button" data-action="backToResearchNotes">返回列表</button><button type="button" class="primary" data-action="saveResearchNote">保存备注</button></div>
+        </div>`;
+      const notes = sortedResearchNotes(form);
+      return `
+        <div class="research-note-head"><label>研究备注</label><button type="button" class="research-note-add" data-action="newResearchNote">+ 新增备注</button></div>
+        ${notes.length ? `<div class="research-note-list">${notes.map((note) => `
+          <div class="research-note-list-item">
+            <button type="button" class="research-note-open" data-action="editResearchNote" data-note-id="${escapeHtml(note.id)}" title="编辑 ${escapeHtml(researchNoteTitle(note.content))}">${escapeHtml(researchNoteTitle(note.content))}</button>
+            <span class="research-note-date">${formatDate(note.updatedAt)}</span>
+            <button type="button" class="research-note-delete" data-action="deleteResearchNote" data-note-id="${escapeHtml(note.id)}" title="删除备注" aria-label="删除 ${escapeHtml(researchNoteTitle(note.content))}">×</button>
+          </div>`).join("")}</div>` : `<div class="research-note-empty">暂无研究备注，点击“新增备注”开始记录。</div>`}`;
+    }
+
+    function newResearchNote() {
+      if (!state.form) return;
+      const now = new Date().toISOString();
+      const note = { id:id("note"), content:"", createdAt:now, updatedAt:now };
+      state.form.researchNotes = [...(state.form.researchNotes || []), note];
+      state.activeResearchNoteId = note.id;
+      markFormDirty();
+      render();
+    }
+
+    function editResearchNote(noteId) {
+      if (!state.form?.researchNotes?.some((note) => note.id === noteId)) return;
+      state.activeResearchNoteId = noteId;
+      render();
+    }
+
+    function syncResearchNoteLegacyField() {
+      if (!state.form) return;
+      state.form.myNote = sortedResearchNotes()[0]?.content || "";
+    }
+
+    async function saveResearchNote() {
+      const note = activeResearchNote();
+      const editor = document.querySelector('[data-rich-field="researchNote"]');
+      if (!note || !editor) return;
+      note.content = editorHtmlToMarkdown(editor);
+      if (!note.content.trim()) { state.drawerError = "研究备注内容不能为空。"; render(); return; }
+      note.updatedAt = new Date().toISOString();
+      syncResearchNoteLegacyField();
+      state.activeResearchNoteId = "";
+      markFormDirty();
+      if (state.form.id) await saveStock({ keepOpen:true });
+      else render();
+    }
+
+    async function deleteResearchNote(noteId) {
+      if (!state.form || !noteId || !window.confirm("确认删除这条研究备注吗？")) return;
+      state.form.researchNotes = (state.form.researchNotes || []).filter((note) => note.id !== noteId);
+      if (state.activeResearchNoteId === noteId) state.activeResearchNoteId = "";
+      syncResearchNoteLegacyField();
+      markFormDirty();
+      if (state.form.id) await saveStock({ keepOpen:true });
+      else render();
     }
 
     function markdownInlineToEditorHtml(value) {
@@ -12340,12 +12482,15 @@
 
     function updateRichFormField(key, editor) {
       if (!state.form || !editor) return;
-      state.form[key] = editorHtmlToMarkdown(editor);
+      if (key === "researchNote") {
+        const note = activeResearchNote();
+        if (note) note.content = editorHtmlToMarkdown(editor);
+      } else state.form[key] = editorHtmlToMarkdown(editor);
       markFormDirty();
     }
 
     function formatResearchNote(format) {
-      const editor = document.querySelector('[data-rich-field="myNote"]');
+      const editor = document.querySelector('[data-rich-field="researchNote"]');
       if (!editor || !state.form) return;
       editor.focus();
       const selection = window.getSelection();
@@ -12360,7 +12505,7 @@
       else if (/^h[1-3]$/.test(format)) document.execCommand("formatBlock", false, format.toUpperCase());
       else if (format === "divider") document.execCommand("insertHorizontalRule", false);
       else return;
-      updateRichFormField("myNote", editor);
+      updateRichFormField("researchNote", editor);
     }
 
     function updateFormField(key, value) {
@@ -12596,9 +12741,10 @@
       render();
     }
 
-    async function saveStock() {
+    async function saveStock({ keepOpen = false } = {}) {
       if (state.saving) return null;
-      state.form = normalizeShareholderReturnFields(state.form);
+      state.form = normalizeResearchNotes(normalizeShareholderReturnFields(state.form));
+      syncResearchNoteLegacyField();
       if (!state.form.name.trim() || !state.form.code.trim()) {
         state.drawerError = "请填写股票名称和代码。";
         render();
@@ -12667,6 +12813,12 @@
       state.formInitialSnapshot = formSnapshot(state.form);
       state.formDirty = false;
       state.saving = false;
+      if (keepOpen) {
+        state.editingId = payload.id;
+        state.activeResearchNoteId = "";
+        render();
+        return payload;
+      }
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
@@ -12837,12 +12989,14 @@
     }
 
     function normalizeStockRow(row) {
-      return normalizeShareholderReturnFields({
+      return normalizeResearchNotes(normalizeShareholderReturnFields({
         ...row.payload,
         id: row.id,
         userId: row.user_id || row.payload?.userId || "",
+        createdAt: row.payload?.createdAt || row.created_at || "",
+        updatedAt: row.payload?.updatedAt || row.updated_at || "",
         myNote: row.payload?.myNote || ""
-      });
+      }));
     }
 
     async function loadProfile() {

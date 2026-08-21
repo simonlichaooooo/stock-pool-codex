@@ -44,13 +44,24 @@ class StockDrawerLayoutTests(unittest.TestCase):
             self.assertIn(f'data-markdown-format="{markdown_format}"', HTML)
         self.assertIn("function formatResearchNote(format)", HTML)
         self.assertIn('contenteditable="true"', HTML)
-        self.assertIn('data-rich-field="myNote"', HTML)
+        self.assertIn('data-rich-field="researchNote"', HTML)
         self.assertNotIn('<textarea class="markdown-note"', HTML)
         self.assertIn("function markdownToEditorHtml(markdown)", HTML)
         self.assertIn("function editorHtmlToMarkdown(editor)", HTML)
         self.assertIn('document.execCommand("bold", false)', HTML)
         self.assertIn('document.execCommand("formatBlock", false, format.toUpperCase())', HTML)
         self.assertIn('document.execCommand("insertHorizontalRule", false)', HTML)
+
+    def test_research_notes_support_multiple_sorted_entries(self):
+        self.assertIn("function sortedResearchNotes", HTML)
+        self.assertIn("new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)", HTML)
+        self.assertIn("function researchNoteTitle", HTML)
+        self.assertIn('data-action="newResearchNote"', HTML)
+        self.assertIn('data-action="editResearchNote"', HTML)
+        self.assertIn('data-action="deleteResearchNote"', HTML)
+        self.assertIn('data-action="saveResearchNote"', HTML)
+        self.assertIn("max-height: 260px;", HTML)
+        self.assertIn("overflow-y: auto;", HTML)
 
 
 if __name__ == "__main__":
