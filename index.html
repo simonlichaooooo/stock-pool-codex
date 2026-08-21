@@ -4735,6 +4735,25 @@
     }
 
     /* Stock research notes: keep the editor compact around its controls and dedicate the available height to writing. */
+    .drawer-head-valuation {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:5px;
+      margin-left:auto;
+    }
+    .drawer-head-valuation span {
+      display:grid;
+      grid-template-columns:auto auto;
+      align-items:baseline;
+      gap:5px;
+      min-width:112px;
+      padding:4px 7px;
+      border-radius:4px;
+      background:color-mix(in srgb,var(--panel-2) 70%,transparent);
+    }
+    .drawer-head-valuation small { color:var(--muted); font-size:10px; font-weight:500; white-space:nowrap; }
+    .drawer-head-valuation b { color:var(--text); font-size:12px; font-weight:740; white-space:nowrap; }
     .result-panel {
       padding:10px;
       gap:6px;
@@ -4748,9 +4767,50 @@
     }
     .research-note-editor-head { min-height:26px; gap:5px; }
     .research-note-editor-head strong { font-size:12px; line-height:1.25; }
-    .research-note-editor-head button,
     .research-note-editor-actions button { min-height:25px; padding:0 8px; font-size:11px; }
-    .research-note-editor-actions { gap:4px; }
+    .research-note-head-actions { display:flex; align-items:center; gap:2px; }
+    .research-note-quiet-action,
+    .research-note-quiet-action:hover {
+      min-height:24px;
+      padding:0 6px;
+      border:0;
+      background:transparent;
+      box-shadow:none;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:550;
+    }
+    .research-note-quiet-action:hover { color:var(--brand); }
+    .research-note-delete,
+    .research-note-delete:hover {
+      min-width:20px;
+      width:20px;
+      min-height:20px;
+      padding:0;
+      border:0;
+      background:transparent;
+      box-shadow:none;
+      color:var(--muted);
+      font-size:15px;
+      font-weight:400;
+    }
+    .research-note-delete:hover { color:var(--loss); }
+    .research-note-editor-footer {
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      min-height:33px;
+      padding-top:8px;
+    }
+    .research-note-auto-save {
+      margin-right:auto;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:400;
+      white-space:nowrap;
+    }
+    .research-note-editor-actions { display:flex; gap:4px; }
     .markdown-toolbar { gap:2px; padding:2px 3px; }
     .markdown-toolbar button { min-width:27px; min-height:24px; padding:1px 6px; font-size:11px; }
     .markdown-toolbar .markdown-divider-icon { font-size:13px; }
@@ -4782,6 +4842,7 @@
     }
     @media (max-width:1100px) {
       .side-note-box > .markdown-editor { flex:none; grid-template-rows:auto auto 320px auto; }
+      .drawer-head-valuation { overflow-x:auto; justify-content:flex-start; }
     }
     @media (max-width: 760px) {
       .market-insight-head { align-items:stretch; flex-direction:column; }
@@ -4864,6 +4925,8 @@
     let sessionRefreshPromise = null;
     let journalSearchTimer = null;
     let journalSearchRequestId = 0;
+    let researchNoteAutoSaveTimer = null;
+    let researchNoteAutoSaveRequestId = 0;
     let portfolioInitializationSearchTimer = null;
     let portfolioInitializationSearchRequestId = 0;
     const stockSearchCache = new Map();
@@ -5026,6 +5089,8 @@
       saving: false,
       drawerError: "",
       activeResearchNoteId: "",
+      researchNotesManaging: false,
+      researchNoteAutoSaveStatus: "",
       deleteConfirm: {
         open: false,
         stockId: "",
@@ -9757,6 +9822,12 @@
               <div class="drawer-title">
                 <h2>${form.id ? "编辑股票" : "新增股票"}</h2>
               </div>
+              <div class="drawer-head-valuation" aria-label="估值测算">
+                <span><small>前瞻市值</small><b data-drawer-valuation="marketCap">${metricMoney(c.expectedMarketCapCny, currency)}</b></span>
+                <span><small>Upside</small><b data-drawer-valuation="upside">${percent(c.upside)}</b></span>
+                <span><small>Forward PE</small><b data-drawer-valuation="forwardPE">${c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--"}</b></span>
+                <span><small>股东回报率</small><b data-drawer-valuation="shareholderReturn">${percent(c.shareholderReturnRate)}</b></span>
+              </div>
               <button class="icon" data-action="closeDrawer" title="关闭">×</button>
             </div>
             <div class="drawer-body">
@@ -9818,15 +9889,6 @@
                 <div class="result-panel">
                   <div class="side-note-box">
                     ${renderResearchNotes(form)}
-                  </div>
-                  <div class="valuation-summary-block">
-                    <h3>估值测算</h3>
-                    <div class="result-grid summary">
-                      ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
-                      ${resultItem("Upside", percent(c.upside))}
-                      ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
-                      ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -10130,7 +10192,10 @@
         el.addEventListener("change", () => updateFormField(el.dataset.field, el.type === "checkbox" ? el.checked : el.value));
       });
       document.querySelectorAll("[data-rich-field]").forEach((editor) => {
-        editor.addEventListener("input", () => updateRichFormField(editor.dataset.richField, editor));
+        editor.addEventListener("input", () => {
+          updateRichFormField(editor.dataset.richField, editor);
+          if (editor.dataset.richField === "researchNote") scheduleResearchNoteAutoSave();
+        });
         editor.addEventListener("blur", () => updateRichFormField(editor.dataset.richField, editor));
       });
       document.querySelectorAll("[data-markdown-format]").forEach((button) => {
@@ -10796,7 +10861,8 @@
       if (action === "closeDrawer") closeDrawer();
       if (action === "newResearchNote") newResearchNote();
       if (action === "editResearchNote") editResearchNote(event.currentTarget.dataset.noteId || "");
-      if (action === "backToResearchNotes") { state.activeResearchNoteId = ""; render(); }
+      if (action === "toggleResearchNotesManaging") { state.researchNotesManaging = !state.researchNotesManaging; render(); }
+      if (action === "backToResearchNotes") await backToResearchNotes();
       if (action === "saveResearchNote") await saveResearchNote();
       if (action === "deleteResearchNote") await deleteResearchNote(event.currentTarget.dataset.noteId || "");
       if (action === "formatResearchNote") formatResearchNote(event.currentTarget.dataset.markdownFormat || "");
@@ -12346,6 +12412,8 @@
       state.editingId = stockId;
       state.form = normalizeResearchNotes(normalizeShareholderReturnFields(stock ? { ...stock } : emptyForm()));
       state.activeResearchNoteId = "";
+      state.researchNotesManaging = false;
+      state.researchNoteAutoSaveStatus = "";
       state.formInitialSnapshot = formSnapshot(state.form);
       state.formDirty = false;
       state.drawerError = "";
@@ -12354,6 +12422,7 @@
     }
 
     function closeDrawer() {
+      clearResearchNoteAutoSave();
       state.drawerOpen = false;
       state.editingId = null;
       state.form = null;
@@ -12361,6 +12430,8 @@
       state.formDirty = false;
       state.drawerError = "";
       state.activeResearchNoteId = "";
+      state.researchNotesManaging = false;
+      state.researchNoteAutoSaveStatus = "";
       render();
     }
 
@@ -12409,7 +12480,7 @@
       const active = activeResearchNote();
       if (active) return `
         <div class="markdown-editor">
-          <div class="research-note-editor-head"><strong>${escapeHtml(researchNoteTitle(active.content))}</strong><button type="button" data-action="backToResearchNotes">返回列表</button></div>
+          <div class="research-note-editor-head"><strong>${escapeHtml(researchNoteTitle(active.content))}</strong></div>
           <div class="markdown-toolbar" role="toolbar" aria-label="研究备注字体编辑">
             <button type="button" class="markdown-bold" data-action="formatResearchNote" data-markdown-format="bold" title="加粗" aria-label="加粗">B</button>
             <span class="markdown-toolbar-separator" aria-hidden="true"></span>
@@ -12420,16 +12491,16 @@
             <button type="button" class="markdown-divider-icon" data-action="formatResearchNote" data-markdown-format="divider" title="插入分割线" aria-label="插入分割线">—</button>
           </div>
           <div class="markdown-note" contenteditable="true" role="textbox" aria-multiline="true" aria-label="研究备注内容" data-rich-field="researchNote" data-placeholder="第一行将作为备注标题。">${markdownToEditorHtml(active.content)}</div>
-          <div class="research-note-editor-actions"><button type="button" data-action="backToResearchNotes">返回列表</button><button type="button" class="primary" data-action="saveResearchNote">保存备注</button></div>
+          <div class="research-note-editor-footer"><span class="research-note-auto-save" data-note-auto-save>${escapeHtml(state.researchNoteAutoSaveStatus)}</span><div class="research-note-editor-actions"><button type="button" data-action="backToResearchNotes">返回</button><button type="button" class="primary" data-action="saveResearchNote">保存</button></div></div>
         </div>`;
       const notes = sortedResearchNotes(form);
       return `
-        <div class="research-note-head"><label>研究备注</label><button type="button" class="research-note-add" data-action="newResearchNote">+ 新增备注</button></div>
+        <div class="research-note-head"><label>研究备注</label><div class="research-note-head-actions"><button type="button" class="research-note-quiet-action" data-action="newResearchNote">新增</button>${notes.length ? `<button type="button" class="research-note-quiet-action" data-action="toggleResearchNotesManaging">${state.researchNotesManaging ? "完成" : "编辑"}</button>` : ""}</div></div>
         ${notes.length ? `<div class="research-note-list">${notes.map((note) => `
           <div class="research-note-list-item">
             <button type="button" class="research-note-open" data-action="editResearchNote" data-note-id="${escapeHtml(note.id)}" title="编辑 ${escapeHtml(researchNoteTitle(note.content))}">${escapeHtml(researchNoteTitle(note.content))}</button>
             <span class="research-note-date">${formatDate(note.updatedAt)}</span>
-            <button type="button" class="research-note-delete" data-action="deleteResearchNote" data-note-id="${escapeHtml(note.id)}" title="删除备注" aria-label="删除 ${escapeHtml(researchNoteTitle(note.content))}">×</button>
+            ${state.researchNotesManaging ? `<button type="button" class="research-note-delete" data-action="deleteResearchNote" data-note-id="${escapeHtml(note.id)}" title="删除备注" aria-label="删除 ${escapeHtml(researchNoteTitle(note.content))}">×</button>` : ""}
           </div>`).join("")}</div>` : `<div class="research-note-empty">暂无研究备注，点击“新增备注”开始记录。</div>`}`;
     }
 
@@ -12439,6 +12510,8 @@
       const note = { id:id("note"), content:"", createdAt:now, updatedAt:now };
       state.form.researchNotes = [...(state.form.researchNotes || []), note];
       state.activeResearchNoteId = note.id;
+      state.researchNotesManaging = false;
+      state.researchNoteAutoSaveStatus = "";
       markFormDirty();
       render();
     }
@@ -12446,6 +12519,8 @@
     function editResearchNote(noteId) {
       if (!state.form?.researchNotes?.some((note) => note.id === noteId)) return;
       state.activeResearchNoteId = noteId;
+      state.researchNotesManaging = false;
+      state.researchNoteAutoSaveStatus = "";
       render();
     }
 
@@ -12455,6 +12530,7 @@
     }
 
     async function saveResearchNote() {
+      clearResearchNoteAutoSave();
       const note = activeResearchNote();
       const editor = document.querySelector('[data-rich-field="researchNote"]');
       if (!note || !editor) return;
@@ -12466,6 +12542,74 @@
       markFormDirty();
       if (state.form.id) await saveStock({ keepOpen:true });
       else render();
+    }
+
+    function clearResearchNoteAutoSave() {
+      if (researchNoteAutoSaveTimer) window.clearTimeout(researchNoteAutoSaveTimer);
+      researchNoteAutoSaveTimer = null;
+    }
+
+    function setResearchNoteAutoSaveStatus(message) {
+      state.researchNoteAutoSaveStatus = message;
+      const target = document.querySelector("[data-note-auto-save]");
+      if (target) target.textContent = message;
+    }
+
+    function scheduleResearchNoteAutoSave() {
+      clearResearchNoteAutoSave();
+      const requestId = ++researchNoteAutoSaveRequestId;
+      setResearchNoteAutoSaveStatus("正在自动保存…");
+      researchNoteAutoSaveTimer = window.setTimeout(() => autoSaveResearchNote(requestId), 2000);
+    }
+
+    async function autoSaveResearchNote(requestId = ++researchNoteAutoSaveRequestId) {
+      clearResearchNoteAutoSave();
+      const note = activeResearchNote();
+      if (!note || requestId !== researchNoteAutoSaveRequestId) return false;
+      if (!String(note.content || "").trim()) {
+        setResearchNoteAutoSaveStatus("内容为空，暂未自动保存");
+        return false;
+      }
+      const now = new Date();
+      const savedAt = now.toISOString();
+      note.updatedAt = savedAt;
+      syncResearchNoteLegacyField();
+      if (!state.form.id) {
+        setResearchNoteAutoSaveStatus("保存股票后将启用自动保存");
+        return false;
+      }
+      const payload = { ...normalizeShareholderReturnFields(state.form), updatedAt:savedAt };
+      try {
+        if (state.session?.access_token !== "local-demo") {
+          await supabaseRequest(`/rest/v1/stock_records?id=eq.${encodeURIComponent(payload.id)}`, {
+            method:"PATCH",
+            body:JSON.stringify({ payload:payloadForStockRecord(payload), updated_at:savedAt })
+          });
+        }
+        if (requestId !== researchNoteAutoSaveRequestId) return false;
+        state.form = payload;
+        state.stocks = state.stocks.map((item) => item.id === payload.id ? payload : item);
+        state.formInitialSnapshot = formSnapshot(state.form);
+        state.formDirty = false;
+        const minute = String(now.getMinutes()).padStart(2, "0");
+        const second = String(now.getSeconds()).padStart(2, "0");
+        setResearchNoteAutoSaveStatus(`已于 ${minute}分：${second}秒为你自动保存`);
+        return true;
+      } catch (error) {
+        setResearchNoteAutoSaveStatus("自动保存失败，请点击保存重试");
+        return false;
+      }
+    }
+
+    async function backToResearchNotes() {
+      const note = activeResearchNote();
+      if (note && !String(note.content || "").trim()) {
+        state.form.researchNotes = state.form.researchNotes.filter((item) => item.id !== note.id);
+        clearResearchNoteAutoSave();
+      } else if (note) await autoSaveResearchNote();
+      state.activeResearchNoteId = "";
+      state.researchNoteAutoSaveStatus = "";
+      render();
     }
 
     async function deleteResearchNote(noteId) {
@@ -12555,6 +12699,7 @@
       else if (format === "divider") document.execCommand("insertHorizontalRule", false);
       else return;
       updateRichFormField("researchNote", editor);
+      scheduleResearchNoteAutoSave();
     }
 
     function updateFormField(key, value) {
@@ -12729,19 +12874,26 @@
 
     function refreshSummary() {
       const summary = document.querySelector(".summary");
-      if (!summary || !state.form) return;
+      if (!state.form) return;
       const currency = state.form.displayCurrency || "CNY";
       const c = calc(state.form);
       const segmentProfit = document.querySelector("[data-segment-total='profit']");
       const segmentPE = document.querySelector("[data-segment-total='pe']");
       if (segmentProfit) segmentProfit.textContent = metricMoney(state.form.expectedProfitCny, currency);
       if (segmentPE) segmentPE.textContent = state.form.expectedPE ? `${trimNumber(state.form.expectedPE)} 倍` : "--";
-      summary.innerHTML = `
-        ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
-        ${resultItem("Upside", percent(c.upside))}
-        ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
-        ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
-      `;
+      if (summary) summary.innerHTML = `
+          ${resultItem("前瞻市值", metricMoney(c.expectedMarketCapCny, currency))}
+          ${resultItem("Upside", percent(c.upside))}
+          ${resultItem("Forward PE", c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--")}
+          ${resultItem("股东回报率", percent(c.shareholderReturnRate))}
+        `;
+      const headerValues = {
+        marketCap:metricMoney(c.expectedMarketCapCny, currency),
+        upside:percent(c.upside),
+        forwardPE:c.forwardPE ? `${trimNumber(c.forwardPE)} 倍` : "--",
+        shareholderReturn:percent(c.shareholderReturnRate)
+      };
+      document.querySelectorAll("[data-drawer-valuation]").forEach((node) => { node.textContent = headerValues[node.dataset.drawerValuation] || "--"; });
     }
 
     async function onStockSearch(event) {

@@ -70,6 +70,16 @@ class StockDrawerLayoutTests(unittest.TestCase):
         self.assertIn("font-size:12px;", HTML)
         self.assertNotIn('<div class="disclaimer">内容为用户个人记录，不构成投资建议。</div>', HTML)
 
+    def test_research_note_management_and_auto_save_controls(self):
+        self.assertIn('class="drawer-head-valuation"', HTML)
+        self.assertIn('data-drawer-valuation="upside"', HTML)
+        self.assertNotIn('class="valuation-summary-block"', HTML)
+        self.assertIn('data-action="toggleResearchNotesManaging"', HTML)
+        self.assertIn('data-note-auto-save', HTML)
+        self.assertIn('window.setTimeout(() => autoSaveResearchNote(requestId), 2000)', HTML)
+        self.assertIn("async function backToResearchNotes()", HTML)
+        self.assertIn("已于 ${minute}分：${second}秒为你自动保存", HTML)
+
 
 if __name__ == "__main__":
     unittest.main()
