@@ -11764,14 +11764,27 @@
     }
 
     async function fetchHistoricalCloses(stock, firstDate, lastDate) {
+      const symbol = tencentHistorySymbol(stock);
+      if (symbol) {
+        try {
+          const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${encodeURIComponent(symbol)},day,${firstDate},${lastDate},5000,qfq&_=${Date.now()}`;
+          const response = await fetchWithTimeout(url, 10000);
+          if (!response.ok) throw new Error(`腾讯日线 HTTP ${response.status}`);
+          const json = await response.json();
+          const data = json?.data?.[symbol];
+          const rows = data?.qfqday || data?.day || [];
+          const closes = rows.map((row) => [String(row?.[0] || ""), Number(row?.[2])]).filter((item) => item[0] && item[1] > 0);
+          if (closes.length) return closes;
+          throw new Error("腾讯日线数据为空");
+        } catch (error) {
+          console.warn("腾讯历史日线不可用，尝试东方财富备用行情。", stock?.code, error);
+        }
+      }
       let quoteId = stockQuoteId(stock);
       if (!quoteId && stock.market === "US") quoteId = `105.${String(stock.rawCode || stock.code || "").toUpperCase()}`;
       if (!quoteId) throw new Error("暂时无法识别这只股票的历史行情代码。");
       const compact = (value) => String(value).replaceAll("-", "");
       const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${encodeURIComponent(quoteId)}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=0&beg=${compact(firstDate)}&end=${compact(lastDate)}`;
-      // The history endpoint does not consistently allow cross-origin fetches in
-      // browsers. Use its JSONP interface, as the weekly history request does,
-      // so backfilled trades are not blocked by CORS before they can be saved.
       const json = await jsonp(url);
       const closes = (json?.data?.klines || []).map((line) => String(line).split(",")).map((parts) => [parts[0], Number(parts[2])]).filter((item) => item[0] && item[1] > 0);
       if (!closes.length) throw new Error("没有取得该股票的历史收盘价。");
