@@ -6101,20 +6101,22 @@
       const next = { ...stock };
       next.useSegmentValuation = Boolean(next.useSegmentValuation);
       const rawSegments = Array.isArray(next.segmentValuations) ? next.segmentValuations : [];
-      next.segmentValuations = rawSegments.map((segment, index) => ({
-        segmentName: segment?.segmentName || segment?.name || `分部${index + 1}`,
-        expectedProfitCny: Number(segment?.expectedProfitCny) || 0,
-        expectedProfitCurrency: currencies[segment?.expectedProfitOriginal?.currency] ? segment.expectedProfitOriginal.currency : currencies[segment?.expectedProfitCurrency] ? segment.expectedProfitCurrency : "CNY",
-        expectedProfitInput: segment?.expectedProfitOriginal?.value !== undefined && segment?.expectedProfitOriginal?.value !== null ? String(segment.expectedProfitOriginal.value) : segment?.expectedProfitInput === undefined || segment?.expectedProfitInput === null ? "" : String(segment.expectedProfitInput),
-        expectedProfitOriginal: {
-          value: segment?.expectedProfitOriginal?.value !== undefined && segment?.expectedProfitOriginal?.value !== null ? String(segment.expectedProfitOriginal.value) : segment?.expectedProfitInput === undefined || segment?.expectedProfitInput === null ? "" : String(segment.expectedProfitInput),
-          currency: currencies[segment?.expectedProfitOriginal?.currency] ? segment.expectedProfitOriginal.currency : currencies[segment?.expectedProfitCurrency] ? segment.expectedProfitCurrency : "CNY"
-        },
-        expectedPE: Number(segment?.expectedPE) || 0,
-        expectedPEInput: segment?.expectedPEInput === undefined || segment?.expectedPEInput === null ? String(Number(segment?.expectedPE) || "") : String(segment.expectedPEInput),
-        forecastYear: segment?.forecastYear || next.forecastYear || "2026E",
-        expectedPERemark: segment?.expectedPERemark || ""
-      }));
+      next.segmentValuations = rawSegments.map((segment, index) => {
+        const profitCurrency = currencies[segment?.expectedProfitOriginal?.currency] ? segment.expectedProfitOriginal.currency : currencies[segment?.expectedProfitCurrency] ? segment.expectedProfitCurrency : "CNY";
+        const profitInput = segment?.expectedProfitOriginal?.value !== undefined && segment?.expectedProfitOriginal?.value !== null ? String(segment.expectedProfitOriginal.value) : segment?.expectedProfitInput === undefined || segment?.expectedProfitInput === null ? "" : String(segment.expectedProfitInput);
+        const inputProfit = Number(profitInput);
+        return {
+          segmentName: segment?.segmentName || segment?.name || `分部${index + 1}`,
+          expectedProfitCny: profitInput !== "" && Number.isFinite(inputProfit) ? toCny(inputProfit, profitCurrency) : Number(segment?.expectedProfitCny) || 0,
+          expectedProfitCurrency: profitCurrency,
+          expectedProfitInput: profitInput,
+          expectedProfitOriginal: { value: profitInput, currency: profitCurrency },
+          expectedPE: Number(segment?.expectedPE) || 0,
+          expectedPEInput: segment?.expectedPEInput === undefined || segment?.expectedPEInput === null ? String(Number(segment?.expectedPE) || "") : String(segment.expectedPEInput),
+          forecastYear: segment?.forecastYear || next.forecastYear || "2026E",
+          expectedPERemark: segment?.expectedPERemark || ""
+        };
+      });
       if (next.useSegmentValuation) {
         while (next.segmentValuations.length < 2) {
           next.segmentValuations.push(emptySegmentValuationRow(next.segmentValuations.length + 1, next.forecastYear || "2026E"));
@@ -6144,6 +6146,11 @@
       next.originalAmounts = normalizeOriginalAmounts(next);
       next.amountCurrencies = Object.fromEntries(Object.entries(next.originalAmounts).map(([key, entry]) => [key, entry.currency]));
       next.amountInputValues = Object.fromEntries(Object.entries(next.originalAmounts).map(([key, entry]) => [key, entry.value]));
+      Object.entries(next.originalAmounts).forEach(([key, entry]) => {
+        if (key === "expectedProfitCny" && next.useSegmentValuation) return;
+        const inputAmount = Number(entry.value);
+        if (entry.value !== "" && Number.isFinite(inputAmount)) next[key] = toCny(inputAmount, entry.currency);
+      });
       next.expectedPEInput = next.expectedPEInput === undefined || next.expectedPEInput === null ? String(Number(next.expectedPE) || "") : String(next.expectedPEInput);
       if (next.expectedDividendCny === undefined && next.expectedBuybackCny === undefined) {
         next.expectedDividendCny = Number(next.expectedShareholderReturnCny) || 0;
