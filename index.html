@@ -11799,7 +11799,7 @@
       if (!applicableDates.length) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
       const firstDate = applicableDates.sort()[0];
       const lastDate = rows[rows.length - 1].nav_date;
-      if (firstDate > lastDate) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
+      if (firstDate >= todayString() || firstDate > lastDate) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
       const priceStart = new Date(`${firstDate}T00:00:00`);
       priceStart.setDate(priceStart.getDate() - 10);
       const closes = await fetchHistoricalCloses(stock, localDateTimeMinuteValue(priceStart).slice(0, 10), lastDate);
@@ -11895,7 +11895,10 @@
       let navRevision;
       if (form.has("backfillTrade")) {
         try { navRevision = await revisedNavForTrades(portfolio, stock, [{ trade, multiplier: 1 }]); }
-        catch (error) { return showPortfolioError(error.message || "历史净值回溯失败，请稍后重试。"); }
+        catch (error) {
+          console.warn("历史净值暂未回溯，交易将先正常保存。", stock.code, error);
+          trade.navRevisionPending = true;
+        }
       }
       updateActivePortfolio((item) => {
         const positions = [...item.positions];
