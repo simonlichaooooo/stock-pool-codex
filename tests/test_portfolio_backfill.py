@@ -17,6 +17,16 @@ class PortfolioBackfillTests(unittest.TestCase):
         self.assertIn("const json = await jsonp(url);", function)
         self.assertLess(function.index("web.ifzq.gtimg.cn"), function.index("push2his.eastmoney.com"))
 
+    def test_trade_after_latest_nav_skips_history_request(self):
+        function = HTML.split("async function revisedNavForTrades", 1)[1].split(
+            "async function submitPositionTrade", 1
+        )[0]
+        self.assertIn("const firstDate = applicableDates.sort()[0];", function)
+        self.assertNotIn("[...applicableDates, rows[0].nav_date]", function)
+        boundary_check = function.index("if (firstDate > lastDate)")
+        history_request = function.index("await fetchHistoricalCloses")
+        self.assertLess(boundary_check, history_request)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11796,7 +11796,8 @@
       const rows = (state.navHistory || []).map((row) => ({ ...row }));
       if (!rows.length) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
       const applicableDates = changes.map(({ trade }) => portfolioTradeDate(trade)).filter(Boolean);
-      const firstDate = [...applicableDates, rows[0].nav_date].sort()[0];
+      if (!applicableDates.length) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
+      const firstDate = applicableDates.sort()[0];
       const lastDate = rows[rows.length - 1].nav_date;
       if (firstDate > lastDate) return { rows, corrections: { ...(portfolio.navHistoryCorrections || {}) } };
       const priceStart = new Date(`${firstDate}T00:00:00`);
