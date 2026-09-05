@@ -14,6 +14,16 @@ class PortfolioCostCycleTests(unittest.TestCase):
         self.assertIn("contracts*multiplier*premium", entry)
         self.assertIn("sharesDelta*Number(trade.strikePrice", entry)
 
+    def test_futu_example_keeps_premiums_separate_from_both_assignments(self):
+        diluted_cost = (
+            111.35 * 300
+            - 3.45 * 300
+            - 123 * 300
+            - 3.10 * 300
+            + 123 * 300
+        ) / 300
+        self.assertAlmostEqual(diluted_cost, 104.80)
+
     def test_cost_continues_across_zero_until_user_completes_cycle(self):
         ledger = HTML.split("function portfolioCostLedger(portfolio", 1)[1].split(
             "function recalculatePortfolioCostBases", 1

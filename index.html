@@ -9072,14 +9072,14 @@
               ? `<div class="history-actions"><button class="history-save" data-action="saveTradeShares" data-trade-id="${item.id}">保存</button><button class="history-cancel" data-action="cancelTradeShares">取消</button></div>`
               : `<div class="history-actions"><button class="history-edit" data-action="editTradeShares" data-trade-id="${item.id}">编辑交易</button><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></div>`;
           const timeCell = editing ? `<div class="history-full-edit"><input type="datetime-local" step="60" value="${escapeHtml(modal.editOccurredAt || localDateTimeMinuteValue(item.occurredAt))}" data-history-time="${escapeHtml(item.id)}" aria-label="修订交易时间"></div>` : new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-          const displayedPrice = item.type === "exercise" ? Number(item.effectivePrice) || Number(item.price) : item.price;
+          const displayedPrice = item.type === "exercise" ? Number(item.strikePrice) || Number(item.price) : item.price;
           const priceCell = editing ? `<div class="history-full-edit"><input type="number" min="0" ${priceInputAttrs(item.market || position.market, modal.editPrice || item.price)} value="${escapeHtml(String(modal.editPrice || item.price || ""))}" data-history-price="${escapeHtml(item.id)}" aria-label="修订成交价"></div>` : formatPortfolioMoney(displayedPrice, item.currency || position.currency);
           return `<tr><td>${timeCell}</td><td>${portfolioTradeTypeText(item.type,item)}</td><td>${priceCell}</td><td>${sign}${sharesCell}</td><td>${actions}</td></tr>`;
         }).join("")}</tbody>
       </table></div>` : `<div class="empty" style="padding:28px 12px">暂无交易记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
         <div class="simple-modal-head"><h2>${escapeHtml(position?.name || "持仓")} · 交易历史</h2><button class="icon" data-action="closePortfolioModal" aria-label="关闭">×</button></div>
-        <div class="simple-modal-body">${body}<div class="position-history-note">交易历史始终完整保留，关联期权的权利金会计入股票摊薄成本。持股归零后默认延续当前成本周期；点击“完结周期”后，后续买回将从新周期重新计算。</div>${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
+        <div class="simple-modal-body">${body}<div class="position-history-note">行权交易按行权价记录；期权权利金作为独立现金流计入摊薄成本，不会在行权价格中重复计算。持股归零后默认延续当前成本周期；点击“完结周期”后，后续买回将从新周期重新计算。</div>${state.portfolioError ? `<div class="simple-modal-error">${escapeHtml(state.portfolioError)}</div>` : ""}</div>
         <div class="simple-modal-foot"><button data-action="closePortfolioModal">关闭</button></div>
       </section></div>`;
     }
@@ -11173,13 +11173,13 @@
           if(!nextShares) positions.splice(stockIndex,1);
           else{
             const sameDirection=!oldShares||Math.sign(oldShares)===Math.sign(sharesDelta);
-            const nextCost=sameDirection?(Math.abs(oldShares)*Number(stock.averageCost||effectivePrice)+Math.abs(sharesDelta)*effectivePrice)/(Math.abs(oldShares)+Math.abs(sharesDelta)):Math.sign(nextShares)===Math.sign(oldShares)?Number(stock.averageCost||effectivePrice):effectivePrice;
+            const nextCost=sameDirection?(Math.abs(oldShares)*Number(stock.averageCost||strike)+Math.abs(sharesDelta)*strike)/(Math.abs(oldShares)+Math.abs(sharesDelta)):Math.sign(nextShares)===Math.sign(oldShares)?Number(stock.averageCost||strike):strike;
             underlyingPositionId=stock.id;
             positions[stockIndex]={...stock,shares:nextShares,averageCost:roundPortfolioCost(nextCost),latestPrice:underlyingPrice||stock.latestPrice,optionExerciseCostBasisVersion:1};
           }
         }else{
           underlyingPositionId=id("position");
-          positions.push({id:underlyingPositionId,name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(effectivePrice),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:optionSettledAt,optionExerciseCostBasisVersion:1});
+          positions.push({id:underlyingPositionId,name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(strike),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:optionSettledAt,optionExerciseCostBasisVersion:1});
         }
         tradeHistory.push({id:id("trade"),positionId:underlyingPositionId||option.id,optionPositionId:option.id,assetType:"option",code:option.code,type:"exercise",direction:option.direction,optionType:option.optionType,underlyingCode:option.underlyingCode,contracts:option.contracts,shares:Math.abs(sharesDelta),sharesDelta,sharesAfter,closedPositionCycle:sharesAfter===0,price:strike,strikePrice:strike,optionPremium,effectivePrice,underlyingPrice,currency,costBasisApplied:true,occurredAt:optionSettledAt});
         changed=true;

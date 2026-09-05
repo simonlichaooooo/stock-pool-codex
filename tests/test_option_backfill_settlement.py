@@ -43,12 +43,17 @@ class OptionBackfillSettlementTests(unittest.TestCase):
         self.assertIn('item.assetType==="option"', history)
         self.assertIn('portfolioTradeTypeText(item.type,item)', history)
 
-    def test_option_premium_is_included_in_effective_stock_cost(self):
+    def test_exercise_uses_strike_while_premium_is_kept_separate(self):
         settlement = HTML.split("function settleExpiredOptionsInPortfolio", 1)[1].split(
             "function settleExpiredOptions", 1
         )[0]
+        history = HTML.split("function renderPositionHistoryModal", 1)[1].split(
+            "function modalShell", 1
+        )[0]
         self.assertIn("strike+optionFactor*optionPremium", settlement)
-        self.assertIn("averageCost:roundPortfolioCost(effectivePrice)", settlement)
+        self.assertIn("averageCost:roundPortfolioCost(strike)", settlement)
+        self.assertIn('Number(item.strikePrice) || Number(item.price)', history)
+        self.assertNotIn('Number(item.effectivePrice) || Number(item.price)', history)
         self.assertAlmostEqual(123 - 3.1, 119.9)
 
     def test_existing_option_exercises_are_enriched_for_cost_ledger(self):
