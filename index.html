@@ -11008,19 +11008,20 @@
       return { portfolios: normalized, changed };
     }
 
-    function settleExpiredOptionsInPortfolio(portfolio) {
+    function settleExpiredOptionsInPortfolio(portfolio, { positionIds = null, settlementPrices = {}, settledAt = "" } = {}) {
       const today=portfolioCalendarDateString(new Date());
-      const expired=(portfolio.positions||[]).filter((position)=>position.assetType==="option"&&position.expiryDate&&position.expiryDate<today);
+      const targetIds=positionIds?new Set(positionIds):null;
+      const expired=(portfolio.positions||[]).filter((position)=>position.assetType==="option"&&position.expiryDate&&position.expiryDate<today&&(!targetIds||targetIds.has(position.id)));
       if(!expired.length) return {portfolio,changed:false};
       let positions=[...(portfolio.positions||[])],cash={...(portfolio.cash||{})},tradeHistory=[...(portfolio.tradeHistory||[])],changed=false;
       expired.forEach((option)=>{
         const underlying=positions.find((position)=>position.assetType!=="option"&&optionUnderlyingKey(position)===optionUnderlyingKey(option));
-        const underlyingPrice=Number(underlying?.latestPrice)||Number(option.underlyingLatestPrice)||0,strike=Number(option.strikePrice)||0;
+        const underlyingPrice=Number(settlementPrices[option.id])||Number(underlying?.latestPrice)||Number(option.underlyingLatestPrice)||0,strike=Number(option.strikePrice)||0;
         const itm=option.optionType==="call"?underlyingPrice>strike:underlyingPrice<strike;
         positions=positions.filter((position)=>position.id!==option.id);
-        const settledAt=new Date().toISOString();
+        const optionSettledAt=settledAt||new Date().toISOString();
         if(!itm){
-          tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"expire",contracts:option.contracts,occurredAt:settledAt});
+          tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"expire",contracts:option.contracts,underlyingPrice,occurredAt:optionSettledAt});
           changed=true;
           return;
         }
@@ -11039,9 +11040,9 @@
             positions[stockIndex]={...stock,shares:nextShares,averageCost:roundPortfolioCost(nextCost),latestPrice:underlyingPrice||stock.latestPrice};
           }
         }else{
-          positions.push({id:id("position"),name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(strike),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:settledAt});
+          positions.push({id:id("position"),name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(strike),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:optionSettledAt});
         }
-        tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"exercise",contracts:option.contracts,shares:Math.abs(sharesDelta),price:strike,currency,occurredAt:settledAt});
+        tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"exercise",contracts:option.contracts,shares:Math.abs(sharesDelta),price:strike,underlyingPrice,currency,occurredAt:optionSettledAt});
         changed=true;
       });
       return {portfolio:{...portfolio,positions,cash,tradeHistory,updatedAt:new Date().toISOString()},changed};
@@ -11963,26 +11964,40 @@
       closePortfolioModal();
     }
 
-    function submitOptionTrade(form,portfolio,modal,option,price){
+    async function submitOptionTrade(form,portfolio,modal,option,price){
       const contracts=Number(form.get("contracts")),multiplier=Number(form.get("contractMultiplier")||option.contractMultiplier),strike=Number(form.get("strikePrice")||option.strikePrice);
       const expiryDate=String(form.get("expiryDate")||option.expiryDate||""),direction=String(form.get("direction")||option.direction||"long")==="short"?"short":"long";
+      const backfillTrade=form.has("backfillTrade"),today=portfolioCalendarDateString(new Date());
       if(!Number.isInteger(contracts)||contracts<=0) return showPortfolioError("期权交易张数必须为正整数。");
       if(!Number.isInteger(multiplier)||multiplier<=0) return showPortfolioError("每张对应股数必须为正整数。");
       if(!(strike>0)||!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) return showPortfolioError("请填写有效的行权价和到期日。");
-      if(expiryDate<portfolioCalendarDateString(new Date())) return showPortfolioError("到期日不能早于今天。");
+      if(expiryDate<today&&!backfillTrade) return showPortfolioError("到期日不能早于今天；如需录入历史交易，请勾选补录交易。");
       if(!["HK","US"].includes(option.market)) return showPortfolioError("第一期期权仅支持港股和美股标的。");
       if(portfolio.accountType==="CNY"&&option.market!=="HK") return showPortfolioError("人民币账户第一期仅支持港股期权。");
       if(modal.type==="reduce"&&contracts>Number(option.contracts||0)) return showPortfolioError("平仓张数不能超过当前持仓。");
       if(modal.type==="open"&&(portfolio.positions||[]).some((item)=>item.assetType==="option"&&item.code===option.code&&item.direction===direction)) return showPortfolioError("该方向的期权合约已在组合中，请使用加仓。");
-      const occurredAt=form.has("backfillTrade")?new Date(String(form.get("occurredAt")||"")):new Date();
+      const occurredAt=backfillTrade?new Date(String(form.get("occurredAt")||"")):new Date();
       if(!Number.isFinite(occurredAt.getTime())) return showPortfolioError("请输入有效的补录交易时间。");
       if(occurredAt.getTime()>Date.now()+60000) return showPortfolioError("补录交易时间不能晚于现在。");
+      if(backfillTrade&&portfolioCalendarDateString(occurredAt)>expiryDate) return showPortfolioError("补录交易时间不能晚于期权到期日。");
       const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
       const premiumAmount=price*contracts*multiplier,baseCashAmount=premiumAmount*portfolioFx(currency,cashCurrency);
       const opening=modal.type!=="reduce",cashDelta=(direction==="long"?(opening?-1:1):(opening?1:-1))*baseCashAmount;
       if(Number(portfolio.cash?.[cashCurrency]||0)+cashDelta<-.000001) return showPortfolioError(`${currencies[cashCurrency]?.label||cashCurrency}现金余额不足。`);
       const now=new Date().toISOString(),newPositionId=modal.type==="open"?id("option"):option.id;
       const trade={id:id("trade"),positionId:newPositionId,code:option.code,market:option.market,assetType:"option",type:modal.type,direction,currency,price,contracts,multiplier,occurredAt:occurredAt.toISOString()};
+      const settleAfterBackfill=backfillTrade&&expiryDate<today&&modal.type!=="reduce";
+      let settlementUnderlyingPrice=Number(option.underlyingLatestPrice)||0;
+      if(settleAfterBackfill){
+        try{
+          const priceStart=new Date(`${expiryDate}T00:00:00`);
+          priceStart.setDate(priceStart.getDate()-10);
+          const closes=await fetchHistoricalCloses(option,portfolioCalendarDateString(priceStart),expiryDate);
+          settlementUnderlyingPrice=Number(closes.at(-1)?.[1])||settlementUnderlyingPrice;
+        }catch(error){
+          console.warn("到期日历史价格不可用，使用当前标的价格判断期权结算。",option.code,error);
+        }
+      }
       updateActivePortfolio((item)=>{
         const positions=[...(item.positions||[])];
         if(modal.type==="open"){
@@ -12004,7 +12019,9 @@
             else positions[index]={...positions[index],contracts:remaining,latestPrice:price};
           }
         }
-        return {...item,positions,tradeHistory:[...(item.tradeHistory||[]),trade],cash:{...item.cash,[cashCurrency]:Number(item.cash?.[cashCurrency]||0)+cashDelta},updatedAt:now};
+        const updated={...item,positions,tradeHistory:[...(item.tradeHistory||[]),trade],cash:{...item.cash,[cashCurrency]:Number(item.cash?.[cashCurrency]||0)+cashDelta},updatedAt:now};
+        if(!settleAfterBackfill) return updated;
+        return settleExpiredOptionsInPortfolio(updated,{positionIds:[newPositionId],settlementPrices:{[newPositionId]:settlementUnderlyingPrice},settledAt:now}).portfolio;
       });
       closePortfolioModal();
     }
