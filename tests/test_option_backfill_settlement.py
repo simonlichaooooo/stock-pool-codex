@@ -30,6 +30,35 @@ class OptionBackfillSettlementTests(unittest.TestCase):
         self.assertIn("settlementPrices[option.id]", function)
         self.assertIn("underlyingPrice", function)
 
+    def test_exercise_history_is_linked_to_underlying_stock(self):
+        settlement = HTML.split("function settleExpiredOptionsInPortfolio", 1)[1].split(
+            "function settleExpiredOptions", 1
+        )[0]
+        history = HTML.split("function renderPositionHistoryModal", 1)[1].split(
+            "function modalShell", 1
+        )[0]
+        self.assertIn("underlyingCode:option.underlyingCode", settlement)
+        self.assertIn("sharesDelta", settlement)
+        self.assertIn('item.type === "exercise" && item.underlyingCode === position?.code', history)
+        self.assertIn('portfolioTradeTypeText(item.type,item)', history)
+
+    def test_option_premium_is_included_in_effective_stock_cost(self):
+        settlement = HTML.split("function settleExpiredOptionsInPortfolio", 1)[1].split(
+            "function settleExpiredOptions", 1
+        )[0]
+        self.assertIn("strike+optionFactor*optionPremium", settlement)
+        self.assertIn("averageCost:roundPortfolioCost(effectivePrice)", settlement)
+        self.assertAlmostEqual(123 - 3.1, 119.9)
+
+    def test_existing_option_exercises_are_migrated_without_crossing_closed_cycles(self):
+        repair = HTML.split("function repairOptionSettlementHistory", 1)[1].split(
+            "function normalizePortfolioPositionIds", 1
+        )[0]
+        self.assertIn("parseUniversalOptionCode(trade.code", repair)
+        self.assertIn("premiumBasisCorrection+=delta", repair)
+        self.assertIn("positionAppliedIds.clear()", repair)
+        self.assertIn("optionExerciseCostBasisVersion:1", repair)
+
 
 if __name__ == "__main__":
     unittest.main()

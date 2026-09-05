@@ -9043,26 +9043,28 @@
       const position = modal.position;
       const optionPosition=position?.assetType==="option";
       const rows = (portfolio?.tradeHistory || [])
-        .filter((item) => item.positionId === position?.id || (item.code === position?.code && (!item.market || item.market === position?.market)))
+        .filter((item) => item.positionId === position?.id || (item.code === position?.code && (!item.market || item.market === position?.market)) || (!optionPosition && item.type === "exercise" && item.underlyingCode === position?.code && (!item.market || item.market === position?.market)))
         .sort((a, b) => String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")));
       const body = rows.length ? `<div class="table-scroll"><table class="position-history-table">
         <thead><tr><th>日期</th><th>交易类型</th><th>成交价</th><th>${optionPosition?"变动张数":"变动股数"}</th><th>操作</th></tr></thead>
         <tbody>${rows.map((item) => {
           const sameStock = item.code === position?.code && (!item.market || item.market === position?.market);
-          const canRollback = !optionPosition && (item.positionId === position?.id || sameStock);
+          const canRollback = !optionPosition && ["open","add","reduce"].includes(item.type) && (item.positionId === position?.id || sameStock);
           const editing = canRollback && modal.editTradeId === item.id;
-          const sign = portfolioTradeSign(item.type) > 0 ? "+" : "-";
+          const sharesDelta = item.type === "exercise" && Number.isFinite(Number(item.sharesDelta)) ? Number(item.sharesDelta) : portfolioTradeSign(item.type) * Number(item.shares || 0);
+          const sign = sharesDelta >= 0 ? "+" : "-";
           const sharesCell = editing
             ? `<div class="history-full-edit"><input type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(String(modal.editShares || item.shares || ""))}" data-history-shares="${escapeHtml(item.id)}" aria-label="修订交易股数"></div>`
-            : `${Number(optionPosition?item.contracts:item.shares).toLocaleString("zh-CN")}`;
+            : `${Math.abs(Number(optionPosition?item.contracts:(item.type === "exercise" ? sharesDelta : item.shares))).toLocaleString("zh-CN")}`;
           const actions = !canRollback
             ? `<span class="muted">历史周期</span>`
             : editing
               ? `<div class="history-actions"><button class="history-save" data-action="saveTradeShares" data-trade-id="${item.id}">保存</button><button class="history-cancel" data-action="cancelTradeShares">取消</button></div>`
               : `<div class="history-actions"><button class="history-edit" data-action="editTradeShares" data-trade-id="${item.id}">编辑交易</button><button class="history-rollback" data-action="rollbackTrade" data-trade-id="${item.id}">回滚</button></div>`;
           const timeCell = editing ? `<div class="history-full-edit"><input type="datetime-local" step="60" value="${escapeHtml(modal.editOccurredAt || localDateTimeMinuteValue(item.occurredAt))}" data-history-time="${escapeHtml(item.id)}" aria-label="修订交易时间"></div>` : new Date(item.occurredAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-          const priceCell = editing ? `<div class="history-full-edit"><input type="number" min="0" ${priceInputAttrs(item.market || position.market, modal.editPrice || item.price)} value="${escapeHtml(String(modal.editPrice || item.price || ""))}" data-history-price="${escapeHtml(item.id)}" aria-label="修订成交价"></div>` : formatPortfolioMoney(item.price, item.currency || position.currency);
-          return `<tr><td>${timeCell}</td><td>${portfolioTradeTypeText(item.type)}</td><td>${priceCell}</td><td>${sign}${sharesCell}</td><td>${actions}</td></tr>`;
+          const displayedPrice = item.type === "exercise" ? Number(item.effectivePrice) || Number(item.price) : item.price;
+          const priceCell = editing ? `<div class="history-full-edit"><input type="number" min="0" ${priceInputAttrs(item.market || position.market, modal.editPrice || item.price)} value="${escapeHtml(String(modal.editPrice || item.price || ""))}" data-history-price="${escapeHtml(item.id)}" aria-label="修订成交价"></div>` : formatPortfolioMoney(displayedPrice, item.currency || position.currency);
+          return `<tr><td>${timeCell}</td><td>${portfolioTradeTypeText(item.type,item)}</td><td>${priceCell}</td><td>${sign}${sharesCell}</td><td>${actions}</td></tr>`;
         }).join("")}</tbody>
       </table></div>` : `<div class="empty" style="padding:28px 12px">暂无交易记录。</div>`;
       return `<div class="simple-modal-backdrop" data-portfolio-backdrop><section class="simple-modal">
@@ -10988,12 +10990,81 @@
       return `${PORTFOLIO_STORAGE_PREFIX}${state.session?.user?.id || "guest"}`;
     }
 
+    function repairOptionSettlementHistory(portfolio) {
+      const sourceHistory=Array.isArray(portfolio?.tradeHistory)?portfolio.tradeHistory:[];
+      const lifecycle=new Map(),repairedById=new Map();
+      let changed=false;
+      [...sourceHistory].sort((a,b)=>String(a.occurredAt||"").localeCompare(String(b.occurredAt||""))).forEach((trade)=>{
+        const parsed=parseUniversalOptionCode(trade.code||"");
+        const isOptionTrade=trade.assetType==="option"||Boolean(parsed);
+        if(!isOptionTrade){repairedById.set(trade.id,trade);return;}
+        const lifecycleId=trade.optionPositionId||trade.positionId||trade.code;
+        const previous=lifecycle.get(lifecycleId)||{};
+        let next={...trade};
+        if(parsed){
+          next={...next,optionType:next.optionType||parsed.optionType,underlyingCode:next.underlyingCode||parsed.underlyingCode,strikePrice:Number(next.strikePrice)||parsed.strikePrice,expiryDate:next.expiryDate||parsed.expiryDate};
+        }
+        if(["open","add"].includes(trade.type)){
+          const added=Number(trade.contracts)||0,oldContracts=Number(previous.contracts)||0;
+          const premium=added?(oldContracts*Number(previous.optionPremium||0)+added*Number(trade.price||0))/(oldContracts+added):Number(previous.optionPremium)||Number(trade.price)||0;
+          lifecycle.set(lifecycleId,{...previous,direction:trade.direction||previous.direction||"long",optionType:next.optionType||previous.optionType,underlyingCode:next.underlyingCode||previous.underlyingCode,strikePrice:Number(next.strikePrice)||Number(previous.strikePrice)||0,multiplier:Number(trade.multiplier||trade.contractMultiplier)||Number(previous.multiplier)||0,contracts:oldContracts+added,optionPremium:premium});
+        }else if(trade.type==="reduce"){
+          lifecycle.set(lifecycleId,{...previous,contracts:Math.max(0,(Number(previous.contracts)||0)-(Number(trade.contracts)||0))});
+        }else if(["exercise","expire"].includes(trade.type)){
+          const direction=next.direction||previous.direction||"long",optionType=next.optionType||previous.optionType||parsed?.optionType;
+          const underlyingCode=next.underlyingCode||previous.underlyingCode||parsed?.underlyingCode||"";
+          const strike=Number(next.strikePrice)||Number(previous.strikePrice)||Number(next.price)||0;
+          const optionPremium=Number(next.optionPremium)||Number(previous.optionPremium)||0;
+          const optionFactor=optionType==="call"?1:-1,directionFactor=direction==="short"?-1:1;
+          const exerciseShares=Number(next.shares)||Number(next.contracts||previous.contracts||0)*Number(previous.multiplier||100);
+          const sharesDelta=Number.isFinite(Number(next.sharesDelta))?Number(next.sharesDelta):directionFactor*optionFactor*exerciseShares;
+          const effectivePrice=Number(next.effectivePrice)||Math.max(0,strike+optionFactor*optionPremium);
+          next={...next,direction,optionType,underlyingCode,strikePrice:strike,optionPremium,effectivePrice,...(trade.type==="exercise"?{shares:Math.abs(exerciseShares),sharesDelta}:{})};
+          lifecycle.delete(lifecycleId);
+        }
+        if(JSON.stringify(next)!==JSON.stringify(trade)) changed=true;
+        repairedById.set(trade.id,next);
+      });
+      let tradeHistory=sourceHistory.map((trade)=>repairedById.get(trade.id)||trade);
+      const costBasisAppliedIds=new Set();
+      const positions=(portfolio.positions||[]).map((position)=>{
+        if(position.assetType==="option"||position.optionExerciseCostBasisVersion===1||!Number(position.shares)) return position;
+        let runningShares=0,premiumBasisCorrection=0,hasUnappliedExercise=false;
+        const positionAppliedIds=new Set();
+        [...tradeHistory].sort((a,b)=>String(a.occurredAt||"").localeCompare(String(b.occurredAt||""))).forEach((trade)=>{
+          let delta=0;
+          if(trade.type==="exercise"&&trade.underlyingCode===position.code&&(!trade.market||trade.market===position.market)){
+            delta=Number(trade.sharesDelta)||0;
+            if(!trade.costBasisApplied){
+              premiumBasisCorrection+=delta*(Number(trade.effectivePrice)-Number(trade.strikePrice||trade.price));
+              hasUnappliedExercise=true;
+              positionAppliedIds.add(trade.id);
+            }
+          }else if(trade.assetType!=="option"&&["open","add","reduce"].includes(trade.type)&&trade.code===position.code&&(!trade.market||trade.market===position.market)){
+            delta=portfolioTradeSign(trade.type)*Number(trade.shares||0);
+          }
+          if(!delta) return;
+          runningShares+=delta;
+          if(Math.abs(runningShares)<.000001){runningShares=0;premiumBasisCorrection=0;hasUnappliedExercise=false;positionAppliedIds.clear();}
+        });
+        if(!hasUnappliedExercise||Math.abs(runningShares-Number(position.shares))>.000001) return position;
+        positionAppliedIds.forEach((tradeId)=>costBasisAppliedIds.add(tradeId));
+        changed=true;
+        return {...position,averageCost:roundPortfolioCost(Number(position.averageCost||0)+premiumBasisCorrection/Number(position.shares)),optionExerciseCostBasisVersion:1};
+      });
+      if(costBasisAppliedIds.size){
+        tradeHistory=tradeHistory.map((trade)=>costBasisAppliedIds.has(trade.id)?{...trade,costBasisApplied:true}:trade);
+        changed=true;
+      }
+      return {portfolio:{...portfolio,positions,tradeHistory},changed};
+    }
+
     function normalizePortfolioPositionIds(portfolios) {
       let changed = false;
       const seenIds = new Set();
-      const normalized = (portfolios || []).map((portfolio) => ({
-        ...portfolio,
-        positions: (portfolio.positions || []).map((position) => {
+      const normalized = (portfolios || []).map((portfolio) => {
+        const normalizedPortfolio={...portfolio,
+          positions: (portfolio.positions || []).map((position) => {
           const currentId = typeof position.id === "string" ? position.id.trim() : "";
           if (currentId && !seenIds.has(currentId)) {
             seenIds.add(currentId);
@@ -11003,8 +11074,11 @@
           seenIds.add(positionId);
           changed = true;
           return { ...position, id: positionId };
-        })
-      }));
+        })};
+        const repaired=repairOptionSettlementHistory(normalizedPortfolio);
+        changed=changed||repaired.changed;
+        return repaired.portfolio;
+      });
       return { portfolios: normalized, changed };
     }
 
@@ -11021,28 +11095,32 @@
         positions=positions.filter((position)=>position.id!==option.id);
         const optionSettledAt=settledAt||new Date().toISOString();
         if(!itm){
-          tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"expire",contracts:option.contracts,underlyingPrice,occurredAt:optionSettledAt});
+          tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"expire",direction:option.direction,optionType:option.optionType,underlyingCode:option.underlyingCode,strikePrice:strike,optionPremium:Number(option.averageCost)||0,contracts:option.contracts,underlyingPrice,occurredAt:optionSettledAt});
           changed=true;
           return;
         }
         const direction=option.direction==="short"?-1:1,optionFactor=option.optionType==="call"?1:-1;
         const sharesDelta=direction*optionFactor*Number(option.contracts||0)*Number(option.contractMultiplier||0);
+        const optionPremium=Number(option.averageCost)||0,effectivePrice=Math.max(0,strike+optionFactor*optionPremium);
         const currency=option.currency||marketCurrency(option.market),cashCurrency=portfolio.accountType==="CNY"?"CNY":currency;
         const cashDelta=-sharesDelta*strike*portfolioFx(currency,cashCurrency);
         cash[cashCurrency]=Number(cash[cashCurrency]||0)+cashDelta;
         const stockIndex=positions.findIndex((position)=>position.assetType!=="option"&&optionUnderlyingKey(position)===optionUnderlyingKey(option));
+        let underlyingPositionId="";
         if(stockIndex>=0){
           const stock=positions[stockIndex],oldShares=Number(stock.shares||0),nextShares=oldShares+sharesDelta;
           if(!nextShares) positions.splice(stockIndex,1);
           else{
             const sameDirection=!oldShares||Math.sign(oldShares)===Math.sign(sharesDelta);
-            const nextCost=sameDirection?(Math.abs(oldShares)*Number(stock.averageCost||strike)+Math.abs(sharesDelta)*strike)/(Math.abs(oldShares)+Math.abs(sharesDelta)):Math.sign(nextShares)===Math.sign(oldShares)?Number(stock.averageCost||strike):strike;
-            positions[stockIndex]={...stock,shares:nextShares,averageCost:roundPortfolioCost(nextCost),latestPrice:underlyingPrice||stock.latestPrice};
+            const nextCost=sameDirection?(Math.abs(oldShares)*Number(stock.averageCost||effectivePrice)+Math.abs(sharesDelta)*effectivePrice)/(Math.abs(oldShares)+Math.abs(sharesDelta)):Math.sign(nextShares)===Math.sign(oldShares)?Number(stock.averageCost||effectivePrice):effectivePrice;
+            underlyingPositionId=stock.id;
+            positions[stockIndex]={...stock,shares:nextShares,averageCost:roundPortfolioCost(nextCost),latestPrice:underlyingPrice||stock.latestPrice,optionExerciseCostBasisVersion:1};
           }
         }else{
-          positions.push({id:id("position"),name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(strike),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:optionSettledAt});
+          underlyingPositionId=id("position");
+          positions.push({id:underlyingPositionId,name:option.underlyingName||option.underlyingCode,code:option.underlyingCode,rawCode:option.rawCode||"",market:option.market,exchange:option.exchange||"",quoteId:option.quoteId||"",currency,shares:sharesDelta,averageCost:roundPortfolioCost(effectivePrice),latestPrice:underlyingPrice||strike,previousClose:underlyingPrice||strike,priceUpdatedAt:optionSettledAt,optionExerciseCostBasisVersion:1});
         }
-        tradeHistory.push({id:id("trade"),positionId:option.id,assetType:"option",code:option.code,type:"exercise",contracts:option.contracts,shares:Math.abs(sharesDelta),price:strike,underlyingPrice,currency,occurredAt:optionSettledAt});
+        tradeHistory.push({id:id("trade"),positionId:underlyingPositionId||option.id,optionPositionId:option.id,assetType:"option",code:option.code,type:"exercise",direction:option.direction,optionType:option.optionType,underlyingCode:option.underlyingCode,contracts:option.contracts,shares:Math.abs(sharesDelta),sharesDelta,price:strike,strikePrice:strike,optionPremium,effectivePrice,underlyingPrice,currency,costBasisApplied:true,occurredAt:optionSettledAt});
         changed=true;
       });
       return {portfolio:{...portfolio,positions,cash,tradeHistory,updatedAt:new Date().toISOString()},changed};
@@ -11757,7 +11835,16 @@
     }
 
     function portfolioTradeSign(type) { return type === "reduce" ? -1 : 1; }
-    function portfolioTradeTypeText(type) { return type === "open" ? "开仓" : type === "add" ? "加仓" : type === "expire" ? "到期作废" : type === "exercise" ? "自动行权" : "减持/平仓"; }
+    function portfolioTradeTypeText(type, trade = null) {
+      if (type === "open") return "开仓";
+      if (type === "add") return "加仓";
+      if (type === "expire") return "到期作废";
+      if (type === "exercise") {
+        const optionLabel = trade?.optionType === "put" ? "Put" : trade?.optionType === "call" ? "Call" : "期权";
+        return `${optionLabel} 行权${Number(trade?.sharesDelta) >= 0 ? "买入" : "卖出"}`;
+      }
+      return "减持/平仓";
+    }
     function portfolioTradeDate(trade) { return localDateTimeMinuteValue(trade?.occurredAt).slice(0, 10); }
 
     function historicalFx(currency, baseCurrency, rates = {}) {
