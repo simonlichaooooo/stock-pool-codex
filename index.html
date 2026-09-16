@@ -8662,9 +8662,9 @@
             const dailyProfitText = Number.isFinite(dailyProfit)
               ? `${dailyProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioNumber(dailyProfit) : formatWan(dailyProfit)}`
               : "--";
-            const averageCost = Number(position.averageCost);
+            const averageCost = position.averageCost == null || position.averageCost === "" ? NaN : Number(position.averageCost);
             const latestPrice = Number(position.latestPrice);
-            const holdingProfit = averageCost > 0 && latestPrice > 0
+            const holdingProfit = Number.isFinite(averageCost) && Number.isFinite(latestPrice) && latestPrice > 0
               ? (latestPrice - averageCost) * Number(position.shares || 0) * portfolioFx(position.currency, base)
               : NaN;
             const holdingReturn = averageCost > 0 && latestPrice > 0 ? (latestPrice / averageCost - 1) * 100 : NaN;
@@ -8672,9 +8672,13 @@
             const holdingProfitText = Number.isFinite(holdingProfit)
               ? `${holdingProfit > 0 ? "+" : ""}${base === "USD" ? formatPortfolioNumber(holdingProfit) : formatWan(holdingProfit)}`
               : "--";
+            // Zero or negative net cost has no meaningful cost-based return percentage.
+            const holdingReturnText = Number.isFinite(holdingReturn)
+              ? `${holdingReturn > 0 ? "+" : ""}${holdingReturn.toFixed(2)}%`
+              : Number.isFinite(holdingProfit) && averageCost <= 0 ? "本金已收回" : "";
             const holdingProfitCell = state.portfolioPrivacyMode
-              ? (Number.isFinite(holdingReturn) ? `${holdingReturn > 0 ? "+" : ""}${holdingReturn.toFixed(2)}%` : "--")
-              : `${holdingProfitText}${Number.isFinite(holdingReturn) ? `<div class="portfolio-holding-profit-rate">${holdingReturn > 0 ? "+" : ""}${holdingReturn.toFixed(2)}%</div>` : ""}`;
+              ? (holdingReturnText || "--")
+              : `${holdingProfitText}${holdingReturnText ? `<div class="portfolio-holding-profit-rate">${holdingReturnText}</div>` : ""}`;
             return `<tr class="${entry.grouped?"portfolio-child-row":""}">
               <td data-label="股票" class="sticky-col"><div class="stock-name">${escapeHtml(position.name)}</div><div class="stock-code">${escapeHtml(position.code)}</div>${(position.tags || []).length ? `<div class="position-row-tags">${position.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}</td>
               <td data-label="股数">${portfolioPrivate(Number(position.shares).toLocaleString("zh-CN"))}</td>
