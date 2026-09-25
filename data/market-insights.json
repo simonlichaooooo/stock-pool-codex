@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-24T17:28:19.276Z",
+  "generatedAt": "2026-09-25T15:06:05.353Z",
   "constituents": {
     "indexes": {
       "hstech": {
         "label": "恒生科技",
         "code": "HSTECH",
         "quoteId": "124.HSTECH",
-        "asOf": "2026-09-18",
+        "asOf": "2026-09-25",
         "sourceUrl": "https://www.hsi.com.hk/data/chi/rt/index-series/hstech/constituents.do",
         "weightAsOf": "2026-05-20",
         "weightEffectiveDate": "2026-06-08",
@@ -166,7 +166,7 @@
         "label": "大型股",
         "code": "HSLI",
         "quoteId": "124.HSLI",
-        "asOf": "2026-09-18",
+        "asOf": "2026-09-25",
         "sourceUrl": "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do",
         "members": [
           {
@@ -675,7 +675,7 @@
         "label": "中型股",
         "code": "HSMI",
         "quoteId": "124.HSMI",
-        "asOf": "2026-09-18",
+        "asOf": "2026-09-25",
         "sourceUrl": "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do",
         "members": [
           {
@@ -1580,7 +1580,7 @@
         "label": "小型股",
         "code": "HSSI",
         "quoteId": "124.HSSI",
-        "asOf": "2026-09-18",
+        "asOf": "2026-09-25",
         "sourceUrl": "https://www.hsi.com.hk/data/chi/rt/index-series/sizeindexes/constituents.do",
         "members": [
           {
@@ -2216,10 +2216,6 @@
             "name": "环球医疗"
           },
           {
-            "code": "2670",
-            "name": "雲迹"
-          },
-          {
             "code": "2672",
             "name": "白鴿在線"
           },
@@ -2270,6 +2266,10 @@
           {
             "code": "2889",
             "name": "博泰车联"
+          },
+          {
+            "code": "2915",
+            "name": "雲迹"
           },
           {
             "code": "2922",
@@ -2516,603 +2516,603 @@
     }
   },
   "shortPositions": {
-    "asOf": "2026-09-11",
+    "asOf": "2026-09-18",
     "sourceUrl": "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares",
-    "reportUrl": "https://www.sfc.hk/-/media/EN/pdf/spr/2026/09/11/Short_Position_Reporting_Aggregated_Data_20260911.csv?rev=4a9c54d0c6584155afa6e67311955bda",
+    "reportUrl": "https://www.sfc.hk/-/media/EN/pdf/spr/2026/09/18/Short_Position_Reporting_Aggregated_Data_20260918.csv?rev=169f66cc5a164f5f911b015e07285f9c",
     "byCode": {
       "1021": {
-        "shares": 2060000,
-        "valueHkd": 24493400,
+        "shares": 2347400,
+        "valueHkd": 26572568,
         "name": "HUAYAN ROBOTICS"
       },
       "1024": {
-        "shares": 387570841,
-        "valueHkd": 12115464490,
+        "shares": 406542117,
+        "valueHkd": 12497104677,
         "name": "KUAISHOU-W"
       },
       "1030": {
-        "shares": 221046622,
-        "valueHkd": 300623406,
+        "shares": 219795382,
+        "valueHkd": 326396142,
         "name": "SEAZEN"
       },
       "1038": {
-        "shares": 29597629,
-        "valueHkd": 1962322803,
+        "shares": 29289388,
+        "valueHkd": 1915525975,
         "name": "CKI HOLDINGS"
       },
       "1044": {
-        "shares": 68537336,
-        "valueHkd": 1418722855,
+        "shares": 80525570,
+        "valueHkd": 1586353729,
         "name": "HENGAN INT'L"
       },
       "1052": {
-        "shares": 9646393,
-        "valueHkd": 32845968,
+        "shares": 11314393,
+        "valueHkd": 38355792,
         "name": "YUEXIUTRANSPORT"
       },
       "1055": {
-        "shares": 108518226,
-        "valueHkd": 329352816,
+        "shares": 111926165,
+        "valueHkd": 331301448,
         "name": "CHINA SOUTH AIR"
       },
       "1060": {
-        "shares": 1059282524,
-        "valueHkd": 534937675,
+        "shares": 1091541143,
+        "valueHkd": 534855160,
         "name": "DAMAI ENT"
       },
       "1066": {
-        "shares": 68918371,
-        "valueHkd": 212613175,
+        "shares": 67216621,
+        "valueHkd": 212404522,
         "name": "WEIGAO GROUP"
       },
       "1070": {
-        "shares": 32437971,
-        "valueHkd": 554689304,
+        "shares": 32546492,
+        "valueHkd": 560450592,
         "name": "TCL ELECTRONICS"
       },
       "1071": {
-        "shares": 94166911,
-        "valueHkd": 381375990,
+        "shares": 102242273,
+        "valueHkd": 415103628,
         "name": "HUADIAN POWER"
       },
       "1072": {
-        "shares": 26196390,
-        "valueHkd": 515021027,
+        "shares": 24233625,
+        "valueHkd": 467951299,
         "name": "DONGFANG ELEC"
       },
       "1083": {
-        "shares": 79760353,
-        "valueHkd": 249649905,
+        "shares": 73039267,
+        "valueHkd": 209987893,
         "name": "TG SMART ENERGY"
       },
       "1088": {
-        "shares": 152767502,
-        "valueHkd": 7045637192,
+        "shares": 158288309,
+        "valueHkd": 7037498218,
         "name": "CHINA SHENHUA"
       },
       "1093": {
-        "shares": 307869867,
-        "valueHkd": 2681546542,
+        "shares": 299894128,
+        "valueHkd": 2678054563,
         "name": "CSPC PHARMA"
       },
       "1099": {
-        "shares": 81038855,
-        "valueHkd": 1244756813,
+        "shares": 79146293,
+        "valueHkd": 1188777321,
         "name": "SINOPHARM"
       },
       "1109": {
-        "shares": 255734523,
-        "valueHkd": 7457218691,
+        "shares": 227992235,
+        "valueHkd": 6529697610,
         "name": "CHINA RES LAND"
       },
       "1112": {
-        "shares": 6340233,
-        "valueHkd": 109559226,
+        "shares": 7281281,
+        "valueHkd": 122689585,
         "name": "H&H INTL HLDG"
       },
       "1113": {
-        "shares": 37034142,
-        "valueHkd": 1773194719,
+        "shares": 39980762,
+        "valueHkd": 1846311589,
         "name": "CK ASSET"
       },
       "1114": {
-        "shares": 465692815,
-        "valueHkd": 842903995,
+        "shares": 446444837,
+        "valueHkd": 772349568,
         "name": "BRILLIANCE CHI"
       },
       "1117": {
-        "shares": 107663846,
-        "valueHkd": 177645346,
+        "shares": 111515716,
+        "valueHkd": 183443353,
         "name": "CH MODERN D"
       },
       "1128": {
-        "shares": 170846605,
-        "valueHkd": 936239395,
+        "shares": 177838329,
+        "valueHkd": 915867394,
         "name": "WYNN MACAU"
       },
       "1133": {
-        "shares": 27220752,
-        "valueHkd": 405316997,
+        "shares": 24161985,
+        "valueHkd": 338992650,
         "name": "HARBIN ELECTRIC"
       },
       "1138": {
-        "shares": 102107380,
-        "valueHkd": 1879796866,
+        "shares": 100586075,
+        "valueHkd": 1937287805,
         "name": "COSCO SHIP ENGY"
       },
       "1157": {
-        "shares": 61007074,
-        "valueHkd": 366347479,
+        "shares": 62060754,
+        "valueHkd": 364296626,
         "name": "ZOOMLION"
       },
       "1164": {
-        "shares": 572330112,
-        "valueHkd": 1304912655,
+        "shares": 663916381,
+        "valueHkd": 1507090185,
         "name": "CGN MINING"
       },
       "1171": {
-        "shares": 281694922,
-        "valueHkd": 3656400088,
+        "shares": 275848471,
+        "valueHkd": 3315698621,
         "name": "YANKUANG ENERGY"
       },
       "1177": {
-        "shares": 525381322,
-        "valueHkd": 2758251941,
+        "shares": 515603020,
+        "valueHkd": 2820348519,
         "name": "SBP GROUP"
       },
       "1179": {
-        "shares": 15821066,
-        "valueHkd": 535384873,
+        "shares": 15663556,
+        "valueHkd": 530054735,
         "name": "HWORLD-S"
       },
       "1186": {
-        "shares": 9972127,
-        "valueHkd": 44276244,
+        "shares": 11678341,
+        "valueHkd": 51735051,
         "name": "CHINA RAIL CONS"
       },
       "1193": {
-        "shares": 56776265,
-        "valueHkd": 911826816,
+        "shares": 55140694,
+        "valueHkd": 892727836,
         "name": "CHINA RES GAS"
       },
       "1199": {
-        "shares": 34054047,
-        "valueHkd": 194959419,
+        "shares": 33754759,
+        "valueHkd": 199321852,
         "name": "COSCO SHIP PORT"
       },
       "1208": {
-        "shares": 581594670,
-        "valueHkd": 5275063657,
+        "shares": 599607163,
+        "valueHkd": 5297529285,
         "name": "MMG"
       },
       "1209": {
-        "shares": 31531675,
-        "valueHkd": 1203248718,
+        "shares": 34436909,
+        "valueHkd": 1292761564,
         "name": "CHINA RES MIXC"
       },
       "1211": {
-        "shares": 244988741,
-        "valueHkd": 19562350969,
+        "shares": 243547665,
+        "valueHkd": 19849134698,
         "name": "BYD COMPANY"
       },
       "1258": {
-        "shares": 112136609,
-        "valueHkd": 1850254049,
+        "shares": 112680561,
+        "valueHkd": 1801762170,
         "name": "CHINFMINING"
       },
       "1276": {
-        "shares": 36308255,
-        "valueHkd": 1588849239,
+        "shares": 35546505,
+        "valueHkd": 1644381321,
         "name": "HENGRUI PHARMA"
       },
       "1277": {
-        "shares": 68339261,
-        "valueHkd": 135995129,
+        "shares": 64721261,
+        "valueHkd": 122323183,
         "name": "KINETIC DEV"
       },
       "1286": {
-        "shares": 17511961,
-        "valueHkd": 139570329,
+        "shares": 20072280,
+        "valueHkd": 150742823,
         "name": "IMPRO PRECISION"
       },
       "1288": {
-        "shares": 945041762,
-        "valueHkd": 6005740398,
+        "shares": 682169646,
+        "valueHkd": 4297668770,
         "name": "ABC"
       },
       "1299": {
-        "shares": 110591264,
-        "valueHkd": 8299874363,
+        "shares": 123530320,
+        "valueHkd": 9480952060,
         "name": "AIA"
       },
       "1302": {
-        "shares": 250434025,
-        "valueHkd": 346851125,
+        "shares": 249065078,
+        "valueHkd": 328765903,
         "name": "LIFETECH SCI"
       },
       "1308": {
-        "shares": 64402487,
-        "valueHkd": 2921296810,
+        "shares": 75129464,
+        "valueHkd": 3618234986,
         "name": "SITC"
       },
       "1310": {
-        "shares": 16710256,
-        "valueHkd": 90903793,
+        "shares": 17102256,
+        "valueHkd": 93378318,
         "name": "HKBN"
       },
       "1313": {
-        "shares": 213684857,
-        "valueHkd": 210479584,
+        "shares": 222814635,
+        "valueHkd": 203875391,
         "name": "CR BLDG MAT TEC"
       },
       "1316": {
-        "shares": 76246654,
-        "valueHkd": 354928174,
+        "shares": 73180748,
+        "valueHkd": 341754093,
         "name": "NEXTEER"
       },
       "1318": {
-        "shares": 16704962,
-        "valueHkd": 792817497,
+        "shares": 17277453,
+        "valueHkd": 791998446,
         "name": "MAO GEPING"
       },
       "1333": {
-        "shares": 255200,
-        "valueHkd": 3149168,
+        "shares": 343600,
+        "valueHkd": 4243460,
         "name": "BRETON"
       },
       "1336": {
-        "shares": 62776390,
-        "valueHkd": 2986900636,
+        "shares": 65453991,
+        "valueHkd": 3090737455,
         "name": "NCI"
       },
       "1339": {
-        "shares": 154144321,
-        "valueHkd": 909451494,
+        "shares": 169444626,
+        "valueHkd": 979389938,
         "name": "PICC GROUP"
       },
       "1347": {
-        "shares": 47217620,
-        "valueHkd": 5274208154,
+        "shares": 50000104,
+        "valueHkd": 5775012012,
         "name": "HUA HONG GRACE"
       },
       "1357": {
-        "shares": 315213894,
-        "valueHkd": 1325474424,
+        "shares": 376256694,
+        "valueHkd": 1518195760,
         "name": "MEITU"
       },
       "1359": {
-        "shares": 718065878,
-        "valueHkd": 639078631,
+        "shares": 770682779,
+        "valueHkd": 685907673,
         "name": "CHINA CINDA"
       },
       "1361": {
-        "shares": 39498049,
-        "valueHkd": 173001455,
+        "shares": 39108049,
+        "valueHkd": 169142312,
         "name": "361 DEGREES"
       },
       "1364": {
-        "shares": 82794921,
-        "valueHkd": 1894347792,
+        "shares": 81966699,
+        "valueHkd": 1793431374,
         "name": "GUMING"
       },
       "1368": {
-        "shares": 150396520,
-        "valueHkd": 494052568,
+        "shares": 181011807,
+        "valueHkd": 632636265,
         "name": "XTEP INT'L"
       },
       "1378": {
-        "shares": 302389862,
-        "valueHkd": 6803771895,
+        "shares": 300727299,
+        "valueHkd": 6652087854,
         "name": "CHINAHONGQIAO"
       },
       "1384": {
-        "shares": 2135928,
-        "valueHkd": 66213768,
+        "shares": 2257928,
+        "valueHkd": 70402195,
         "name": "DEEPEXI TECH"
       },
       "1385": {
-        "shares": 9043935,
-        "valueHkd": 224651345,
+        "shares": 8508289,
+        "valueHkd": 229213306,
         "name": "SHANGHAI FUDAN"
       },
       "1398": {
-        "shares": 1195871663,
-        "valueHkd": 9100583355,
+        "shares": 1235094190,
+        "valueHkd": 9263206425,
         "name": "ICBC"
       },
       "1405": {
-        "shares": 5247706,
-        "valueHkd": 159950079,
+        "shares": 5754306,
+        "valueHkd": 164458065,
         "name": "DPC DASH"
       },
       "1415": {
-        "shares": 37759795,
-        "valueHkd": 902459101,
+        "shares": 36086378,
+        "valueHkd": 838647425,
         "name": "COWELL"
       },
       "1428": {
-        "shares": 128276592,
-        "valueHkd": 905632740,
+        "shares": 128715320,
+        "valueHkd": 915165925,
         "name": "BRIGHT SMART"
       },
       "1440": {
-        "shares": 1770000,
-        "valueHkd": 24850800,
+        "shares": 1810000,
+        "valueHkd": 36000900,
         "name": "STAR SHINE HLDG"
       },
       "1478": {
-        "shares": 36906913,
-        "valueHkd": 200958141,
+        "shares": 35232843,
+        "valueHkd": 191138173,
         "name": "Q TECH"
       },
       "1513": {
-        "shares": 10815098,
-        "valueHkd": 224737736,
+        "shares": 8246693,
+        "valueHkd": 168232537,
         "name": "LIVZON PHARMA"
       },
       "1519": {
-        "shares": 436197049,
-        "valueHkd": 4071899452,
+        "shares": 463159191,
+        "valueHkd": 4156853739,
         "name": "J&T EXPRESS-W"
       },
       "1530": {
-        "shares": 151144864,
-        "valueHkd": 2333676700,
+        "shares": 137740375,
+        "valueHkd": 2169410906,
         "name": "3SBIO"
       },
       "1548": {
-        "shares": 118057505,
-        "valueHkd": 3820340862,
+        "shares": 111858410,
+        "valueHkd": 4400509849,
         "name": "GENSCRIPT BIO"
       },
       "1579": {
-        "shares": 20553387,
-        "valueHkd": 287130816,
+        "shares": 20696929,
+        "valueHkd": 281685204,
         "name": "YIHAI INTL"
       },
       "1585": {
-        "shares": 194957148,
-        "valueHkd": 1668833187,
+        "shares": 182804175,
+        "valueHkd": 1580342093,
         "name": "YADEA"
       },
       "1610": {
-        "shares": 294991694,
-        "valueHkd": 359889867,
+        "shares": 299945977,
+        "valueHkd": 340438684,
         "name": "COFCO JOYCOME"
       },
       "1651": {
-        "shares": 14491326,
-        "valueHkd": 728189132,
+        "shares": 18687403,
+        "valueHkd": 918672731,
         "name": "TSUGAMI CHINA"
       },
       "1658": {
-        "shares": 511934544,
-        "valueHkd": 2774685228,
+        "shares": 520738011,
+        "valueHkd": 2811985259,
         "name": "PSBC"
       },
       "1672": {
-        "shares": 17932000,
-        "valueHkd": 169457400,
+        "shares": 19439000,
+        "valueHkd": 174367830,
         "name": "ASCLETIS-B"
       },
       "1675": {
-        "shares": 15935647,
-        "valueHkd": 61033528,
+        "shares": 15757744,
+        "valueHkd": 64212807,
         "name": "ASIAINFO TECH"
       },
       "1681": {
-        "shares": 7136849,
-        "valueHkd": 93064511,
+        "shares": 6809900,
+        "valueHkd": 90639769,
         "name": "CONSUN PHARMA"
       },
       "1686": {
-        "shares": 108541283,
-        "valueHkd": 595891644,
+        "shares": 102753384,
+        "valueHkd": 565657379,
         "name": "SUNEVISION"
       },
       "1698": {
-        "shares": 8840545,
-        "valueHkd": 273703273,
+        "shares": 15331441,
+        "valueHkd": 476807815,
         "name": "TME-SW"
       },
       "1729": {
-        "shares": 65971697,
-        "valueHkd": 1206622338,
+        "shares": 76144650,
+        "valueHkd": 1388878416,
         "name": "TIME INTERCON"
       },
       "1735": {
-        "shares": 4681000,
-        "valueHkd": 38360795,
+        "shares": 4697292,
+        "valueHkd": 38917064,
         "name": "CENTRAL NEW EGY"
       },
       "1766": {
-        "shares": 209264564,
-        "valueHkd": 1107009544,
+        "shares": 217074504,
+        "valueHkd": 1113592206,
         "name": "CRRC"
       },
       "1768": {
-        "shares": 1694648,
-        "valueHkd": 615835083,
+        "shares": 1775148,
+        "valueHkd": 644023694,
         "name": "BUSYMING"
       },
       "1772": {
-        "shares": 67089345,
-        "valueHkd": 2325316698,
+        "shares": 71019582,
+        "valueHkd": 2404723047,
         "name": "GANFENGLITHIUM"
       },
       "1776": {
-        "shares": 54533210,
-        "valueHkd": 969055142,
+        "shares": 52055656,
+        "valueHkd": 913056206,
         "name": "GF SEC"
       },
       "1783": {
-        "shares": 84518464,
-        "valueHkd": 361316434,
+        "shares": 86255464,
+        "valueHkd": 387287033,
         "name": "ENVISION GREEN"
       },
       "1787": {
-        "shares": 111843457,
-        "valueHkd": 2728980351,
+        "shares": 116273041,
+        "valueHkd": 2671954482,
         "name": "SD GOLD"
       },
       "1788": {
-        "shares": 428053845,
-        "valueHkd": 1232795074,
+        "shares": 406294452,
+        "valueHkd": 1176222439,
         "name": "GUOTAI JUNAN I"
       },
       "1789": {
-        "shares": 25221391,
-        "valueHkd": 123963137,
+        "shares": 26419053,
+        "valueHkd": 128528693,
         "name": "AK MEDICAL"
       },
       "1797": {
-        "shares": 31883736,
-        "valueHkd": 762021290,
+        "shares": 31829983,
+        "valueHkd": 824396560,
         "name": "EAST BUY"
       },
       "1800": {
-        "shares": 19588843,
-        "valueHkd": 68658895,
+        "shares": 21658843,
+        "valueHkd": 73748360,
         "name": "CHINA COMM CONS"
       },
       "1801": {
-        "shares": 55956407,
-        "valueHkd": 5234721875,
+        "shares": 53935516,
+        "valueHkd": 5210170846,
         "name": "INNOVENT BIO"
       },
       "1810": {
-        "shares": 1414615302,
-        "valueHkd": 37289259361,
+        "shares": 1408096634,
+        "valueHkd": 37173751138,
         "name": "XIAOMI-W"
       },
       "1811": {
-        "shares": 53087439,
-        "valueHkd": 114668868,
+        "shares": 53492279,
+        "valueHkd": 111798863,
         "name": "CGN NEW ENERGY"
       },
       "1816": {
-        "shares": 611977809,
-        "valueHkd": 1875711985,
+        "shares": 614735059,
+        "valueHkd": 1828836801,
         "name": "CGN POWER"
       },
       "1818": {
-        "shares": 123073504,
-        "valueHkd": 2621465635,
+        "shares": 128119110,
+        "valueHkd": 2582881258,
         "name": "ZHAOJIN MINING"
       },
       "1828": {
-        "shares": 5053502,
-        "valueHkd": 169292317,
+        "shares": 10170686,
+        "valueHkd": 355160355,
         "name": "FWD"
       },
       "1833": {
-        "shares": 208146916,
-        "valueHkd": 1274899861,
+        "shares": 210496416,
+        "valueHkd": 1300867851,
         "name": "PA GOODDOCTOR"
       },
       "1836": {
-        "shares": 37290941,
-        "valueHkd": 432202006,
+        "shares": 37578856,
+        "valueHkd": 431781055,
         "name": "STELLA HOLDINGS"
       },
       "1866": {
-        "shares": 14450605,
-        "valueHkd": 155633016,
+        "shares": 15214185,
+        "valueHkd": 151457212,
         "name": "CHINA XLX FERT"
       },
       "1876": {
-        "shares": 338119868,
-        "valueHkd": 1940808042,
+        "shares": 331375196,
+        "valueHkd": 1963398036,
         "name": "BUD APAC"
       },
       "1879": {
-        "shares": 834628,
-        "valueHkd": 260737787,
+        "shares": 959863,
+        "valueHkd": 310227722,
         "name": "XIZHI TECH-P"
       },
       "1880": {
-        "shares": 6029164,
-        "valueHkd": 282164875,
+        "shares": 6150910,
+        "valueHkd": 284295060,
         "name": "CTG DUTY-FREE"
       },
       "1882": {
-        "shares": 36435151,
-        "valueHkd": 637979494,
+        "shares": 37698304,
+        "valueHkd": 643510049,
         "name": "HAITIAN INT'L"
       },
       "1883": {
-        "shares": 28682897,
-        "valueHkd": 68265295,
+        "shares": 30021011,
+        "valueHkd": 72050426,
         "name": "CITIC TELECOM"
       },
       "1888": {
-        "shares": 139298992,
-        "valueHkd": 6672421717,
+        "shares": 125930682,
+        "valueHkd": 5931335122,
         "name": "KB LAMINATES"
       },
       "1896": {
-        "shares": 45644011,
-        "valueHkd": 190335526,
+        "shares": 43621611,
+        "valueHkd": 173177796,
         "name": "MAOYAN ENT"
       },
       "1898": {
-        "shares": 65405068,
-        "valueHkd": 728612458,
+        "shares": 71290947,
+        "valueHkd": 747842034,
         "name": "CHINA COAL"
       },
       "1907": {
-        "shares": 67409604,
-        "valueHkd": 125381863,
+        "shares": 80385604,
+        "valueHkd": 142684447,
         "name": "CHINA RISUN GP"
       },
       "1908": {
-        "shares": 130476646,
-        "valueHkd": 1585291249,
+        "shares": 126515760,
+        "valueHkd": 1540961957,
         "name": "C&D INTL GROUP"
       },
       "1910": {
-        "shares": 43307993,
-        "valueHkd": 541349913,
+        "shares": 45029693,
+        "valueHkd": 551613739,
         "name": "SAMSONITE"
       },
       "1913": {
-        "shares": 33612260,
-        "valueHkd": 1294072010,
+        "shares": 33153112,
+        "valueHkd": 1297612804,
         "name": "PRADA"
       },
       "1918": {
-        "shares": 1123682159,
-        "valueHkd": 612406777,
+        "shares": 1213276333,
+        "valueHkd": 740098563,
         "name": "SUNAC"
       },
       "1919": {
-        "shares": 409312195,
-        "valueHkd": 6729092486,
+        "shares": 407477075,
+        "valueHkd": 6755969904,
         "name": "COSCO SHIP HOLD"
       },
       "1921": {
-        "shares": 5466000,
-        "valueHkd": 18721050,
+        "shares": 5780000,
+        "valueHkd": 18120300,
         "name": "DALIPAL HLDG"
       },
       "1928": {
-        "shares": 217578317,
-        "valueHkd": 2906846315,
+        "shares": 254423204,
+        "valueHkd": 3114140017,
         "name": "SANDS CHINA LTD"
       },
       "1929": {
-        "shares": 357017952,
-        "valueHkd": 4166399500,
+        "shares": 353821931,
+        "valueHkd": 3909732338,
         "name": "CHOW TAI FOOK"
       },
       "1951": {
-        "shares": 125775156,
-        "valueHkd": 263498952,
+        "shares": 122627156,
+        "valueHkd": 256290756,
         "name": "JXR"
       },
       "1952": {
-        "shares": 21106453,
-        "valueHkd": 566075069,
+        "shares": 19396719,
+        "valueHkd": 534961510,
         "name": "EVEREST MED"
       },
       "1956": {
@@ -3121,88 +3121,88 @@
         "name": "WENGE AI"
       },
       "1963": {
-        "shares": 6129553,
-        "valueHkd": 53020633,
+        "shares": 5945553,
+        "valueHkd": 49348090,
         "name": "BCQ"
       },
       "1972": {
-        "shares": 20665767,
-        "valueHkd": 504244715,
+        "shares": 21470236,
+        "valueHkd": 522156140,
         "name": "SWIREPROPERTIES"
       },
       "1988": {
-        "shares": 321343387,
-        "valueHkd": 1115061553,
+        "shares": 318129435,
+        "valueHkd": 1091183962,
         "name": "MINSHENG BANK"
       },
       "1997": {
-        "shares": 73957065,
-        "valueHkd": 2286752450,
+        "shares": 75428017,
+        "valueHkd": 2299045958,
         "name": "WHARF REIC"
       },
       "1999": {
-        "shares": 186060364,
-        "valueHkd": 517247812,
+        "shares": 191083941,
+        "valueHkd": 538856714,
         "name": "MAN WAH HLDGS"
       },
       "2005": {
-        "shares": 104044135,
-        "valueHkd": 272595634,
+        "shares": 101371750,
+        "valueHkd": 273703725,
         "name": "SSY GROUP"
       },
       "2007": {
-        "shares": 1705993001,
-        "valueHkd": 295136789,
+        "shares": 1762464738,
+        "valueHkd": 306668864,
         "name": "COUNTRY GARDEN"
       },
       "2013": {
-        "shares": 411348745,
-        "valueHkd": 341419458,
+        "shares": 406964493,
+        "valueHkd": 329641239,
         "name": "WEIMOB INC"
       },
       "2015": {
-        "shares": 164829810,
-        "valueHkd": 7638213395,
+        "shares": 168622066,
+        "valueHkd": 8019665459,
         "name": "LI AUTO-W"
       },
       "2016": {
-        "shares": 80997440,
-        "valueHkd": 198443728,
+        "shares": 80136943,
+        "valueHkd": 192328663,
         "name": "CZBANK"
       },
       "2018": {
-        "shares": 49183006,
-        "valueHkd": 2065686252,
+        "shares": 49228159,
+        "valueHkd": 1999647819,
         "name": "AAC TECH"
       },
       "2020": {
-        "shares": 66359414,
-        "valueHkd": 4807739544,
+        "shares": 66799835,
+        "valueHkd": 4789548170,
         "name": "ANTA SPORTS"
       },
       "2026": {
-        "shares": 5968647,
-        "valueHkd": 307385321,
+        "shares": 5957552,
+        "valueHkd": 317537522,
         "name": "PONY-W"
       },
       "2038": {
-        "shares": 11226027,
-        "valueHkd": 184219103,
+        "shares": 10240369,
+        "valueHkd": 168146859,
         "name": "FIH"
       },
       "2039": {
-        "shares": 17924654,
-        "valueHkd": 140260418,
+        "shares": 17939604,
+        "valueHkd": 138942233,
         "name": "CIMC"
       },
       "2050": {
-        "shares": 50234336,
-        "valueHkd": 1226722485,
+        "shares": 52314569,
+        "valueHkd": 1302632768,
         "name": "SANHUA"
       },
       "2057": {
-        "shares": 27973311,
-        "valueHkd": 4542865706,
+        "shares": 28325508,
+        "valueHkd": 4617057804,
         "name": "ZTO EXPRESS-W"
       },
       "2076": {
@@ -3211,53 +3211,53 @@
         "name": "BOSS ZHIPIN-W"
       },
       "2096": {
-        "shares": 25472857,
-        "valueHkd": 281475070,
+        "shares": 22434199,
+        "valueHkd": 250590003,
         "name": "SIMCERE PHARMA"
       },
       "2097": {
-        "shares": 2616742,
-        "valueHkd": 511573061,
+        "shares": 2303125,
+        "valueHkd": 447727500,
         "name": "MIXUE GROUP"
       },
       "2099": {
-        "shares": 5494338,
-        "valueHkd": 1464790511,
+        "shares": 5193100,
+        "valueHkd": 1302429480,
         "name": "CHINAGOLDINTL"
       },
       "2128": {
-        "shares": 164665339,
-        "valueHkd": 526105758,
+        "shares": 164816079,
+        "valueHkd": 521642890,
         "name": "CHINA LESSO"
       },
       "2142": {
-        "shares": 51160627,
-        "valueHkd": 659460482,
+        "shares": 55481023,
+        "valueHkd": 779508373,
         "name": "HBM HOLDINGS-B"
       },
       "2145": {
-        "shares": 13145234,
-        "valueHkd": 295767765,
+        "shares": 13474159,
+        "valueHkd": 285921654,
         "name": "CHICMAX"
       },
       "2155": {
-        "shares": 18839000,
-        "valueHkd": 133474315,
+        "shares": 18765683,
+        "valueHkd": 135112918,
         "name": "MORIMATSU INTL"
       },
       "2157": {
-        "shares": 22043000,
-        "valueHkd": 82330605,
+        "shares": 23330030,
+        "valueHkd": 94719922,
         "name": "LEPU BIO"
       },
       "2162": {
-        "shares": 15403696,
-        "valueHkd": 1125239993,
+        "shares": 14807157,
+        "valueHkd": 1066855662,
         "name": "KEYMED BIO-B"
       },
       "2171": {
-        "shares": 41710706,
-        "valueHkd": 523469360,
+        "shares": 41017899,
+        "valueHkd": 522978212,
         "name": "CARSGEN-B"
       },
       "2172": {
@@ -3266,153 +3266,153 @@
         "name": "MICROPORT NEURO"
       },
       "2186": {
-        "shares": 518005642,
-        "valueHkd": 932410156,
+        "shares": 515490890,
+        "valueHkd": 902109058,
         "name": "LUYE PHARMA"
       },
       "2192": {
-        "shares": 9817499,
-        "valueHkd": 69311543,
+        "shares": 10047000,
+        "valueHkd": 71836050,
         "name": "MEDLIVE"
       },
       "2196": {
-        "shares": 24326938,
-        "valueHkd": 397258898,
+        "shares": 24354428,
+        "valueHkd": 421818693,
         "name": "FOSUN PHARMA"
       },
       "2202": {
-        "shares": 224332284,
-        "valueHkd": 502504316,
+        "shares": 225597060,
+        "valueHkd": 530153091,
         "name": "CHINA VANKE"
       },
       "2225": {
         "shares": 2235000,
-        "valueHkd": 14080500,
+        "valueHkd": 12728325,
         "name": "JINHAI MED TECH"
       },
       "2228": {
-        "shares": 419676068,
-        "valueHkd": 2908355151,
+        "shares": 402982332,
+        "valueHkd": 3231918303,
         "name": "XTALPI"
       },
       "2232": {
-        "shares": 29098815,
-        "valueHkd": 194234590,
+        "shares": 30190712,
+        "valueHkd": 198956792,
         "name": "CRYSTAL INTL"
       },
       "2233": {
-        "shares": 298883874,
-        "valueHkd": 564890522,
+        "shares": 297684411,
+        "valueHkd": 531366674,
         "name": "WESTCHINACEMENT"
       },
       "2238": {
-        "shares": 203456437,
-        "valueHkd": 435396775,
+        "shares": 171132212,
+        "valueHkd": 419273919,
         "name": "GAC GROUP"
       },
       "2252": {
-        "shares": 27382775,
-        "valueHkd": 579967175,
+        "shares": 27381575,
+        "valueHkd": 579941759,
         "name": "MEDBOT-B"
       },
       "2259": {
-        "shares": 85658981,
-        "valueHkd": 13714002858,
+        "shares": 86816235,
+        "valueHkd": 13812462989,
         "name": "ZIJIN GOLD INTL"
       },
       "2268": {
-        "shares": 66237042,
-        "valueHkd": 4775690728,
+        "shares": 67509067,
+        "valueHkd": 5198198159,
         "name": "WUXI XDC"
       },
       "2269": {
-        "shares": 102978490,
-        "valueHkd": 4839989030,
+        "shares": 104901355,
+        "valueHkd": 5281783224,
         "name": "WUXI BIO"
       },
       "2273": {
-        "shares": 6669974,
-        "valueHkd": 177021110,
+        "shares": 6122930,
+        "valueHkd": 165686486,
         "name": "GUSHENGTANG"
       },
       "2276": {
-        "shares": 27286210,
-        "valueHkd": 1160755373,
+        "shares": 26433581,
+        "valueHkd": 1072674717,
         "name": "CONANT OPTICAL"
       },
       "2282": {
-        "shares": 136849779,
-        "valueHkd": 1380814270,
+        "shares": 145506438,
+        "valueHkd": 1382311161,
         "name": "MGM CHINA"
       },
       "2285": {
-        "shares": 8026495,
-        "valueHkd": 197451777,
+        "shares": 6060482,
+        "valueHkd": 151269631,
         "name": "CHERVON"
       },
       "2313": {
-        "shares": 66470543,
-        "valueHkd": 2391610137,
+        "shares": 69142333,
+        "valueHkd": 2422747348,
         "name": "SHENZHOU INTL"
       },
       "2314": {
-        "shares": 34490639,
-        "valueHkd": 123476488,
+        "shares": 34598425,
+        "valueHkd": 120229527,
         "name": "LEE & MAN PAPER"
       },
       "2318": {
-        "shares": 1085281425,
-        "valueHkd": 58605196950,
+        "shares": 1088998665,
+        "valueHkd": 57934728978,
         "name": "PING AN"
       },
       "2319": {
-        "shares": 140448992,
-        "valueHkd": 2578643493,
+        "shares": 148402732,
+        "valueHkd": 2637116548,
         "name": "MENGNIU DAIRY"
       },
       "2328": {
-        "shares": 193521001,
-        "valueHkd": 3297597857,
+        "shares": 209012605,
+        "valueHkd": 3498871008,
         "name": "PICC P&C"
       },
       "2331": {
-        "shares": 142243758,
-        "valueHkd": 1850591292,
+        "shares": 137818557,
+        "valueHkd": 1732379261,
         "name": "LI NING"
       },
       "2333": {
-        "shares": 104380702,
-        "valueHkd": 791205721,
+        "shares": 92041377,
+        "valueHkd": 688469500,
         "name": "GWMOTOR"
       },
       "2338": {
-        "shares": 114035618,
-        "valueHkd": 3573876268,
+        "shares": 117945317,
+        "valueHkd": 3738866549,
         "name": "WEICHAI POWER"
       },
       "2343": {
-        "shares": 125677494,
-        "valueHkd": 536642899,
+        "shares": 121637959,
+        "valueHkd": 505405720,
         "name": "PACIFIC BASIN"
       },
       "2356": {
-        "shares": 8971042,
-        "valueHkd": 127568217,
+        "shares": 8917567,
+        "valueHkd": 130999059,
         "name": "DAHSING BANKING"
       },
       "2357": {
-        "shares": 97622565,
-        "valueHkd": 285057890,
+        "shares": 104702565,
+        "valueHkd": 295261233,
         "name": "AVICHINA"
       },
       "2359": {
-        "shares": 98100751,
-        "valueHkd": 18521421789,
+        "shares": 90104029,
+        "valueHkd": 18020805800,
         "name": "WUXI APPTEC"
       },
       "2367": {
-        "shares": 51724134,
-        "valueHkd": 1317930934,
+        "shares": 50325064,
+        "valueHkd": 1220886053,
         "name": "GIANT BIOGENE"
       },
       "2378": {
@@ -3421,98 +3421,98 @@
         "name": "PRU"
       },
       "2380": {
-        "shares": 267214577,
-        "valueHkd": 724151504,
+        "shares": 263775273,
+        "valueHkd": 691091215,
         "name": "CHINA POWER"
       },
       "2382": {
-        "shares": 143845230,
-        "valueHkd": 9939705393,
+        "shares": 146283548,
+        "valueHkd": 9808311893,
         "name": "SUNNY OPTICAL"
       },
       "2386": {
-        "shares": 27422827,
-        "valueHkd": 151374005,
+        "shares": 24630868,
+        "valueHkd": 129435211,
         "name": "SINOPEC SEG"
       },
       "2388": {
-        "shares": 100931746,
-        "valueHkd": 5278730316,
+        "shares": 99044892,
+        "valueHkd": 5155286629,
         "name": "BOC HONG KONG"
       },
       "2400": {
-        "shares": 25657039,
-        "valueHkd": 1005242788,
+        "shares": 25457241,
+        "valueHkd": 982140358,
         "name": "XD INC"
       },
       "2419": {
-        "shares": 4157363,
-        "valueHkd": 249026044,
+        "shares": 4146063,
+        "valueHkd": 242337382,
         "name": "DEKON AGR"
       },
       "2423": {
-        "shares": 64625820,
-        "valueHkd": 2879726539,
+        "shares": 61997764,
+        "valueHkd": 2670863673,
         "name": "BEKE-W"
       },
       "2432": {
-        "shares": 11662253,
-        "valueHkd": 245373803,
+        "shares": 11678923,
+        "valueHkd": 254600521,
         "name": "DOBOT"
       },
       "2460": {
-        "shares": 18418195,
-        "valueHkd": 132426822,
+        "shares": 19148098,
+        "valueHkd": 137196122,
         "name": "CR BEVERAGE"
       },
       "2476": {
-        "shares": 4307557,
-        "valueHkd": 861511400,
+        "shares": 4483457,
+        "valueHkd": 894001326,
         "name": "VGT"
       },
       "2498": {
-        "shares": 46571429,
-        "valueHkd": 784262864,
+        "shares": 48061804,
+        "valueHkd": 824259939,
         "name": "ROBOSENSE"
       },
       "2506": {
-        "shares": 21400,
-        "valueHkd": 1447710,
+        "shares": 21379,
+        "valueHkd": 1425979,
         "name": "XUNFEIHEALTH"
       },
       "2507": {
-        "shares": 3004400,
-        "valueHkd": 134476944,
+        "shares": 2865400,
+        "valueHkd": 123899896,
         "name": "CIRRUS"
       },
       "2510": {
-        "shares": 13250301,
-        "valueHkd": 180601603,
+        "shares": 13488331,
+        "valueHkd": 189376167,
         "name": "TS LINES"
       },
       "2513": {
-        "shares": 7571115,
-        "valueHkd": 6003894195,
+        "shares": 5104943,
+        "valueHkd": 3981855540,
         "name": "Z.AI"
       },
       "2517": {
-        "shares": 49004539,
-        "valueHkd": 80122421,
+        "shares": 43610818,
+        "valueHkd": 65416227,
         "name": "GUOQUAN"
       },
       "2525": {
-        "shares": 54936071,
-        "valueHkd": 925672796,
+        "shares": 54160640,
+        "valueHkd": 890942528,
         "name": "HESAI-W"
       },
       "2526": {
-        "shares": 33400,
-        "valueHkd": 15851640,
+        "shares": 80000,
+        "valueHkd": 34560000,
         "name": "DIAGENS-B"
       },
       "2533": {
-        "shares": 35897183,
-        "valueHkd": 350894964,
+        "shares": 35901183,
+        "valueHkd": 359011830,
         "name": "BLACK SESAME"
       },
       "2555": {
@@ -3521,8 +3521,8 @@
         "name": "CHABAIDAO"
       },
       "2556": {
-        "shares": 1683493,
-        "valueHkd": 89898526,
+        "shares": 1107413,
+        "valueHkd": 62624205,
         "name": "MARKETINGFORCE"
       },
       "2565": {
@@ -3536,28 +3536,28 @@
         "name": "XUANZHUBIO-B"
       },
       "2577": {
-        "shares": 36494756,
-        "valueHkd": 1536429228,
+        "shares": 36421009,
+        "valueHkd": 1609808598,
         "name": "INNOSCIENCE"
       },
       "2580": {
-        "shares": 12343691,
-        "valueHkd": 119363492,
+        "shares": 12699501,
+        "valueHkd": 118041862,
         "name": "AUX ELECTRIC"
       },
       "2583": {
-        "shares": 47700,
-        "valueHkd": 3556035,
+        "shares": 32700,
+        "valueHkd": 1876980,
         "name": "HIPINE"
       },
       "2586": {
-        "shares": 293400,
-        "valueHkd": 1288026,
+        "shares": 381000,
+        "valueHkd": 1986915,
         "name": "DMALL"
       },
       "2588": {
-        "shares": 5350897,
-        "valueHkd": 398909371,
+        "shares": 4679467,
+        "valueHkd": 335049837,
         "name": "BOC AVIATION"
       },
       "2589": {
@@ -3566,73 +3566,73 @@
         "name": "AUNTEA JENNY"
       },
       "2590": {
-        "shares": 8077930,
-        "valueHkd": 70681888,
+        "shares": 8398800,
+        "valueHkd": 69794028,
         "name": "GEEKPLUS-W"
       },
       "2591": {
-        "shares": 206600,
-        "valueHkd": 824334,
+        "shares": 0,
+        "valueHkd": 0,
         "name": "INNOGEN-B"
       },
       "2595": {
-        "shares": 7151800,
-        "valueHkd": 182227864,
+        "shares": 7806400,
+        "valueHkd": 202185760,
         "name": "GENFLEET-B"
       },
       "2600": {
-        "shares": 272877997,
-        "valueHkd": 2277166885,
+        "shares": 269029670,
+        "valueHkd": 2184520920,
         "name": "CHALCO"
       },
       "2601": {
-        "shares": 197817625,
-        "valueHkd": 5815838175,
+        "shares": 188975503,
+        "valueHkd": 5382022325,
         "name": "CPIC"
       },
       "2602": {
-        "shares": 33589044,
-        "valueHkd": 643566083,
+        "shares": 32833244,
+        "valueHkd": 619563314,
         "name": "ONEWO"
       },
       "2607": {
-        "shares": 16562058,
-        "valueHkd": 182679500,
+        "shares": 15040510,
+        "valueHkd": 161986293,
         "name": "SH PHARMA"
       },
       "2609": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 296968,
+        "valueHkd": 887934,
         "name": "BAYZED HEALTH"
       },
       "2610": {
-        "shares": 4454708,
-        "valueHkd": 111545888,
+        "shares": 4916482,
+        "valueHkd": 126353587,
         "name": "NANSHAN AL INTL"
       },
       "2611": {
-        "shares": 82999947,
-        "valueHkd": 1224249218,
+        "shares": 103048254,
+        "valueHkd": 1580760216,
         "name": "GTHT"
       },
       "2616": {
-        "shares": 93432978,
-        "valueHkd": 540509778,
+        "shares": 103416206,
+        "valueHkd": 551725459,
         "name": "CSTONE PHARMA-B"
       },
       "2617": {
-        "shares": 382500,
-        "valueHkd": 3585938,
+        "shares": 385000,
+        "valueHkd": 3861550,
         "name": "TRANSTHERA-B"
       },
       "2618": {
-        "shares": 78280165,
-        "valueHkd": 844642980,
+        "shares": 84511871,
+        "valueHkd": 884839289,
         "name": "JD LOGISTICS"
       },
       "2628": {
-        "shares": 161404322,
-        "valueHkd": 4777567931,
+        "shares": 180083375,
+        "valueHkd": 5290849558,
         "name": "CHINA LIFE"
       },
       "2632": {
@@ -3647,17 +3647,17 @@
       },
       "2637": {
         "shares": 44608,
-        "valueHkd": 8609344,
+        "valueHkd": 8595962,
         "name": "HAIXI PHARMA"
       },
       "2638": {
-        "shares": 25224742,
-        "valueHkd": 159294246,
+        "shares": 27372974,
+        "valueHkd": 169986169,
         "name": "HKELECTRIC-SS"
       },
       "2643": {
-        "shares": 5866000,
-        "valueHkd": 69629420,
+        "shares": 5817400,
+        "valueHkd": 76091592,
         "name": "CAOCAO INC"
       },
       "2650": {
@@ -3666,43 +3666,38 @@
         "name": "ZHIDA TECH"
       },
       "2652": {
-        "shares": 823900,
-        "valueHkd": 8535604,
+        "shares": 1315500,
+        "valueHkd": 14470500,
         "name": "CF PHARMTECH"
       },
       "2655": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 102000,
+        "valueHkd": 1521840,
         "name": "GUOXIA TECH"
       },
       "2656": {
-        "shares": 377750,
-        "valueHkd": 3231651,
+        "shares": 450750,
+        "valueHkd": 2512931,
         "name": "160 HEALTH"
       },
       "2665": {
-        "shares": 272500,
-        "valueHkd": 558625,
+        "shares": 382500,
+        "valueHkd": 763088,
         "name": "SEYOND"
       },
       "2666": {
-        "shares": 78557829,
-        "valueHkd": 356259755,
+        "shares": 91164329,
+        "valueHkd": 409783659,
         "name": "UNI MEDICAL"
       },
       "2669": {
-        "shares": 45058688,
-        "valueHkd": 147341910,
+        "shares": 52197149,
+        "valueHkd": 172511577,
         "name": "CHINA OVS PPT"
       },
-      "2670": {
-        "shares": 0,
-        "valueHkd": 0,
-        "name": "YUNJI"
-      },
       "2675": {
-        "shares": 714300,
-        "valueHkd": 26429100,
+        "shares": 499200,
+        "valueHkd": 17222400,
         "name": "EDGE MEDICAL-B"
       },
       "2685": {
@@ -3716,23 +3711,23 @@
         "name": "ABLE DIGITAL"
       },
       "2688": {
-        "shares": 15963257,
-        "valueHkd": 768471192,
+        "shares": 16668815,
+        "valueHkd": 828106729,
         "name": "ENN ENERGY"
       },
       "2689": {
-        "shares": 75922072,
-        "valueHkd": 477929443,
+        "shares": 79309537,
+        "valueHkd": 491719129,
         "name": "ND PAPER"
       },
       "2696": {
-        "shares": 4662949,
-        "valueHkd": 293765787,
+        "shares": 4422331,
+        "valueHkd": 264013161,
         "name": "HENLIUS"
       },
       "2698": {
-        "shares": 2193000,
-        "valueHkd": 64430340,
+        "shares": 2319600,
+        "valueHkd": 67453968,
         "name": "SOFTCARE"
       },
       "2706": {
@@ -3741,13 +3736,13 @@
         "name": "HAIZHI TECH GP"
       },
       "2714": {
-        "shares": 19466647,
-        "valueHkd": 741289918,
+        "shares": 19876692,
+        "valueHkd": 739412942,
         "name": "MUYUAN"
       },
       "2718": {
-        "shares": 32080,
-        "valueHkd": 1385214,
+        "shares": 36080,
+        "valueHkd": 1545667,
         "name": "MININGLAMP-W"
       },
       "2723": {
@@ -3756,18 +3751,18 @@
         "name": "DEEPZERO"
       },
       "2726": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 32050,
+        "valueHkd": 2616883,
         "name": "EPIWORLD"
       },
       "2727": {
-        "shares": 167130291,
-        "valueHkd": 501390873,
+        "shares": 180157931,
+        "valueHkd": 544076952,
         "name": "SH ELECTRIC"
       },
       "2729": {
-        "shares": 91200,
-        "valueHkd": 3868704,
+        "shares": 88000,
+        "valueHkd": 2705120,
         "name": "GALAXIS TECH"
       },
       "2778": {
@@ -3776,58 +3771,58 @@
         "name": "CHAMPION REIT"
       },
       "2788": {
-        "shares": 67507691,
-        "valueHkd": 1140879978,
+        "shares": 69823772,
+        "valueHkd": 1152092238,
         "name": "CHUANGXIN IND"
       },
       "2799": {
-        "shares": 380913312,
-        "valueHkd": 238070820,
+        "shares": 383109466,
+        "valueHkd": 243274511,
         "name": "CITIC FAMC"
       },
       "2858": {
-        "shares": 199676789,
-        "valueHkd": 224636388,
+        "shares": 207528659,
+        "valueHkd": 229319168,
         "name": "YIXIN"
       },
       "2869": {
-        "shares": 20358261,
-        "valueHkd": 84486783,
+        "shares": 20747956,
+        "valueHkd": 84859140,
         "name": "GREENTOWN SER"
       },
       "2877": {
-        "shares": 6013577,
-        "valueHkd": 47807937,
+        "shares": 7553614,
+        "valueHkd": 61373114,
         "name": "SHINEWAY PHARM"
       },
       "2883": {
-        "shares": 74285108,
-        "valueHkd": 565309672,
+        "shares": 88835999,
+        "valueHkd": 669823432,
         "name": "CHINA OILFIELD"
       },
       "2888": {
-        "shares": 2125705,
-        "valueHkd": 513995469,
+        "shares": 1969195,
+        "valueHkd": 482452775,
         "name": "STANCHART"
       },
       "2889": {
-        "shares": 42320,
-        "valueHkd": 3686072,
+        "shares": 42980,
+        "valueHkd": 3977799,
         "name": "PATEO"
       },
       "2899": {
-        "shares": 782989428,
-        "valueHkd": 27263691883,
+        "shares": 768240676,
+        "valueHkd": 26227736679,
         "name": "ZIJIN MINING"
       },
       "3288": {
-        "shares": 15434700,
-        "valueHkd": 417971676,
+        "shares": 15923100,
+        "valueHkd": 426739080,
         "name": "HAITIAN FLAV"
       },
       "3306": {
-        "shares": 3265408,
-        "valueHkd": 69030725,
+        "shares": 2846908,
+        "valueHkd": 62233409,
         "name": "JNBY"
       },
       "3310": {
@@ -3836,83 +3831,83 @@
         "name": "VIEWTRIX TECH"
       },
       "3311": {
-        "shares": 102063522,
-        "valueHkd": 841003421,
+        "shares": 108156032,
+        "valueHkd": 904725208,
         "name": "CHINA STATE CON"
       },
       "3317": {
-        "shares": 656800,
-        "valueHkd": 66336800,
+        "shares": 587700,
+        "valueHkd": 60239250,
         "name": "XUNCE"
       },
       "3320": {
-        "shares": 47674357,
-        "valueHkd": 202616017,
+        "shares": 53610738,
+        "valueHkd": 233206710,
         "name": "CHINARES PHARMA"
       },
       "3323": {
-        "shares": 498640913,
-        "valueHkd": 1727790764,
+        "shares": 533477670,
+        "valueHkd": 1728467651,
         "name": "CNBM"
       },
       "3328": {
-        "shares": 325228407,
-        "valueHkd": 2631097813,
+        "shares": 294928822,
+        "valueHkd": 2400720611,
         "name": "BANKCOMM"
       },
       "3330": {
-        "shares": 102194071,
-        "valueHkd": 2401560669,
+        "shares": 103074317,
+        "valueHkd": 2531505226,
         "name": "LINGBAO GOLD"
       },
       "3339": {
-        "shares": 16277000,
-        "valueHkd": 55016260,
+        "shares": 19364000,
+        "valueHkd": 63804380,
         "name": "LONKING"
       },
       "3355": {
-        "shares": 297500,
-        "valueHkd": 11602500,
+        "shares": 667800,
+        "valueHkd": 27660276,
         "name": "FS.COM"
       },
       "3360": {
-        "shares": 247159984,
-        "valueHkd": 1688102691,
+        "shares": 237554115,
+        "valueHkd": 1525097418,
         "name": "FE HORIZON"
       },
       "3380": {
-        "shares": 19821541,
-        "valueHkd": 25768003,
+        "shares": 20068541,
+        "valueHkd": 25085676,
         "name": "LOGAN GROUP"
       },
       "3393": {
-        "shares": 36439899,
-        "valueHkd": 518904162,
+        "shares": 34997890,
+        "valueHkd": 487520608,
         "name": "WASION HOLDINGS"
       },
       "3396": {
-        "shares": 15139309,
-        "valueHkd": 277503534,
+        "shares": 13445813,
+        "valueHkd": 297152467,
         "name": "LEGENDHOLDING"
       },
       "3606": {
-        "shares": 32275275,
-        "valueHkd": 1770298834,
+        "shares": 35254959,
+        "valueHkd": 1942548241,
         "name": "FUYAO GLASS"
       },
       "3613": {
-        "shares": 21301097,
-        "valueHkd": 125569967,
+        "shares": 19571249,
+        "valueHkd": 110479701,
         "name": "TONGRENTANGCM"
       },
       "3618": {
-        "shares": 76988470,
-        "valueHkd": 488491842,
+        "shares": 74247519,
+        "valueHkd": 464046994,
         "name": "CQRC BANK"
       },
       "3633": {
-        "shares": 31730992,
-        "valueHkd": 88212158,
+        "shares": 31620099,
+        "valueHkd": 83002760,
         "name": "ZHONGYU ENERGY"
       },
       "3660": {
@@ -3922,67 +3917,67 @@
       },
       "3668": {
         "shares": 448800,
-        "valueHkd": 16497888,
+        "valueHkd": 14559072,
         "name": "YANCOAL AUS"
       },
       "3677": {
-        "shares": 735300,
-        "valueHkd": 3231644,
+        "shares": 1017900,
+        "valueHkd": 4992800,
         "name": "ZENERGY"
       },
       "3690": {
-        "shares": 168317219,
-        "valueHkd": 12640623147,
+        "shares": 173535183,
+        "valueHkd": 12702775396,
         "name": "MEITUAN-W"
       },
       "3692": {
-        "shares": 81513127,
-        "valueHkd": 2667109515,
+        "shares": 85182758,
+        "valueHkd": 2921768599,
         "name": "HANSOH PHARMA"
       },
       "3696": {
-        "shares": 18813987,
-        "valueHkd": 950106344,
+        "shares": 25972187,
+        "valueHkd": 1579108970,
         "name": "INSILICO"
       },
       "3698": {
-        "shares": 22942274,
-        "valueHkd": 111499452,
+        "shares": 29015422,
+        "valueHkd": 138838794,
         "name": "HUISHANG BANK"
       },
       "3738": {
-        "shares": 152867180,
-        "valueHkd": 476945602,
+        "shares": 147040185,
+        "valueHkd": 490379017,
         "name": "VOBILE GROUP"
       },
       "3750": {
-        "shares": 38349546,
-        "valueHkd": 20996376435,
+        "shares": 41702432,
+        "valueHkd": 21143133024,
         "name": "CATL"
       },
       "3800": {
-        "shares": 2396739497,
-        "valueHkd": 1689701345,
+        "shares": 2413878566,
+        "valueHkd": 1774200746,
         "name": "GCL TECH"
       },
       "3808": {
-        "shares": 46540937,
-        "valueHkd": 1900731867,
+        "shares": 47430358,
+        "valueHkd": 1805199425,
         "name": "SINOTRUK"
       },
       "3858": {
-        "shares": 4565574,
-        "valueHkd": 251563127,
+        "shares": 6479613,
+        "valueHkd": 362858328,
         "name": "JIAXIN INTL RES"
       },
       "3868": {
-        "shares": 104471866,
-        "valueHkd": 83055133,
+        "shares": 109548047,
+        "valueHkd": 87090697,
         "name": "XINYI ENERGY"
       },
       "3877": {
-        "shares": 421260367,
-        "valueHkd": 1044725710,
+        "shares": 431556724,
+        "valueHkd": 1055156190,
         "name": "CSSC SHIPPING"
       },
       "3881": {
@@ -3991,208 +3986,208 @@
         "name": "CIDI"
       },
       "3887": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 4837950,
+        "valueHkd": 13909106,
         "name": "HASHKEY HLDGS"
       },
       "3888": {
-        "shares": 65229239,
-        "valueHkd": 1590288847,
+        "shares": 64625406,
+        "valueHkd": 1620805182,
         "name": "KINGSOFT"
       },
       "3896": {
-        "shares": 190393421,
-        "valueHkd": 999565460,
+        "shares": 183910742,
+        "valueHkd": 945301214,
         "name": "KINGSOFT CLOUD"
       },
       "3898": {
-        "shares": 37916015,
-        "valueHkd": 1115489161,
+        "shares": 38980114,
+        "valueHkd": 1121068079,
         "name": "TIMES ELECTRIC"
       },
       "3899": {
-        "shares": 21026600,
-        "valueHkd": 170210327,
+        "shares": 23641107,
+        "valueHkd": 183218579,
         "name": "CIMC ENRIC"
       },
       "3900": {
-        "shares": 157046545,
-        "valueHkd": 891239143,
+        "shares": 157342589,
+        "valueHkd": 917307294,
         "name": "GREENTOWN CHINA"
       },
       "3908": {
-        "shares": 103345187,
-        "valueHkd": 2079305162,
+        "shares": 77556140,
+        "valueHkd": 1574389642,
         "name": "CICC"
       },
       "3918": {
-        "shares": 22731584,
-        "valueHkd": 70695226,
+        "shares": 24071106,
+        "valueHkd": 76546117,
         "name": "NAGACORP"
       },
       "3931": {
-        "shares": 25593100,
-        "valueHkd": 433035252,
+        "shares": 29484323,
+        "valueHkd": 566393845,
         "name": "CALB"
       },
       "3933": {
-        "shares": 115545594,
-        "valueHkd": 917432016,
+        "shares": 111592236,
+        "valueHkd": 883810509,
         "name": "UNITED LAB"
       },
       "3939": {
-        "shares": 178642032,
-        "valueHkd": 2758232974,
+        "shares": 172221500,
+        "valueHkd": 2731432990,
         "name": "WANGUO GOLD GP"
       },
       "3968": {
-        "shares": 257159229,
-        "valueHkd": 13359421947,
+        "shares": 263579602,
+        "valueHkd": 13495275622,
         "name": "CM BANK"
       },
       "3969": {
-        "shares": 99138056,
-        "valueHkd": 307823664,
+        "shares": 96921674,
+        "valueHkd": 289311197,
         "name": "CHINA CRSC"
       },
       "3986": {
-        "shares": 1011295,
-        "valueHkd": 457307599,
+        "shares": 1023342,
+        "valueHkd": 523951104,
         "name": "GIGADEVICE"
       },
       "3988": {
-        "shares": 984823472,
-        "valueHkd": 5953257888,
+        "shares": 1035658397,
+        "valueHkd": 6198415506,
         "name": "BANK OF CHINA"
       },
       "3993": {
-        "shares": 107624482,
-        "valueHkd": 1721991712,
+        "shares": 113686773,
+        "valueHkd": 1783745468,
         "name": "CMOC"
       },
       "3996": {
-        "shares": 328952774,
-        "valueHkd": 340466121,
+        "shares": 319092774,
+        "valueHkd": 333451949,
         "name": "CH ENERGY ENG"
       },
       "3998": {
-        "shares": 364426538,
-        "valueHkd": 1590721838,
+        "shares": 392778267,
+        "valueHkd": 1610390895,
         "name": "BOSIDENG"
       },
       "6030": {
-        "shares": 73240221,
-        "valueHkd": 1847118374,
+        "shares": 73928674,
+        "valueHkd": 1831952542,
         "name": "CITIC SEC"
       },
       "6031": {
-        "shares": 43884356,
-        "valueHkd": 864521813,
+        "shares": 44675556,
+        "valueHkd": 810861341,
         "name": "SANY HEAVY IND"
       },
       "6049": {
-        "shares": 2964293,
-        "valueHkd": 80688055,
+        "shares": 3028093,
+        "valueHkd": 80305026,
         "name": "POLY PPT SER"
       },
       "6055": {
-        "shares": 21068000,
-        "valueHkd": 479929040,
+        "shares": 19431400,
+        "valueHkd": 455083388,
         "name": "CTIHK"
       },
       "6060": {
-        "shares": 44199953,
-        "valueHkd": 449071522,
+        "shares": 42727849,
+        "valueHkd": 431123996,
         "name": "ZA ONLINE"
       },
       "6066": {
-        "shares": 34322822,
-        "valueHkd": 395742138,
+        "shares": 34618803,
+        "valueHkd": 398808611,
         "name": "CSC"
       },
       "6069": {
-        "shares": 21163758,
-        "valueHkd": 127723280,
+        "shares": 21810258,
+        "valueHkd": 130098189,
         "name": "SY HOLDINGS"
       },
       "6078": {
-        "shares": 32416914,
-        "valueHkd": 318658265,
+        "shares": 31934669,
+        "valueHkd": 304177722,
         "name": "HYGEIA HEALTH"
       },
       "6082": {
-        "shares": 33971119,
-        "valueHkd": 1204615880,
+        "shares": 43294519,
+        "valueHkd": 1642594051,
         "name": "BIREN TECH"
       },
       "6088": {
-        "shares": 200215740,
-        "valueHkd": 1056138029,
+        "shares": 194594068,
+        "valueHkd": 1053726878,
         "name": "FIT HON TENG"
       },
       "6098": {
-        "shares": 47877024,
-        "valueHkd": 256620849,
+        "shares": 45819888,
+        "valueHkd": 235514224,
         "name": "CG SERVICES"
       },
       "6099": {
-        "shares": 11831528,
-        "valueHkd": 173686831,
+        "shares": 13049141,
+        "valueHkd": 193388270,
         "name": "CMSC"
       },
       "6110": {
-        "shares": 160903041,
-        "valueHkd": 163316587,
+        "shares": 157010372,
+        "valueHkd": 153870165,
         "name": "TOPSPORTS"
       },
       "6160": {
-        "shares": 21055344,
-        "valueHkd": 4341611933,
+        "shares": 20284267,
+        "valueHkd": 4312435164,
         "name": "BEONE MEDICINES"
       },
       "6168": {
-        "shares": 488500,
-        "valueHkd": 6169755,
+        "shares": 490100,
+        "valueHkd": 6327191,
         "name": "ZHOU LIU FU"
       },
       "6181": {
-        "shares": 8058982,
-        "valueHkd": 2978599747,
+        "shares": 7892417,
+        "valueHkd": 3022795711,
         "name": "LAOPU GOLD"
       },
       "6186": {
-        "shares": 512994475,
-        "valueHkd": 1320960773,
+        "shares": 513713309,
+        "valueHkd": 1294557539,
         "name": "CHINA FEIHE"
       },
       "6600": {
-        "shares": 1409578,
-        "valueHkd": 61119302,
+        "shares": 688978,
+        "valueHkd": 30039441,
         "name": "ONEROBOTICS"
       },
       "6618": {
-        "shares": 59472869,
-        "valueHkd": 2066087469,
+        "shares": 62344855,
+        "valueHkd": 2261871339,
         "name": "JD HEALTH"
       },
       "6636": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 30000,
+        "valueHkd": 2278500,
         "name": "EXTREME VISION"
       },
       "6651": {
-        "shares": 0,
-        "valueHkd": 0,
+        "shares": 173400,
+        "valueHkd": 9814440,
         "name": "51WORLD"
       },
       "6655": {
-        "shares": 10347836,
-        "valueHkd": 170325381,
+        "shares": 11442708,
+        "valueHkd": 186859422,
         "name": "HX BLDG MAT"
       },
       "6656": {
-        "shares": 2843177,
-        "valueHkd": 881953505,
+        "shares": 3148499,
+        "valueHkd": 1061044163,
         "name": "SIGENERGY"
       },
       "6658": {
@@ -4201,78 +4196,78 @@
         "name": "LIULIUMEI"
       },
       "6682": {
-        "shares": 19958869,
-        "valueHkd": 530107561,
+        "shares": 23182180,
+        "valueHkd": 658837556,
         "name": "PHANCY"
       },
       "6683": {
-        "shares": 5050905,
-        "valueHkd": 18385294,
+        "shares": 5307905,
+        "valueHkd": 20568132,
         "name": "STARPLUS LEGEND"
       },
       "6687": {
-        "shares": 539900,
-        "valueHkd": 6667765,
+        "shares": 557800,
+        "valueHkd": 7435474,
         "name": "JST GROUP"
       },
       "6690": {
-        "shares": 86684387,
-        "valueHkd": 1783964684,
+        "shares": 89012860,
+        "valueHkd": 1831884659,
         "name": "HAIER SMARTHOME"
       },
       "6699": {
-        "shares": 12269306,
-        "valueHkd": 1061908434,
+        "shares": 11935890,
+        "valueHkd": 1033051280,
         "name": "ANGELALIGN"
       },
       "6808": {
-        "shares": 296689699,
-        "valueHkd": 315974529,
+        "shares": 286239042,
+        "valueHkd": 294826213,
         "name": "SUNART RETAIL"
       },
       "6809": {
-        "shares": 4951100,
-        "valueHkd": 1277383800,
+        "shares": 5002389,
+        "valueHkd": 1415676087,
         "name": "MONTAGE TECH"
       },
       "6810": {
-        "shares": 64700,
-        "valueHkd": 3594085,
+        "shares": 81400,
+        "valueHkd": 4436300,
         "name": "SUNMI TECH-W"
       },
       "6818": {
-        "shares": 184236787,
-        "valueHkd": 526917211,
+        "shares": 177524601,
+        "valueHkd": 491743145,
         "name": "CEB BANK"
       },
       "6823": {
-        "shares": 85354838,
-        "valueHkd": 1051571604,
+        "shares": 85868037,
+        "valueHkd": 1069057061,
         "name": "HKT-SS"
       },
       "6855": {
-        "shares": 28478908,
-        "valueHkd": 893668133,
+        "shares": 30261349,
+        "valueHkd": 894525476,
         "name": "ASCENTAGE"
       },
       "6862": {
-        "shares": 201117384,
-        "valueHkd": 2023240883,
+        "shares": 197781898,
+        "valueHkd": 1879916940,
         "name": "HAIDILAO"
       },
       "6869": {
-        "shares": 28070407,
-        "valueHkd": 5150919685,
+        "shares": 30693980,
+        "valueHkd": 5620067738,
         "name": "YOFC"
       },
       "6881": {
-        "shares": 108791250,
-        "valueHkd": 830621194,
+        "shares": 111266242,
+        "valueHkd": 843398114,
         "name": "CGS"
       },
       "6886": {
-        "shares": 140257961,
-        "valueHkd": 2404021452,
+        "shares": 135745220,
+        "valueHkd": 2288664409,
         "name": "HTSC"
       },
       "6938": {
@@ -4281,338 +4276,338 @@
         "name": "RIBOLIFE-B"
       },
       "6963": {
-        "shares": 59209905,
-        "valueHkd": 219076649,
+        "shares": 64108554,
+        "valueHkd": 236240021,
         "name": "SUNSHINE INS"
       },
       "6969": {
-        "shares": 194142649,
-        "valueHkd": 1847267305,
+        "shares": 192527581,
+        "valueHkd": 1864629622,
         "name": "SMOORE INTL"
       },
       "6979": {
-        "shares": 21364464,
-        "valueHkd": 162690393,
+        "shares": 20572264,
+        "valueHkd": 159537907,
         "name": "ZJLD"
       },
       "6990": {
-        "shares": 3919734,
-        "valueHkd": 1823460257,
+        "shares": 3976786,
+        "valueHkd": 1835684418,
         "name": "SKB BIO"
       },
       "6993": {
-        "shares": 71678523,
-        "valueHkd": 267002498,
+        "shares": 69391639,
+        "valueHkd": 220318454,
         "name": "BLUE MOON GROUP"
       },
       "7618": {
-        "shares": 3519721,
-        "valueHkd": 45228415,
+        "shares": 9256724,
+        "valueHkd": 129594136,
         "name": "JD INDUSTRIALS"
       },
       "7666": {
-        "shares": 3633000,
-        "valueHkd": 56020860,
+        "shares": 10892766,
+        "valueHkd": 189534128,
         "name": "METIS TECHBIO-P"
       },
       "9606": {
-        "shares": 5781533,
-        "valueHkd": 975344617,
+        "shares": 6382596,
+        "valueHkd": 1260562710,
         "name": "DUALITYBIO-B"
       },
       "9618": {
-        "shares": 61840711,
-        "valueHkd": 6567483508,
+        "shares": 62109780,
+        "valueHkd": 6521526900,
         "name": "JD-SW"
       },
       "9626": {
-        "shares": 49661840,
-        "valueHkd": 6053778296,
+        "shares": 47583594,
+        "valueHkd": 5557763779,
         "name": "BILIBILI-W"
       },
       "9633": {
-        "shares": 71911535,
-        "valueHkd": 2840505633,
+        "shares": 72479328,
+        "valueHkd": 2797702061,
         "name": "NONGFU SPRING"
       },
       "9636": {
-        "shares": 12797604,
-        "valueHkd": 365755522,
+        "shares": 12845654,
+        "valueHkd": 346832658,
         "name": "JF SMARTINVEST"
       },
       "9658": {
-        "shares": 9998801,
-        "valueHkd": 92788873,
+        "shares": 9901996,
+        "valueHkd": 90801303,
         "name": "SUPER HI"
       },
       "9660": {
-        "shares": 1897316623,
-        "valueHkd": 8025649315,
+        "shares": 1945349885,
+        "valueHkd": 8160742768,
         "name": "HORIZONROBOT-W"
       },
       "9678": {
-        "shares": 895096,
-        "valueHkd": 64446912,
+        "shares": 816306,
+        "valueHkd": 59263816,
         "name": "UNISOUND"
       },
       "9688": {
-        "shares": 124509185,
-        "valueHkd": 2358203964,
+        "shares": 116801472,
+        "valueHkd": 2403774294,
         "name": "ZAI LAB"
       },
       "9690": {
-        "shares": 26928815,
-        "valueHkd": 334455882,
+        "shares": 27398324,
+        "valueHkd": 302203514,
         "name": "TUHU-W"
       },
       "9698": {
-        "shares": 116956391,
-        "valueHkd": 3567169926,
+        "shares": 122462929,
+        "valueHkd": 3813495609,
         "name": "GDS-SW"
       },
       "9699": {
-        "shares": 9406365,
-        "valueHkd": 85691985,
+        "shares": 11003653,
+        "valueHkd": 104424667,
         "name": "SF INTRA-CITY"
       },
       "9858": {
-        "shares": 117817250,
-        "valueHkd": 523697676,
+        "shares": 126642791,
+        "valueHkd": 538865076,
         "name": "YOURAN DAIRY"
       },
       "9863": {
-        "shares": 124401857,
-        "valueHkd": 4391385552,
+        "shares": 129086604,
+        "valueHkd": 4809766865,
         "name": "LEAPMOTOR"
       },
       "9866": {
-        "shares": 102306480,
-        "valueHkd": 2917780810,
+        "shares": 104623242,
+        "valueHkd": 3044536342,
         "name": "NIO-SW"
       },
       "9868": {
-        "shares": 180555605,
-        "valueHkd": 7464168711,
+        "shares": 184911547,
+        "valueHkd": 7773681436,
         "name": "XPENG-W"
       },
       "9880": {
-        "shares": 58705148,
-        "valueHkd": 4576066287,
+        "shares": 59677804,
+        "valueHkd": 4824950453,
         "name": "UBTECH ROBOTICS"
       },
       "9887": {
-        "shares": 834451,
-        "valueHkd": 50233950,
+        "shares": 716750,
+        "valueHkd": 39958813,
         "name": "LEADS BIOLABS-B"
       },
       "9888": {
-        "shares": 71031538,
-        "valueHkd": 6328910036,
+        "shares": 81437220,
+        "valueHkd": 7101325584,
         "name": "BIDU-W"
       },
       "9890": {
-        "shares": 3240400,
-        "valueHkd": 29892690,
+        "shares": 3366199,
+        "valueHkd": 31356144,
         "name": "TANWAN"
       },
       "9896": {
-        "shares": 54332390,
-        "valueHkd": 967116542,
+        "shares": 57817339,
+        "valueHkd": 980582069,
         "name": "MNSO"
       },
       "9898": {
-        "shares": 704593,
-        "valueHkd": 36533147,
+        "shares": 686239,
+        "valueHkd": 35375620,
         "name": "WB-SW"
       },
       "9899": {
-        "shares": 3825584,
-        "valueHkd": 332251970,
+        "shares": 3611266,
+        "valueHkd": 314360705,
         "name": "NETEASE MUSIC"
       },
       "9901": {
-        "shares": 23130338,
-        "valueHkd": 998767995,
+        "shares": 23328302,
+        "valueHkd": 1008715778,
         "name": "NEW ORIENTAL-S"
       },
       "9903": {
-        "shares": 1438452,
-        "valueHkd": 448221643,
+        "shares": 5464631,
+        "valueHkd": 767780656,
         "name": "ILUVATAR COREX"
       },
       "9911": {
-        "shares": 75210986,
-        "valueHkd": 712624092,
+        "shares": 75092094,
+        "valueHkd": 732147917,
         "name": "NEWBORNTOWN"
       },
       "9926": {
-        "shares": 81864126,
-        "valueHkd": 7392330578,
+        "shares": 86698666,
+        "valueHkd": 7846229273,
         "name": "AKESO"
       },
       "9927": {
-        "shares": 4047000,
-        "valueHkd": 145611060,
+        "shares": 5896000,
+        "valueHkd": 205180800,
         "name": "SERES"
       },
       "9961": {
-        "shares": 16949492,
-        "valueHkd": 5183154654,
+        "shares": 18723558,
+        "valueHkd": 5980304425,
         "name": "TRIP.COM-S"
       },
       "9969": {
-        "shares": 42245516,
-        "valueHkd": 572004287,
+        "shares": 40385043,
+        "valueHkd": 594063983,
         "name": "INNOCARE"
       },
       "9973": {
-        "shares": 10842016,
-        "valueHkd": 270399879,
+        "shares": 17072686,
+        "valueHkd": 450036003,
         "name": "CHERY AUTO"
       },
       "9985": {
-        "shares": 25127706,
-        "valueHkd": 180919483,
+        "shares": 24665107,
+        "valueHkd": 172409098,
         "name": "WL DELICIOUS"
       },
       "9987": {
-        "shares": 4666574,
-        "valueHkd": 1567035549,
+        "shares": 4453430,
+        "valueHkd": 1443802006,
         "name": "YUM CHINA"
       },
       "9988": {
-        "shares": 187315719,
-        "valueHkd": 20136439793,
+        "shares": 188545374,
+        "valueHkd": 20608009378,
         "name": "BABA-W"
       },
       "9992": {
-        "shares": 148465643,
-        "valueHkd": 22715243379,
+        "shares": 146246013,
+        "valueHkd": 22682756616,
         "name": "POP MART"
       },
       "9993": {
-        "shares": 7971443,
-        "valueHkd": 8210586,
+        "shares": 8282443,
+        "valueHkd": 8903626,
         "name": "RADIANCE HLDGS"
       },
       "9995": {
-        "shares": 16179463,
-        "valueHkd": 1193235396,
+        "shares": 16487842,
+        "valueHkd": 1231641797,
         "name": "REMEGEN"
       },
       "9999": {
-        "shares": 45788644,
-        "valueHkd": 8338112072,
+        "shares": 45740132,
+        "valueHkd": 8397888235,
         "name": "NTES"
       },
       "0001": {
-        "shares": 48162045,
-        "valueHkd": 3315956798,
+        "shares": 49126109,
+        "valueHkd": 3335662801,
         "name": "CKH HOLDINGS"
       },
       "0002": {
-        "shares": 54300351,
-        "valueHkd": 4262577554,
+        "shares": 56698592,
+        "valueHkd": 4391305950,
         "name": "CLP HOLDINGS"
       },
       "0003": {
-        "shares": 478606985,
-        "valueHkd": 3436398152,
+        "shares": 499527465,
+        "valueHkd": 3541649727,
         "name": "HK & CHINA GAS"
       },
       "0004": {
-        "shares": 12454937,
-        "valueHkd": 231412729,
+        "shares": 13006861,
+        "valueHkd": 250772280,
         "name": "WHARF HOLDINGS"
       },
       "0005": {
-        "shares": 59100722,
-        "valueHkd": 9651147903,
+        "shares": 63590954,
+        "valueHkd": 10276298166,
         "name": "HSBC HOLDINGS"
       },
       "0006": {
-        "shares": 34751469,
-        "valueHkd": 2126789903,
+        "shares": 34210307,
+        "valueHkd": 2047486874,
         "name": "POWER ASSETS"
       },
       "0008": {
-        "shares": 86375881,
-        "valueHkd": 467725396,
+        "shares": 85320917,
+        "valueHkd": 452200860,
         "name": "PCCW"
       },
       "0010": {
-        "shares": 8539171,
-        "valueHkd": 104007103,
+        "shares": 9054913,
+        "valueHkd": 110379389,
         "name": "HANG LUNG GROUP"
       },
       "0012": {
-        "shares": 156162719,
-        "valueHkd": 4072723712,
+        "shares": 167466013,
+        "valueHkd": 4347417697,
         "name": "HENDERSON LAND"
       },
       "0013": {
-        "shares": 59224765,
-        "valueHkd": 1211738692,
+        "shares": 56392003,
+        "valueHkd": 1214683745,
         "name": "HUTCHMED"
       },
       "0014": {
-        "shares": 15051768,
-        "valueHkd": 237065346,
+        "shares": 15787658,
+        "valueHkd": 249129243,
         "name": "HYSAN DEV"
       },
       "0016": {
-        "shares": 47576467,
-        "valueHkd": 5147773729,
+        "shares": 46095392,
+        "valueHkd": 4964473718,
         "name": "SHK PPT"
       },
       "0017": {
-        "shares": 138707783,
-        "valueHkd": 816988842,
+        "shares": 142904060,
+        "valueHkd": 825985467,
         "name": "NEW WORLD DEV"
       },
       "0019": {
-        "shares": 20421627,
-        "valueHkd": 2121807045,
+        "shares": 19604098,
+        "valueHkd": 1960409800,
         "name": "SWIRE PACIFIC A"
       },
       "0020": {
-        "shares": 3790956756,
-        "valueHkd": 4966153350,
+        "shares": 3924202196,
+        "valueHkd": 5003357800,
         "name": "SENSETIME-W"
       },
       "0023": {
-        "shares": 12371166,
-        "valueHkd": 230103688,
+        "shares": 14802647,
+        "valueHkd": 284802928,
         "name": "BANK OF E ASIA"
       },
       "0027": {
-        "shares": 195299874,
-        "valueHkd": 6401929870,
+        "shares": 206762700,
+        "valueHkd": 6744599274,
         "name": "GALAXY ENT"
       },
       "0041": {
-        "shares": 986783,
-        "valueHkd": 14643860,
+        "shares": 1159035,
+        "valueHkd": 16620562,
         "name": "GREAT EAGLE H"
       },
       "0066": {
-        "shares": 252300987,
-        "valueHkd": 8310794512,
+        "shares": 253850232,
+        "valueHkd": 8371980651,
         "name": "MTR CORPORATION"
       },
       "0068": {
-        "shares": 3044648,
-        "valueHkd": 27691074,
+        "shares": 8231648,
+        "valueHkd": 69845533,
         "name": "MANYCORE TECH"
       },
       "0081": {
-        "shares": 138277289,
-        "valueHkd": 385102250,
+        "shares": 140484408,
+        "valueHkd": 403892673,
         "name": "CH OVS G OCEANS"
       },
       "0083": {
-        "shares": 190870368,
-        "valueHkd": 1935425532,
+        "shares": 193784599,
+        "valueHkd": 1933001375,
         "name": "SINO LAND"
       },
       "0087": {
@@ -4621,278 +4616,278 @@
         "name": "SWIRE PACIFIC B"
       },
       "0100": {
-        "shares": 15164011,
-        "valueHkd": 4094282970,
+        "shares": 16222826,
+        "valueHkd": 4915516278,
         "name": "MINIMAX-W"
       },
       "0101": {
-        "shares": 82811564,
-        "valueHkd": 563532693,
+        "shares": 84424450,
+        "valueHkd": 557201370,
         "name": "HANG LUNG PPT"
       },
       "0119": {
-        "shares": 76091100,
-        "valueHkd": 92450687,
+        "shares": 86289163,
+        "valueHkd": 106567116,
         "name": "POLY PROPERTY"
       },
       "0123": {
-        "shares": 191090089,
-        "valueHkd": 597156528,
+        "shares": 179801115,
+        "valueHkd": 574464562,
         "name": "YUEXIU PROPERTY"
       },
       "0135": {
-        "shares": 44719718,
-        "valueHkd": 332267505,
+        "shares": 50526953,
+        "valueHkd": 381731130,
         "name": "KUNLUN ENERGY"
       },
       "0136": {
-        "shares": 1144951105,
-        "valueHkd": 1688802880,
+        "shares": 1057833099,
+        "valueHkd": 1565592987,
         "name": "CHINA RUYI"
       },
       "0142": {
-        "shares": 35060844,
-        "valueHkd": 174252395,
+        "shares": 39468602,
+        "valueHkd": 188659918,
         "name": "FIRST PACIFIC"
       },
       "0144": {
-        "shares": 40029734,
-        "valueHkd": 664093287,
+        "shares": 33673560,
+        "valueHkd": 554266798,
         "name": "CHINA MER PORT"
       },
       "0148": {
-        "shares": 24963554,
-        "valueHkd": 1316827474,
+        "shares": 32365105,
+        "valueHkd": 1805972859,
         "name": "KINGBOARD HLDG"
       },
       "0151": {
-        "shares": 139768201,
-        "valueHkd": 396242850,
+        "shares": 157359129,
+        "valueHkd": 442965948,
         "name": "WANT WANT CHINA"
       },
       "0152": {
-        "shares": 173772037,
-        "valueHkd": 876679927,
+        "shares": 183623722,
+        "valueHkd": 979632557,
         "name": "SHENZHEN INT'L"
       },
       "0165": {
-        "shares": 79160167,
-        "valueHkd": 497917450,
+        "shares": 79767761,
+        "valueHkd": 488577536,
         "name": "CHINA EB LTD"
       },
       "0168": {
-        "shares": 29766666,
-        "valueHkd": 1179950640,
+        "shares": 31278578,
+        "valueHkd": 1223617971,
         "name": "TSINGTAO BREW"
       },
       "0173": {
-        "shares": 15655100,
-        "valueHkd": 31936404,
+        "shares": 16175096,
+        "valueHkd": 32673694,
         "name": "K. WAH INT'L"
       },
       "0175": {
-        "shares": 279008834,
-        "valueHkd": 4497622404,
+        "shares": 289517738,
+        "valueHkd": 4614912744,
         "name": "GEELY AUTO"
       },
       "0177": {
-        "shares": 42388049,
-        "valueHkd": 425576012,
+        "shares": 41428513,
+        "valueHkd": 424642258,
         "name": "JIANGSU EXPRESS"
       },
       "0179": {
-        "shares": 33427712,
-        "valueHkd": 603370202,
+        "shares": 34720017,
+        "valueHkd": 652041919,
         "name": "JOHNSON ELEC H"
       },
       "0189": {
-        "shares": 76992066,
-        "valueHkd": 963170746,
+        "shares": 69290637,
+        "valueHkd": 823865674,
         "name": "DONGYUE GROUP"
       },
       "0200": {
-        "shares": 63602234,
-        "valueHkd": 194940847,
+        "shares": 70016055,
+        "valueHkd": 203046560,
         "name": "MELCO INT'L DEV"
       },
       "0220": {
-        "shares": 105413983,
-        "valueHkd": 784807103,
+        "shares": 108520483,
+        "valueHkd": 753132152,
         "name": "U-PRESID CHINA"
       },
       "0241": {
-        "shares": 2136632732,
-        "valueHkd": 6452630851,
+        "shares": 2197578906,
+        "valueHkd": 6735579347,
         "name": "ALI HEALTH"
       },
       "0257": {
-        "shares": 125055501,
-        "valueHkd": 632155558,
+        "shares": 138982688,
+        "valueHkd": 678235517,
         "name": "EB ENVIRONMENT"
       },
       "0267": {
-        "shares": 195487917,
-        "valueHkd": 2684049100,
+        "shares": 192038828,
+        "valueHkd": 2504186317,
         "name": "CITIC"
       },
       "0268": {
-        "shares": 240966813,
-        "valueHkd": 1824118774,
+        "shares": 232084255,
+        "valueHkd": 1753396547,
         "name": "KINGDEE INT'L"
       },
       "0270": {
-        "shares": 58054968,
-        "valueHkd": 496079702,
+        "shares": 54125658,
+        "valueHkd": 474682021,
         "name": "GUANGDONG INV"
       },
       "0285": {
-        "shares": 123770243,
-        "valueHkd": 2953157998,
+        "shares": 125204416,
+        "valueHkd": 2977361012,
         "name": "BYD ELECTRONIC"
       },
       "0288": {
-        "shares": 273599746,
-        "valueHkd": 1768822358,
+        "shares": 265765075,
+        "valueHkd": 1755378320,
         "name": "WH GROUP"
       },
       "0290": {
-        "shares": 14629914,
-        "valueHkd": 24578256,
+        "shares": 16858914,
+        "valueHkd": 26468495,
         "name": "GOFINTECH QUANT"
       },
       "0291": {
-        "shares": 69767972,
-        "valueHkd": 1279544606,
+        "shares": 68816551,
+        "valueHkd": 1253837559,
         "name": "CHINA RES BEER"
       },
       "0293": {
-        "shares": 40419335,
-        "valueHkd": 561020370,
+        "shares": 38573829,
+        "valueHkd": 538104915,
         "name": "CATHAY PAC AIR"
       },
       "0297": {
-        "shares": 129100145,
-        "valueHkd": 168475689,
+        "shares": 139607218,
+        "valueHkd": 175207059,
         "name": "SINOFERT"
       },
       "0300": {
-        "shares": 127951169,
-        "valueHkd": 12692755965,
+        "shares": 132915468,
+        "valueHkd": 13198505972,
         "name": "MIDEA GROUP"
       },
       "0303": {
-        "shares": 20459966,
-        "valueHkd": 1035274280,
+        "shares": 18420165,
+        "valueHkd": 908482538,
         "name": "VTECH HOLDINGS"
       },
       "0308": {
-        "shares": 130805352,
-        "valueHkd": 153696289,
+        "shares": 130198131,
+        "valueHkd": 147123888,
         "name": "CHINA TRAVEL HK"
       },
       "0316": {
-        "shares": 17785260,
-        "valueHkd": 2648225214,
+        "shares": 16847463,
+        "valueHkd": 2464783837,
         "name": "OOIL"
       },
       "0317": {
         "shares": 1054000,
-        "valueHkd": 15831080,
+        "valueHkd": 16062960,
         "name": "COMEC"
       },
       "0322": {
-        "shares": 160320159,
-        "valueHkd": 1935064319,
+        "shares": 162556128,
+        "valueHkd": 1905157820,
         "name": "TINGYI"
       },
       "0325": {
-        "shares": 4029050,
-        "valueHkd": 274378305,
+        "shares": 3824650,
+        "valueHkd": 256442783,
         "name": "BLOKS"
       },
       "0336": {
-        "shares": 16541969,
-        "valueHkd": 51031974,
+        "shares": 27219590,
+        "valueHkd": 96085153,
         "name": "HUABAO INTL"
       },
       "0340": {
-        "shares": 87691790,
-        "valueHkd": 259129239,
+        "shares": 106077174,
+        "valueHkd": 304441489,
         "name": "TONGGUAN GOLD"
       },
       "0345": {
-        "shares": 25605944,
-        "valueHkd": 163878042,
+        "shares": 25578203,
+        "valueHkd": 167025666,
         "name": "VITASOY INT'L"
       },
       "0354": {
-        "shares": 163412680,
-        "valueHkd": 603809853,
+        "shares": 167509121,
+        "valueHkd": 651610481,
         "name": "CHINASOFT INT'L"
       },
       "0358": {
-        "shares": 37236234,
-        "valueHkd": 1301778741,
+        "shares": 36258731,
+        "valueHkd": 1232796854,
         "name": "JIANGXI COPPER"
       },
       "0363": {
-        "shares": 13531137,
-        "valueHkd": 184700020,
+        "shares": 13724975,
+        "valueHkd": 184189165,
         "name": "SHANGHAI IND H"
       },
       "0371": {
-        "shares": 329954600,
-        "valueHkd": 549374409,
+        "shares": 300784625,
+        "valueHkd": 476743631,
         "name": "BJ ENT WATER"
       },
       "0376": {
-        "shares": 31158000,
-        "valueHkd": 69793920,
+        "shares": 34286000,
+        "valueHkd": 69772010,
         "name": "YUNFENG FIN"
       },
       "0384": {
-        "shares": 302341609,
-        "valueHkd": 1622062732,
+        "shares": 303837270,
+        "valueHkd": 1640721258,
         "name": "CHINA GAS HOLD"
       },
       "0386": {
-        "shares": 1257228836,
-        "valueHkd": 6003267692,
+        "shares": 1239788558,
+        "valueHkd": 5591446397,
         "name": "SINOPEC CORP"
       },
       "0388": {
-        "shares": 17609622,
-        "valueHkd": 6913537597,
+        "shares": 20644411,
+        "valueHkd": 8010031468,
         "name": "HKEX"
       },
       "0390": {
-        "shares": 641774333,
-        "valueHkd": 2137108529,
+        "shares": 648499737,
+        "valueHkd": 2146534129,
         "name": "CHINA RAILWAY"
       },
       "0392": {
-        "shares": 32637119,
-        "valueHkd": 950392905,
+        "shares": 31470132,
+        "valueHkd": 931515907,
         "name": "BEIJING ENT"
       },
       "0425": {
-        "shares": 32643665,
-        "valueHkd": 780183594,
+        "shares": 31918390,
+        "valueHkd": 767956463,
         "name": "MINTH GROUP"
       },
       "0440": {
-        "shares": 1028148,
-        "valueHkd": 45937653,
+        "shares": 1104548,
+        "valueHkd": 50698753,
         "name": "DAH SING"
       },
       "0460": {
-        "shares": 194957355,
-        "valueHkd": 140369296,
+        "shares": 195004168,
+        "valueHkd": 140403001,
         "name": "SIHUAN PHARM"
       },
       "0467": {
-        "shares": 646747751,
-        "valueHkd": 261932839,
+        "shares": 577046682,
+        "valueHkd": 233703906,
         "name": "UNITEDENERGY GP"
       },
       "0486": {
@@ -4901,168 +4896,168 @@
         "name": "RUSAL"
       },
       "0506": {
-        "shares": 10905241,
-        "valueHkd": 41003706,
+        "shares": 13888847,
+        "valueHkd": 52638730,
         "name": "CHINA FOODS"
       },
       "0512": {
-        "shares": 72423995,
-        "valueHkd": 342927616,
+        "shares": 62293174,
+        "valueHkd": 304302155,
         "name": "GRAND PHARMA"
       },
       "0522": {
-        "shares": 7002046,
-        "valueHkd": 1132931043,
+        "shares": 7242267,
+        "valueHkd": 1217425083,
         "name": "ASMPT"
       },
       "0546": {
-        "shares": 93356663,
-        "valueHkd": 428507083,
+        "shares": 102702167,
+        "valueHkd": 451889535,
         "name": "FUFENG GROUP"
       },
       "0551": {
-        "shares": 145640696,
-        "valueHkd": 1922457187,
+        "shares": 142184068,
+        "valueHkd": 1721849063,
         "name": "YUE YUEN IND"
       },
       "0552": {
-        "shares": 37684691,
-        "valueHkd": 146970295,
+        "shares": 41088473,
+        "valueHkd": 171338932,
         "name": "CHINACOMSERVICE"
       },
       "0570": {
-        "shares": 165677415,
-        "valueHkd": 210410317,
+        "shares": 156169379,
+        "valueHkd": 190526642,
         "name": "TRAD CHI MED"
       },
       "0576": {
-        "shares": 72321822,
-        "valueHkd": 431038059,
+        "shares": 85173951,
+        "valueHkd": 516580013,
         "name": "ZHEJIANGEXPRESS"
       },
       "0586": {
-        "shares": 119810850,
-        "valueHkd": 912359623,
+        "shares": 109166740,
+        "valueHkd": 811108878,
         "name": "CONCH VENTURE"
       },
       "0590": {
-        "shares": 8148963,
-        "valueHkd": 177158456,
+        "shares": 7493963,
+        "valueHkd": 157822861,
         "name": "LUK FOOK HOLD"
       },
       "0598": {
-        "shares": 46050882,
-        "valueHkd": 211603803,
+        "shares": 48246704,
+        "valueHkd": 221452371,
         "name": "SINOTRANS"
       },
       "0604": {
-        "shares": 155282795,
-        "valueHkd": 97828161,
+        "shares": 158315959,
+        "valueHkd": 94989575,
         "name": "SHENZHEN INVEST"
       },
       "0625": {
-        "shares": 7237340,
-        "valueHkd": 289927840,
+        "shares": 11827700,
+        "valueHkd": 446613952,
         "name": "SHEIN-W"
       },
       "0631": {
-        "shares": 171172559,
-        "valueHkd": 1622715859,
+        "shares": 167545323,
+        "valueHkd": 1452617950,
         "name": "SANY INT'L"
       },
       "0636": {
-        "shares": 2250163,
-        "valueHkd": 13714743,
+        "shares": 2161663,
+        "valueHkd": 12688962,
         "name": "KLN"
       },
       "0639": {
-        "shares": 120828168,
-        "valueHkd": 367921772,
+        "shares": 86761780,
+        "valueHkd": 241631557,
         "name": "SHOUGANG RES"
       },
       "0656": {
-        "shares": 53096199,
-        "valueHkd": 266277438,
+        "shares": 54040822,
+        "valueHkd": 272635947,
         "name": "FOSUN INTL"
       },
       "0659": {
-        "shares": 19005566,
-        "valueHkd": 148623526,
+        "shares": 19029566,
+        "valueHkd": 149382093,
         "name": "CTF SERVICES"
       },
       "0666": {
-        "shares": 6345000,
-        "valueHkd": 59071950,
+        "shares": 6596400,
+        "valueHkd": 60291096,
         "name": "REPT BATTERO"
       },
       "0667": {
-        "shares": 23426939,
-        "valueHkd": 93004948,
+        "shares": 22927223,
+        "valueHkd": 89072261,
         "name": "CHINA EAST EDU"
       },
       "0669": {
-        "shares": 27006858,
-        "valueHkd": 3429870966,
+        "shares": 27160360,
+        "valueHkd": 3487390224,
         "name": "TECHTRONIC IND"
       },
       "0670": {
-        "shares": 87957575,
-        "valueHkd": 234846725,
+        "shares": 83188438,
+        "valueHkd": 215873997,
         "name": "CHINA EAST AIR"
       },
       "0683": {
-        "shares": 11835181,
-        "valueHkd": 212323147,
+        "shares": 12491968,
+        "valueHkd": 218984199,
         "name": "KERRY PPT"
       },
       "0688": {
-        "shares": 291065837,
-        "valueHkd": 3632501646,
+        "shares": 283873243,
+        "valueHkd": 3463253565,
         "name": "CHINA OVERSEAS"
       },
       "0696": {
-        "shares": 42820338,
-        "valueHkd": 371252330,
+        "shares": 43007392,
+        "valueHkd": 376314680,
         "name": "TRAVELSKY TECH"
       },
       "0697": {
-        "shares": 544555405,
-        "valueHkd": 751486459,
+        "shares": 546465405,
+        "valueHkd": 732263643,
         "name": "SHOUCHENG"
       },
       "0700": {
-        "shares": 70372475,
-        "valueHkd": 30147568290,
+        "shares": 71023311,
+        "valueHkd": 29758767309,
         "name": "TENCENT"
       },
       "0728": {
-        "shares": 72029825,
-        "valueHkd": 325574809,
+        "shares": 80231947,
+        "valueHkd": 355828685,
         "name": "CHINA TELECOM"
       },
       "0751": {
-        "shares": 9776912,
-        "valueHkd": 39303186,
+        "shares": 9272224,
+        "valueHkd": 35512618,
         "name": "SKYWORTH GROUP"
       },
       "0753": {
-        "shares": 117943361,
-        "valueHkd": 451133356,
+        "shares": 126953067,
+        "valueHkd": 466552521,
         "name": "AIR CHINA"
       },
       "0762": {
-        "shares": 60223840,
-        "valueHkd": 350803868,
+        "shares": 67193974,
+        "valueHkd": 385021471,
         "name": "CHINA UNICOM"
       },
       "0763": {
-        "shares": 107293490,
-        "valueHkd": 2465604400,
+        "shares": 106853480,
+        "valueHkd": 2440533483,
         "name": "ZTE"
       },
       "0772": {
-        "shares": 46388909,
-        "valueHkd": 912933729,
+        "shares": 45979496,
+        "valueHkd": 897059967,
         "name": "CHINA LIT"
       },
       "0778": {
@@ -5071,48 +5066,48 @@
         "name": "FORTUNE REIT"
       },
       "0780": {
-        "shares": 61548805,
-        "valueHkd": 650570869,
+        "shares": 62356257,
+        "valueHkd": 674694701,
         "name": "TONGCHENGTRAVEL"
       },
       "0788": {
-        "shares": 232427339,
-        "valueHkd": 2098818871,
+        "shares": 260195103,
+        "valueHkd": 2349561780,
         "name": "CHINA TOWER"
       },
       "0800": {
-        "shares": 3862300,
-        "valueHkd": 61565062,
+        "shares": 4235800,
+        "valueHkd": 60995520,
         "name": "WERIDE-W"
       },
       "0817": {
-        "shares": 471338475,
-        "valueHkd": 582103017,
+        "shares": 479123199,
+        "valueHkd": 589321535,
         "name": "CHINA JINMAO"
       },
       "0819": {
-        "shares": 98486401,
-        "valueHkd": 374248324,
+        "shares": 103922573,
+        "valueHkd": 408415712,
         "name": "TIANNENG POWER"
       },
       "0823": {
-        "shares": 60624422,
-        "valueHkd": 2294028128,
+        "shares": 60635302,
+        "valueHkd": 2244718880,
         "name": "LINK REIT"
       },
       "0826": {
-        "shares": 91936587,
-        "valueHkd": 299713274,
+        "shares": 92236577,
+        "valueHkd": 285933389,
         "name": "TIANGONG INT'L"
       },
       "0836": {
-        "shares": 229897169,
-        "valueHkd": 4317468834,
+        "shares": 233419940,
+        "valueHkd": 4409302667,
         "name": "CHINA RES POWER"
       },
       "0839": {
-        "shares": 135113224,
-        "valueHkd": 250635031,
+        "shares": 131710386,
+        "valueHkd": 244981318,
         "name": "CHINA EDU GROUP"
       },
       "0853": {
@@ -5121,48 +5116,48 @@
         "name": "MICROPORT"
       },
       "0855": {
-        "shares": 30498391,
-        "valueHkd": 131753049,
+        "shares": 30347545,
+        "valueHkd": 127307951,
         "name": "CHINA WATER"
       },
       "0856": {
-        "shares": 36785496,
-        "valueHkd": 349094357,
+        "shares": 34916241,
+        "valueHkd": 321054836,
         "name": "VSTECS"
       },
       "0857": {
-        "shares": 518468797,
-        "valueHkd": 5174318594,
+        "shares": 529818531,
+        "valueHkd": 5027977859,
         "name": "PETROCHINA"
       },
       "0863": {
-        "shares": 64291683,
-        "valueHkd": 664776002,
+        "shares": 64932792,
+        "valueHkd": 675301037,
         "name": "OSL GROUP"
       },
       "0867": {
-        "shares": 94460292,
-        "valueHkd": 1018281948,
+        "shares": 92851521,
+        "valueHkd": 1027866337,
         "name": "CMS"
       },
       "0868": {
-        "shares": 166658066,
-        "valueHkd": 1464924400,
+        "shares": 168864344,
+        "valueHkd": 1409172951,
         "name": "XINYI GLASS"
       },
       "0880": {
-        "shares": 354003200,
-        "valueHkd": 492064448,
+        "shares": 342668422,
+        "valueHkd": 486589159,
         "name": "SJM HOLDINGS"
       },
       "0881": {
-        "shares": 69235066,
-        "valueHkd": 220859861,
+        "shares": 72887940,
+        "valueHkd": 230325890,
         "name": "ZHONGSHENG HLDG"
       },
       "0883": {
-        "shares": 157137716,
-        "valueHkd": 3831017516,
+        "shares": 160037468,
+        "valueHkd": 3776884245,
         "name": "CNOOC"
       },
       "0901": {
@@ -5171,98 +5166,98 @@
         "name": "SDMC"
       },
       "0902": {
-        "shares": 532410251,
-        "valueHkd": 3048048687,
+        "shares": 530369321,
+        "valueHkd": 3001890357,
         "name": "HUANENG POWER"
       },
       "0914": {
-        "shares": 151945141,
-        "valueHkd": 2505575375,
+        "shares": 163428085,
+        "valueHkd": 2608312237,
         "name": "CONCH CEMENT"
       },
       "0916": {
-        "shares": 553504761,
-        "valueHkd": 2928040186,
+        "shares": 577442844,
+        "valueHkd": 3051785431,
         "name": "CHINA LONGYUAN"
       },
       "0917": {
-        "shares": 4537846,
-        "valueHkd": 36620417,
+        "shares": 3383500,
+        "valueHkd": 27152588,
         "name": "QUNABOX GROUP"
       },
       "0921": {
-        "shares": 8500993,
-        "valueHkd": 197053018,
+        "shares": 7299163,
+        "valueHkd": 161019536,
         "name": "HISENSE HA"
       },
       "0934": {
-        "shares": 30838436,
-        "valueHkd": 117186057,
+        "shares": 30076436,
+        "valueHkd": 110681284,
         "name": "SINOPEC KANTONS"
       },
       "0939": {
-        "shares": 1041530914,
-        "valueHkd": 10154926412,
+        "shares": 1137433254,
+        "valueHkd": 10907984906,
         "name": "CCB"
       },
       "0941": {
-        "shares": 61468789,
-        "valueHkd": 4849887452,
+        "shares": 65536483,
+        "valueHkd": 5180658981,
         "name": "CHINA MOBILE"
       },
       "0956": {
-        "shares": 113135429,
-        "valueHkd": 360902019,
+        "shares": 123368255,
+        "valueHkd": 411433130,
         "name": "CHINA SUNTIEN"
       },
       "0960": {
-        "shares": 304375647,
-        "valueHkd": 1725809918,
+        "shares": 327997964,
+        "valueHkd": 1863028436,
         "name": "LONGFOR GROUP"
       },
       "0966": {
-        "shares": 83100627,
-        "valueHkd": 1768381343,
+        "shares": 85413301,
+        "valueHkd": 1773180129,
         "name": "CHINA TAIPING"
       },
       "0968": {
-        "shares": 567961918,
-        "valueHkd": 1187040409,
+        "shares": 564389291,
+        "valueHkd": 1154176100,
         "name": "XINYI SOLAR"
       },
       "0975": {
-        "shares": 17682713,
-        "valueHkd": 170726594,
+        "shares": 17602855,
+        "valueHkd": 157369524,
         "name": "MONGOL MINING"
       },
       "0981": {
-        "shares": 48338023,
-        "valueHkd": 3052546152,
+        "shares": 51036518,
+        "valueHkd": 3325029148,
         "name": "SMIC"
       },
       "0990": {
-        "shares": 315833880,
-        "valueHkd": 176866973,
+        "shares": 317381718,
+        "valueHkd": 192015939,
         "name": "DEEP SOURCE"
       },
       "0991": {
-        "shares": 245930725,
-        "valueHkd": 659094343,
+        "shares": 246117137,
+        "valueHkd": 646057485,
         "name": "DATANG POWER"
       },
       "0992": {
-        "shares": 1084162925,
-        "valueHkd": 33934299553,
+        "shares": 980850743,
+        "valueHkd": 36860370922,
         "name": "LENOVO GROUP"
       },
       "0998": {
-        "shares": 102251797,
-        "valueHkd": 864538944,
+        "shares": 108739040,
+        "valueHkd": 911776850,
         "name": "CITIC BANK"
       },
       "0999": {
         "shares": 250400,
-        "valueHkd": 2000696,
+        "valueHkd": 2203520,
         "name": "XIAOCAIYUAN"
       }
     }
