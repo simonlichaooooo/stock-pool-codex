@@ -1,6 +1,10 @@
 name: Update market data history
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/market-insight-hsi-benchmark.sql"
   schedule:
     # 香港时间周五 18:00：证监会周度空头数据。
     - cron: "0 10 * * 5"
@@ -71,6 +75,11 @@ jobs:
         continue-on-error: true
         if: env.MARKET_DATA_SKIP != '1'
         run: python scripts/market-data-ingest.py sync-hsci
+      - name: Rebuild weekly and monthly HSI benchmark metrics
+        if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'push'
+        run: |
+          python scripts/market-data-ingest.py metrics
+          python scripts/market-data-ingest.py monthly-metrics
       - name: Run scheduled SFC update
         if: env.MARKET_DATA_SKIP != '1' && github.event_name == 'schedule' && github.event.schedule == '0 10 * * 5'
         run: python scripts/market-data-ingest.py short --latest-only

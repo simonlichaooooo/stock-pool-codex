@@ -12,7 +12,7 @@
 
 1. 执行 `supabase/market-insight-hsi-benchmark.sql`。它保留原始个股和指数收益，将旧基准的超额收益置空，避免混用。
 2. 发布前端和更新脚本。
-3. 运行 Update market data history 工作流，dataset 选择 filter-metrics，重算周度和月度历史。
+3. 此迁移文件推送 main 后自动触发 Update market data history 重算周度和月度历史；也可手动运行，dataset 选择 filter-metrics。
 4. 检查各分类最新周度日期、HSI质量标记和中船防务00317的收益分解；检查月度记录。
 
 原始核查：00317最新数据库记录停在2026-09-25，股票5周收益20.98360656%，成分股等权基准-5.82926080%，超额26.81286736%。此数值不是恒生指数口径。10月9日任务在Sync HSCI constituents失败，周度更新被跳过。

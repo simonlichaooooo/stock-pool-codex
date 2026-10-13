@@ -1,4 +1,5 @@
 -- Unified HSI benchmark for weekly/monthly excess returns.
+-- Publishing this migration also triggers the existing ingestion workflow backfill.
 -- Retains constituent groups, RLS, prices, and original component returns.
 begin;
 alter table public.market_index_weekly_prices drop constraint if exists market_index_weekly_prices_index_code_check;
