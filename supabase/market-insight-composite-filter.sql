@@ -167,6 +167,7 @@ language sql
 stable
 security invoker
 set search_path = public
+set jit = off
 as $$
 with payload as (
   select case
@@ -191,7 +192,8 @@ conditions as (
   cross join lateral jsonb_array_elements(payload.conditions)
     with ordinality as item(value, ordinality)
 ),
-universe as (
+-- Compute holdings once per stock, before expanding the condition list.
+universe as materialized (
   select u.*
   from public.current_hk_market_insight_filter_universe u
   where u.index_code = any(coalesce(p_index_codes, array[]::text[]))

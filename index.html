@@ -7197,6 +7197,63 @@
       state.marketInsightCustomLoading = false;
       state.marketInsightCustomError = "";
     }
+    function marketInsightCustomMetricField(condition) {
+      const { metric, span, percentileWindow = "2y" } = condition;
+      if (["bias", "speed", "percentile"].includes(metric) && ["5", "10", "20", "30", "40", "50"].includes(span)) {
+        if (metric === "bias") return `bias_${span}w_pct`;
+        if (metric === "speed") return `bias_speed_${span}w_pct`;
+        if (["1y", "2y"].includes(percentileWindow)) return `percentile_${span}w_${percentileWindow}`;
+      }
+      if (metric === "excess") return { "1w":"excess_one_week_return_pct", "5w":"excess_five_week_return_pct" }[span] || null;
+      if (span === "5w") return { shortChange:"short_change_5w_pct", connectChange:"connect_change_5w_pct" }[metric] || null;
+      return null;
+    }
+    function marketInsightCustomMonth(condition) {
+      if (condition.metric !== "excess") return null;
+      if (condition.span === "month") {
+        const parts = new Intl.DateTimeFormat("en", { timeZone:"Asia/Hong_Kong", year:"numeric", month:"2-digit" }).formatToParts(new Date());
+        return `${parts.find((p) => p.type === "year").value}-${parts.find((p) => p.type === "month").value}-01`;
+      }
+      return condition.span === "specific" && /^[0-9]{4}-(0[1-9]|1[0-2])$/.test(condition.month || "") ? `${condition.month}-01` : null;
+    }
+    function evaluateMarketInsightCustomConditions(row, conditions, monthly, months) {
+      let matches = true, missing = 0;
+      conditions.forEach((condition, index) => {
+        const field = marketInsightCustomMetricField(condition);
+        const raw = field ? row[field] : months[index] ? monthly.get(`${row.index_code}:${row.stock_code}:${months[index]}`) : null;
+        const actual = raw === null || raw === undefined || raw === "" ? NaN : Number(raw);
+        const expected = /^[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)$/.test(String(condition.value ?? "")) ? Number(condition.value) : NaN;
+        if (!Number.isFinite(actual) || !Number.isFinite(expected) || !["lt", "eq", "gt"].includes(condition.operator)) {
+          missing += 1;
+          matches = false;
+        } else {
+          matches = matches && (condition.operator === "lt" ? actual < expected : condition.operator === "gt" ? actual > expected : Math.abs(actual - expected) < 0.005);
+        }
+      });
+      return { index_code:row.index_code, stock_code:row.stock_code, matches, missing_condition_count:missing };
+    }
+    async function fetchMarketInsightCustomBatches(indexCode, conditions, requestId) {
+      // Read fresh database values in bounded batches; never use the display cache for filtering.
+      const codes = [...new Set(state.marketInsightRows.filter((row) => MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === row.primaryIndexId)?.code === indexCode).map((row) => String(row.rawCode).padStart(5, "0")))];
+      const fields = [...new Set(["index_code", "stock_code", ...conditions.map(marketInsightCustomMetricField).filter(Boolean)])];
+      const months = conditions.map(marketInsightCustomMonth);
+      const monthList = [...new Set(months.filter(Boolean))];
+      const results = [];
+      for (let start = 0; start < codes.length; start += 40) {
+        if (requestId !== state.marketInsightCustomRequestId) return [];
+        const scope = `index_code=eq.${encodeURIComponent(indexCode)}&stock_code=in.(${codes.slice(start, start + 40).map(encodeURIComponent).join(",")})`;
+        const rows = await supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?${scope}&select=${fields.join(",")}&limit=40`);
+        const monthly = new Map();
+        // One month per request keeps the result below the API row limit even for many conditions.
+        for (const month of monthList) {
+          if (requestId !== state.marketInsightCustomRequestId) return [];
+          const values = await supabaseRequest(`/rest/v1/hk_market_insight_monthly_returns?${scope}&month_start=eq.${month}&select=index_code,stock_code,month_start,excess_return_pct&limit=40`);
+          for (const value of values || []) monthly.set(`${value.index_code}:${value.stock_code}:${value.month_start}`, value.excess_return_pct);
+        }
+        results.push(...(rows || []).map((row) => evaluateMarketInsightCustomConditions(row, conditions, monthly, months)));
+      }
+      return results;
+    }
     async function loadMarketInsightCustomMetrics() {
       if (state.marketInsightCustomLoading || !state.marketInsightCustomActiveIds.length || state.marketInsightCustomHistory) return;
       const requestId = state.marketInsightCustomRequestId + 1;
@@ -7208,10 +7265,20 @@
         const activeConditions = state.marketInsightCustomFilters.filter((filter) => state.marketInsightCustomActiveIds.includes(filter.id)).flatMap((filter) => filter.conditions);
         const indexCodes = [...new Set((state.marketInsightRows || []).map((row) => MARKET_INSIGHT_BASE_INDEXES.find((item) => item.id === row.primaryIndexId)?.code).filter(Boolean))];
         if (!indexCodes.length || !activeConditions.length) throw new Error("没有可执行的指数或筛选条件");
-        const result = await supabaseRequest("/rest/v1/rpc/filter_hk_market_insights", {
-          method:"POST",
-          body:JSON.stringify({ p_index_codes:indexCodes, p_conditions:activeConditions })
-        });
+        const result = [];
+        for (const indexCode of indexCodes) {
+          if (requestId !== state.marketInsightCustomRequestId) return;
+          try {
+            const rows = await supabaseRequest("/rest/v1/rpc/filter_hk_market_insights", {
+              method:"POST",
+              body:JSON.stringify({ p_index_codes:[indexCode], p_conditions:activeConditions })
+            });
+            result.push(...(rows || []));
+          } catch (error) {
+            if (!/57014|statement timeout/i.test(String(error?.message || error))) throw error;
+            result.push(...await fetchMarketInsightCustomBatches(indexCode, activeConditions, requestId));
+          }
+        }
         if (requestId !== state.marketInsightCustomRequestId) return;
         const byKey = new Map((result || []).map((item) => [`${item.index_code}:${item.stock_code}`, item]));
         state.marketInsightRows = state.marketInsightRows.map((row) => {
@@ -7227,7 +7294,7 @@
         });
         if (requestId === state.marketInsightCustomRequestId) state.marketInsightCustomHistory = true;
       } catch (error) {
-        if (requestId === state.marketInsightCustomRequestId) state.marketInsightCustomError = `数据库复合筛选失败，暂未应用：${error.message || error}`;
+        if (requestId === state.marketInsightCustomRequestId) state.marketInsightCustomError = /57014|statement timeout/i.test(String(error?.message || error)) ? "筛选查询超时，暂未应用。请稍后重新启用筛选重试。" : `数据库复合筛选失败，暂未应用：${error.message || error}`;
       }
       finally {
         if (requestId === state.marketInsightCustomRequestId) { state.marketInsightCustomLoading = false; render(); }
