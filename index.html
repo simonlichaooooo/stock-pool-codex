@@ -4341,6 +4341,8 @@
     .market-insight-table .stock-code { display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .market-insight-table .sticky-col { min-width:170px; }
     .market-insight-metric { min-width:132px; font-variant-numeric:tabular-nums; }
+    .market-insight-excess > span { display:inline-flex; align-items:center; white-space:nowrap; }
+    .market-insight-excess > small { display:block; margin-top:3px; color:var(--muted); font-size:9px; font-weight:400; line-height:1.3; }
     .market-insight-metric span { display:block; }
     .market-insight-metric small { display:block; margin-top:2px; color:var(--muted); font-size:10.5px; }
     .market-insight-metric small.market-insight-percentile.low { color:var(--loss); }
@@ -7038,7 +7040,7 @@
     function marketInsightExcessCell(value, star = false, metricWeekDate = null) {
       const excess = value === null || value === undefined || value === "" ? NaN : Number(value);
       const cls = excess > 0 ? "gain" : excess < 0 ? "loss" : "";
-      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${marketInsightRuleStar(star, "5周超额收益为正")}${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span>${metricWeekDate ? `<small>截至 ${escapeHtml(metricWeekDate)}</small>` : ""}</td>`;
+      return `<td data-label="5周超额收益" class="num ${cls}"><div class="market-insight-excess"><span>${Number.isFinite(excess) ? `${marketInsightRuleStar(star, "5周超额收益为正")}${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span>${metricWeekDate ? `<small>截至 ${escapeHtml(metricWeekDate)}</small>` : ""}</div></td>`;
     }
 
     const MARKET_INSIGHT_CUSTOM_METRICS = [
