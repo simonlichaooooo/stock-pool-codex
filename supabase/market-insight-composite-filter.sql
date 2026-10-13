@@ -11,7 +11,7 @@
 begin;
 
 create table if not exists public.market_index_monthly_prices (
-  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')),
+  index_code text not null check (index_code in ('HSI', 'HSTECH', 'HSLI', 'HSMI', 'HSSI')),
   month_start date not null,
   period_end date not null,
   close_price numeric(20, 6) not null check (close_price > 0),
@@ -31,7 +31,7 @@ create table if not exists public.hk_market_insight_monthly_returns (
   index_return_pct numeric(14, 8),
   excess_return_pct numeric(14, 8),
   index_return_quality text not null default 'official_index'
-    check (index_return_quality in ('official_index', 'constituent_equal_weight')),
+    check (index_return_quality in ('official_index', 'constituent_equal_weight', 'official_hsi')),
   price_source text not null default 'tencent_monthly',
   calculated_at timestamptz not null default now(),
   primary key (index_code, stock_code, month_start),
@@ -141,7 +141,7 @@ select index_code,
        count(*)::integer as stored_stock_months,
        count(*) filter (where excess_return_pct is not null)::integer
          as stock_months_with_excess_return,
-       count(*) filter (where index_return_quality = 'official_index')::integer
+       count(*) filter (where index_return_quality in ('official_index', 'official_hsi'))::integer
          as stock_months_with_official_index_return
 from public.hk_market_insight_monthly_returns
 group by index_code

@@ -17,7 +17,7 @@ create table if not exists public.hk_market_insight_metrics_weekly (
   index_five_week_return_pct numeric(14, 8),
   excess_five_week_return_pct numeric(14, 8),
   index_return_quality text not null default 'official_index'
-    check (index_return_quality in ('official_index', 'constituent_equal_weight')),
+    check (index_return_quality in ('official_index', 'constituent_equal_weight', 'official_hsi')),
   price_source text not null default 'tencent_weekly',
   calculated_at timestamptz not null default now(),
   primary key (index_code, stock_code, week_date)

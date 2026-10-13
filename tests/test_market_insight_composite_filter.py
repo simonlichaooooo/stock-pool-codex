@@ -63,7 +63,7 @@ class MarketInsightCompositeFilterTest(unittest.TestCase):
         self.assertNotIn("scheduleVisibleMarketInsightRatioRefresh", HTML)
 
     def test_market_insight_universe_is_prefetched_and_persisted(self):
-        self.assertIn('MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v1"', HTML)
+        self.assertIn('MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v2.hsi"', HTML)
         self.assertIn("MARKET_INSIGHT_UNIVERSE_CACHE_MS = 30 * 60 * 1000", HTML)
         self.assertIn("function readCachedMarketInsightUniverse()", HTML)
         self.assertIn("function writeCachedMarketInsightUniverse(rows)", HTML)

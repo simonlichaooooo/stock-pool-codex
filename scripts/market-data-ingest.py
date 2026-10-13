@@ -544,6 +544,50 @@ def fetch_weekly_prices(stock_code: str, count: int = 320) -> list[tuple[str, fl
     raise RuntimeError(f"Weekly prices unavailable for {stock_code}: {last_error}")
 
 
+def fetch_hsi_prices(period: str) -> list[tuple[str, float]]:
+    """Fetch the actual Hang Seng Index; never substitute constituent returns."""
+    if period not in ("week", "month"):
+        raise ValueError("Unsupported HSI period")
+    last_error = None
+    for attempt in range(3):
+        try:
+            payload = json_request(
+                f"https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=hkHSI,{period},,,320")
+            source = (payload.get("data") or {}).get("hkHSI") or {}
+            prices = sorted({str(row[0]): float(row[2]) for row in source.get(period, [])
+                             if len(row) >= 3 and float(row[2]) > 0}.items())
+            if len(prices) < 6:
+                raise RuntimeError("Insufficient Hang Seng Index history")
+            if period == "week":
+                prices = completed_weekly_prices(prices, latest_completed_week_date())
+                latest_week = latest_completed_week_date()
+                if not prices or week_key(prices[-1][0]) != latest_week.isoformat():
+                    raise RuntimeError("Hang Seng Index weekly history is stale")
+            elif prices[-1][0][:7] != current_hong_kong_month():
+                raise RuntimeError("Hang Seng Index monthly history is stale")
+            return prices
+        except Exception as error:
+            last_error = error
+        time.sleep(0.6 * (attempt + 1))
+    raise RuntimeError(f"Hang Seng Index {period} prices unavailable: {last_error}")
+
+
+def week_key(day: str) -> str:
+    observation = date.fromisoformat(day)
+    return (observation + timedelta(days=4 - observation.weekday())).isoformat()
+
+
+def calendar_week_returns(prices: list[tuple[str, float]], weeks: int) -> dict[str, float]:
+    """Use calendar weeks, so suspended/missing weeks cannot extend the horizon."""
+    closes = {week_key(day): close for day, close in prices}
+    result = {}
+    for day, close in prices:
+        previous = (date.fromisoformat(week_key(day)) - timedelta(weeks=weeks)).isoformat()
+        if previous in closes:
+            result[day] = (close / closes[previous] - 1) * 100
+    return result
+
+
 def fetch_index_weekly_prices(quote_id: str) -> list[tuple[str, float]]:
     end = date.today().strftime("%Y%m%d")
     params = urllib.parse.urlencode({
@@ -834,6 +878,7 @@ def monthly_return_rows(index_code: str, stock_code: str,
             "index_return_quality": quality.get(month_start, "constituent_equal_weight")
                 if isinstance(quality, dict) else quality,
             "price_source": "tencent_monthly",
+            "calculated_at": datetime.now(timezone.utc).isoformat(),
         })
     return rows
 
@@ -847,7 +892,7 @@ def monthly_metric_coverage(rows: list[dict], indexes: dict) -> dict[str, dict]:
         current_rows = [row for row in index_rows if row["month_start"] == latest_month]
         expected = len(item["members"])
         covered = sum(row.get("excess_return_pct") is not None for row in current_rows)
-        official = sum(row.get("index_return_quality") == "official_index" for row in current_rows)
+        official = sum(row.get("index_return_quality") in ("official_index", "official_hsi") for row in current_rows)
         summary[index_code] = {
             "stocks_expected": expected,
             "stocks_in_latest_month": len(current_rows),
@@ -867,7 +912,7 @@ def metric_rows(index_code: str, stock_code: str, prices: list[tuple[str, float]
         (period, label): rolling_percentiles(biases[period], window)
         for period in BIAS_PERIODS for label, window in PERCENTILE_WINDOWS.items()
     }
-    stock_returns = {period: period_returns(prices, period) for period in RETURN_PERIODS}
+    stock_returns = {period: calendar_week_returns(prices, period) for period in RETURN_PERIODS}
     rows = []
     for offset, (day, close) in enumerate(prices):
         if day < METRIC_START.isoformat():
@@ -876,6 +921,7 @@ def metric_rows(index_code: str, stock_code: str, prices: list[tuple[str, float]
             "index_code": index_code, "stock_code": normalize_code(stock_code), "week_date": day,
             "close_price": close,
             "index_return_quality": quality, "price_source": "tencent_weekly",
+            "calculated_at": datetime.now(timezone.utc).isoformat(),
         }
         for period in BIAS_PERIODS:
             row[f"bias_{period}w_pct"] = biases[period][offset]
@@ -884,7 +930,7 @@ def metric_rows(index_code: str, stock_code: str, prices: list[tuple[str, float]
                 row[f"percentile_{period}w_{label}"] = percentiles[(period, label)][offset]
         for period, prefix in ((1, "one"), (5, "five")):
             stock_return = stock_returns[period].get(day)
-            index_return = index_returns[period].get(day)
+            index_return = index_returns[period].get(week_key(day))
             row[f"{prefix}_week_return_pct"] = stock_return
             row[f"index_{prefix}_week_return_pct"] = index_return
             row[f"excess_{prefix}_week_return_pct"] = (
@@ -935,6 +981,11 @@ def ingest_weekly_metrics(client: SupabaseRest, *, dry_run: bool = False, worker
     completed_week = latest_completed_week_date()
     with open(MARKET_INSIGHTS_FILE, encoding="utf-8") as handle:
         indexes = json.load(handle)["constituents"]["indexes"]
+    index_prices = fetch_hsi_prices("week")
+    index_returns = {
+        period: {week_key(day): value for day, value in calendar_week_returns(index_prices, period).items()}
+        for period in RETURN_PERIODS
+    }
     codes = sorted({normalize_code(member["code"]) for item in indexes.values() for member in item["members"]})
     prices_by_code: dict[str, list[tuple[str, float]]] = {}
     failures = {}
@@ -949,34 +1000,14 @@ def ingest_weekly_metrics(client: SupabaseRest, *, dry_run: bool = False, worker
             if completed % 50 == 0 or completed == len(futures):
                 print(f"Weekly prices: {completed}/{len(futures)}")
     all_rows = []
-    all_index_price_rows = []
+    all_index_price_rows = [
+        {"index_code": "HSI", "week_date": day, "close_price": close,
+         "price_source": "tencent_hsi_weekly"} for day, close in index_prices
+    ]
     index_failures = {}
     for index_id, item in indexes.items():
         index_code = item["code"]
-        quality = "official_index"
-        try:
-            index_prices = completed_weekly_prices(fetch_index_weekly_prices(item["quoteId"]), completed_week)
-            index_returns = {period: period_returns(index_prices, period) for period in RETURN_PERIODS}
-            all_index_price_rows.extend({
-                "index_code": index_code, "week_date": day, "close_price": close,
-                "price_source": "eastmoney_index_weekly",
-            } for day, close in index_prices)
-        except Exception as error:
-            print(f"WARN {index_code}: official index prices unavailable, using equal-weight constituents: {error}", file=sys.stderr)
-            quality = "constituent_equal_weight"
-            index_failures[index_code] = str(error)
-            index_returns = {}
-            for period in RETURN_PERIODS:
-                grouped: dict[str, list[float]] = {}
-                for member in item["members"]:
-                    prices = prices_by_code.get(normalize_code(member["code"]))
-                    if not prices:
-                        continue
-                    for day, value in period_returns(prices, period).items():
-                        grouped.setdefault(day, []).append(value)
-                index_returns[period] = {
-                    day: sum(values) / len(values) for day, values in grouped.items() if values
-                }
+        quality = "official_hsi"
         for member in item["members"]:
             code = normalize_code(member["code"])
             prices = prices_by_code.get(code)
@@ -989,6 +1020,7 @@ def ingest_weekly_metrics(client: SupabaseRest, *, dry_run: bool = False, worker
         written = len(all_rows)
         index_prices_written = len(all_index_price_rows)
     else:
+        client.upsert("market_securities", [{"stock_code": code} for code in prices_by_code], "stock_code")
         index_prices_written = client.upsert(
             "market_index_weekly_prices", all_index_price_rows,
             "index_code,week_date", chunk_size=500) if all_index_price_rows else 0
@@ -1014,6 +1046,8 @@ def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, worke
     started = datetime.now(timezone.utc).isoformat()
     with open(MARKET_INSIGHTS_FILE, encoding="utf-8") as handle:
         indexes = json.load(handle)["constituents"]["indexes"]
+    index_prices = fetch_hsi_prices("month")
+    index_returns = monthly_returns(index_prices)
     codes = sorted({normalize_code(member["code"]) for item in indexes.values() for member in item["members"]})
     prices_by_code: dict[str, list[tuple[str, float]]] = {}
     failures = {}
@@ -1029,51 +1063,20 @@ def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, worke
                 print(f"Monthly prices: {completed}/{len(futures)}")
 
     all_rows = []
-    all_index_price_rows = []
+    all_index_price_rows = [
+        {"index_code": "HSI", "month_start": f"{day[:7]}-01", "period_end": day,
+         "close_price": close, "price_source": "tencent_hsi_monthly"}
+        for day, close in index_prices
+    ]
     index_failures = {}
     for item in indexes.values():
         index_code = item["code"]
-        # Always calculate the constituent fallback. Official index returns override
-        # it month by month, so a provider that omits the unfinished current month
-        # cannot leave every MTD excess return null.
-        grouped: dict[str, list[float]] = {}
-        for member in item["members"]:
-            prices = prices_by_code.get(normalize_code(member["code"]))
-            if not prices:
-                continue
-            for month_start, value in monthly_returns(prices).items():
-                grouped.setdefault(month_start, []).append(value)
-        fallback_returns = {
-            month_start: sum(values) / len(values)
-            for month_start, values in grouped.items() if values
-        }
-        official_returns: dict[str, float] = {}
-        try:
-            index_prices = fetch_index_monthly_prices(item["quoteId"])
-            official_returns = monthly_returns(index_prices)
-            all_index_price_rows.extend({
-                "index_code": index_code,
-                "month_start": f"{day[:7]}-01",
-                "period_end": day,
-                "close_price": close,
-                "price_source": "eastmoney_index_monthly",
-            } for day, close in index_prices)
-        except Exception as error:
-            print(f"WARN {index_code}: official index monthly prices unavailable, "
-                  f"using equal-weight constituents: {error}", file=sys.stderr)
-            index_failures[index_code] = str(error)
-        index_returns = {**fallback_returns, **official_returns}
-        quality_by_month = {
-            month_start: "official_index" if month_start in official_returns
-                else "constituent_equal_weight"
-            for month_start in index_returns
-        }
         for member in item["members"]:
             code = normalize_code(member["code"])
             prices = prices_by_code.get(code)
             if prices:
                 all_rows.extend(monthly_return_rows(
-                    index_code, code, prices, index_returns, quality_by_month))
+                    index_code, code, prices, index_returns, "official_hsi"))
 
     if not all_rows:
         raise RuntimeError("No monthly market insight rows were calculated")
@@ -1082,6 +1085,7 @@ def ingest_monthly_metrics(client: SupabaseRest, *, dry_run: bool = False, worke
         written = len(all_rows)
         index_prices_written = len(all_index_price_rows)
     else:
+        client.upsert("market_securities", [{"stock_code": code} for code in prices_by_code], "stock_code")
         index_prices_written = client.upsert(
             "market_index_monthly_prices", all_index_price_rows,
             "index_code,month_start", chunk_size=500) if all_index_price_rows else 0

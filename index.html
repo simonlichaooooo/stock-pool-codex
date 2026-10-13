@@ -4942,7 +4942,7 @@
     const PORTFOLIO_STORAGE_PREFIX = "stockpool.portfolios.";
     const JOURNAL_STORAGE_PREFIX = "stockpool.journals.";
     const MARKET_INSIGHT_WATCHLIST_STORAGE_PREFIX = "stockpool.marketInsightWatchlist.";
-    const MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v1";
+    const MARKET_INSIGHT_UNIVERSE_STORAGE_KEY = "stockpool.marketInsightUniverse.v2.hsi";
     const MARKET_INSIGHT_UNIVERSE_CACHE_MS = 30 * 60 * 1000;
     const THEME_STORAGE_KEY = "stockpool.colorTheme.v1";
     const DEFAULT_THEME_ID = "glacier";
@@ -6466,7 +6466,7 @@
         return broadIndex ? prefetched : prefetched.filter((item) => item.index_code === indexCode);
       }
       const indexFilter = marketInsightUniverseIndexFilter(indexCode);
-      const fields = "index_code,stock_code,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,short_ratio_pct,short_change_5w_pct,connect_holding_ratio_pct,connect_change_5w_pct";
+      const fields = "index_code,stock_code,week_date,index_return_quality,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,short_ratio_pct,short_change_5w_pct,connect_holding_ratio_pct,connect_change_5w_pct";
       const request = supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?index_code=${indexFilter}&select=${fields}&limit=3000`);
       if (broadIndex) marketInsightUniverseInFlight = request;
       try {
@@ -6511,7 +6511,8 @@
           },
           fiveWeekReturn:value("five_week_return_pct"),
           indexFiveWeekReturn:value("index_five_week_return_pct"),
-          excess5w:value("excess_five_week_return_pct"),
+          excess5w:metric.index_return_quality === "official_hsi" ? value("excess_five_week_return_pct") : null,
+          metricWeekDate:metric.week_date || null,
           metricStored:true
         };
       });
@@ -7034,10 +7035,10 @@
       { label:"港股通减持", title:"近5周港股通仓位减少", icon:"↘", inverse:true }
     ];
 
-    function marketInsightExcessCell(value, star = false) {
+    function marketInsightExcessCell(value, star = false, metricWeekDate = null) {
       const excess = value === null || value === undefined || value === "" ? NaN : Number(value);
       const cls = excess > 0 ? "gain" : excess < 0 ? "loss" : "";
-      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${marketInsightRuleStar(star, "5周超额收益为正")}${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span></td>`;
+      return `<td data-label="5周超额收益" class="num ${cls}"><span>${Number.isFinite(excess) ? `${marketInsightRuleStar(star, "5周超额收益为正")}${excess > 0 ? "+" : ""}${excess.toFixed(2)}%` : "--"}</span>${metricWeekDate ? `<small>截至 ${escapeHtml(metricWeekDate)}</small>` : ""}</td>`;
     }
 
     const MARKET_INSIGHT_CUSTOM_METRICS = [
@@ -7435,7 +7436,7 @@
                 const rating = ratings.get(row.id) || marketInsightRating(row);
                 return `<tr data-market-insight-code="${escapeHtml(row.rawCode)}">
                   <td data-label="股票名称" class="sticky-col"><div class="stock-name">${escapeHtml(row.name)}</div><div class="stock-code">${escapeHtml(row.code)}${rating.score ? `<span class="market-insight-rating-badge" title="${rating.score}星"><span class="rating-score" aria-label="${rating.score}星">${"★".repeat(rating.score)}</span></span>` : ""}</div></td>
-                  ${marketInsightExcessCell(row.excess5w, rating.rules[0])}
+                  ${marketInsightExcessCell(row.excess5w, rating.rules[0], row.metricWeekDate)}
                   ${marketInsightMetricCell(row.biasMetrics?.ma5, 5, rating.rules[1], "5周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma30, 30, Number(row.biasMetrics?.ma30?.bias) > 0, "30周乖离率为正")}
                   ${marketInsightMetricCell(row.biasMetrics?.ma40, 40, Number(row.biasMetrics?.ma40?.bias) > 0, "40周乖离率为正")}
@@ -7459,7 +7460,7 @@
         </div>
         <p class="market-insight-note">
           ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“✓已加”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
-          ${["all", "watchlist"].includes(index.id) ? "5周超额收益沿用每只股票的来源指数口径。" : "5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 所选指数同期累计涨跌幅；指数行情暂不可用时，以该指数成分股市值加权收益估算。"}
+          5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 恒生指数同期累计涨跌幅。所有股票统一使用恒生指数；同期数据不足时显示 --。
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。
           数据源：<a href="${escapeHtml(snapshot.shortPositions?.sourceUrl || "https://www.sfc.hk/TC/Regulatory-functions/Market/Short-position-reporting/Aggregated-reportable-short-positions-of-specified-shares")}" target="_blank" rel="noopener">香港证监会</a>、<a href="${escapeHtml(snapshot.stockConnect?.sourceUrl || "https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk")}" target="_blank" rel="noopener">港交所</a>、腾讯/东方财富周线行情。
@@ -7523,23 +7524,6 @@
         state.marketInsightRows = [...rows];
       } else if (universeResult.error) {
         console.warn("数据库市场洞察聚合结果加载失败，保留快照数据。", universeResult.error);
-      }
-      let indexFiveWeekReturn = rows.find((row) => Number.isFinite(row.indexFiveWeekReturn))?.indexFiveWeekReturn ?? null;
-      if (!Number.isFinite(indexFiveWeekReturn) && index.quoteId) {
-        try {
-          const indexCloses = await fetchEastmoneyWeeklyCloses({ quoteId:index.quoteId, market:"INDEX", code:index.code });
-          indexFiveWeekReturn = calculateFiveWeekReturn(indexCloses);
-        } catch (error) {
-          console.warn("指数周线不可用，超额收益暂不展示。", index.code, error);
-        }
-      }
-      if (!Number.isFinite(indexFiveWeekReturn)) {
-        const usable = rows.filter((row) => Number.isFinite(row.fiveWeekReturn));
-        const weighted = usable.filter((row) => Number(row.latestMarketCapCny) > 0);
-        indexFiveWeekReturn = weighted.length
-          ? weighted.reduce((sum, row) => sum + row.fiveWeekReturn * Number(row.latestMarketCapCny), 0) / weighted.reduce((sum, row) => sum + Number(row.latestMarketCapCny), 0)
-          : usable.length ? usable.reduce((sum, row) => sum + row.fiveWeekReturn, 0) / usable.length : null;
-        rows = rows.map((row) => ({ ...row, excess5w:Number.isFinite(indexFiveWeekReturn) && Number.isFinite(row.fiveWeekReturn) ? row.fiveWeekReturn - indexFiveWeekReturn : null }));
       }
       state.marketInsightLoaded = true;
       state.marketInsightLoading = false;

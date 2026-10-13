@@ -11,7 +11,7 @@
 begin;
 
 create table if not exists public.market_index_weekly_prices (
-  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')),
+  index_code text not null check (index_code in ('HSI', 'HSTECH', 'HSLI', 'HSMI', 'HSSI')),
   week_date date not null,
   close_price numeric(20, 6) not null check (close_price > 0),
   price_source text not null default 'eastmoney_index_weekly',
@@ -138,7 +138,7 @@ select index_code, max(latest_week) as latest_week,
        count(*) filter (where has_all_1y_percentiles)::integer as stocks_with_all_1y_percentiles,
        count(*) filter (where has_all_2y_percentiles)::integer as stocks_with_all_2y_percentiles,
        count(*) filter (where has_standard_excess_returns)::integer as stocks_with_standard_excess_returns,
-       count(*) filter (where index_return_quality = 'official_index')::integer as stocks_with_official_index_return
+       count(*) filter (where index_return_quality in ('official_index', 'official_hsi'))::integer as stocks_with_official_index_return
 from public.hk_market_insight_filter_metric_coverage
 group by index_code
 order by index_code;
