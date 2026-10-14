@@ -1,8 +1,15 @@
 import pathlib
 import unittest
+from unittest import mock
+import importlib.util
+import json
+import tempfile
 
 
 ROOT = pathlib.Path(__file__).parents[1]
+SPEC = importlib.util.spec_from_file_location("stock_connect_ingest", ROOT / "scripts" / "market-data-ingest.py")
+INGEST = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(INGEST)
 
 
 class StockConnectUniverseTests(unittest.TestCase):
@@ -24,6 +31,23 @@ class StockConnectUniverseTests(unittest.TestCase):
         self.assertEqual(migration.count("'STOCK_CONNECT'"), 3)
         self.assertIn("hk_market_insight_metrics_weekly_index_code_check", migration)
         self.assertIn("hk_market_insight_monthly_returns_index_code_check", migration)
+
+    def test_share_ratio_refresh_is_batched(self):
+        indexes = {"stockconnect": {"code": "STOCK_CONNECT", "members": [
+            {"code": str(code)} for code in range(1, 24)
+        ]}}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as source:
+            json.dump({"constituents": {"indexes": indexes}}, source)
+            source.flush()
+            client = mock.Mock()
+            with mock.patch.object(INGEST, "MARKET_INSIGHTS_FILE", source.name), mock.patch.object(
+                INGEST, "fetch_issued_shares_history",
+                side_effect=lambda code, *_: [{"stock_code": code, "period_end": "2026-09-30", "issued_shares": 1}],
+            ):
+                INGEST.ingest_issued_shares(client, INGEST.date(2026, 1, 1), INGEST.date(2026, 10, 14), workers=2)
+        batches = [call.args[1]["p_stock_codes"] for call in client.rpc.call_args_list]
+        self.assertEqual([len(batch) for batch in batches], [10, 10, 3])
+        self.assertEqual(len({code for batch in batches for code in batch}), 23)
 
 
 if __name__ == "__main__":

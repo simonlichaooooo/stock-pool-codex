@@ -771,8 +771,13 @@ def ingest_issued_shares(client: SupabaseRest, start: date, end: date, *, dry_ru
         raise RuntimeError("No issued-share history was calculated")
     if not dry_run:
         client.upsert("hk_issued_shares_monthly", all_rows, "stock_code,period_end", chunk_size=500)
-        result = client.rpc("refresh_hk_holding_ratios")
-        print(f"Ratio backfill: {result}")
+        ratio_results = []
+        # The full-universe refresh can exceed the database statement timeout.
+        # Keep each transaction bounded so a larger Stock Connect universe remains reliable.
+        for offset in range(0, len(codes), 10):
+            ratio_results.append(client.rpc(
+                "refresh_hk_holding_ratios", {"p_stock_codes": codes[offset:offset + 10]}))
+        print(f"Ratio backfill: {len(ratio_results)} batches")
     print(f"Stored issued-share history: {len(all_rows)} rows; failed stocks: {len(failures)}")
     return len(all_rows)
 

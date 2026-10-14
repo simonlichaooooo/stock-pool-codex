@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "supabase/market-insight-stock-connect-universe.sql"
+      - "scripts/market-data-ingest.py"
       - ".github/workflows/backfill-stock-connect-market-insights.yml"
   workflow_dispatch:
 
