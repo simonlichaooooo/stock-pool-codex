@@ -74,7 +74,7 @@ create table if not exists public.hk_stock_connect_holdings_daily (
 );
 
 create table if not exists public.hk_market_insight_metrics_weekly (
-  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')),
+  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI', 'STOCK_CONNECT')),
   stock_code text not null references public.market_securities(stock_code) on delete cascade,
   week_date date not null,
   close_price numeric(20, 6) not null check (close_price > 0),

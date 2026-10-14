@@ -4999,6 +4999,7 @@
     const MARKET_INSIGHT_INDEXES = [
       { id: "all", name: "全部", code: "ALL", quoteId: "", constituentAsOf: "" },
       { id: "watchlist", name: "自选", code: "WATCHLIST", quoteId: "", constituentAsOf: "自选列表" },
+      { id: "stockconnect", name: "港股通", code: "STOCK_CONNECT", quoteId: "", constituentAsOf: "" },
       { id: "hstech", name: "恒生科技", code: "HSTECH", quoteId: "124.HSTECH", constituentAsOf: "2026-06-08" },
       { id: "hsli", name: "大型股", code: "HSLI", quoteId: "124.HSLI", constituentAsOf: "" },
       { id: "hsmi", name: "中型股", code: "HSMI", quoteId: "124.HSMI", constituentAsOf: "" },
@@ -6972,7 +6973,7 @@
     }
 
     function defaultMarketInsightSort(indexId = state.marketInsightIndexId) {
-      return { key:["all", "watchlist"].includes(indexId) ? "marketCap" : "indexWeight", dir:"desc" };
+      return { key:["all", "watchlist", "stockconnect"].includes(indexId) ? "marketCap" : "indexWeight", dir:"desc" };
     }
 
     function sortedMarketInsightRows(rows) {
@@ -7453,15 +7454,15 @@
           <div class="market-insight-pagination"><span>共 ${filteredRows.length} 只 · 第 ${currentPage}/${pageCount} 页</span><button class="secondary" data-action="marketInsightPage" data-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""}>上一页</button><button class="secondary" data-action="marketInsightPage" data-page="${currentPage + 1}" ${currentPage >= pageCount ? "disabled" : ""}>下一页</button></div>
         </section>
         <div class="market-insight-meta market-insight-meta-bottom">
-          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${index.id === "watchlist" ? "股票" : "成分股"}</span>
-          <span>${index.id === "watchlist" ? "列表类型" : "成分生效日"}：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
+          <span><strong>${escapeHtml(index.name)}</strong> · ${rows.length} 只${["watchlist", "stockconnect"].includes(index.id) ? "股票" : "成分股"}</span>
+          <span>${index.id === "watchlist" ? "列表类型" : index.id === "stockconnect" ? "持仓日期" : "成分生效日"}：<strong>${escapeHtml(index.constituentAsOf)}</strong></span>
           <span>空仓报告：<strong>${escapeHtml(shortAsOf)}</strong></span>
           <span>港股通持仓：<strong>${escapeHtml(connectAsOf)}</strong></span>
           ${state.marketInsightLoading ? `<span class="market-insight-loading">正在读取市场数据</span>` : ""}
           ${state.marketInsightError ? `<span class="loss">${escapeHtml(state.marketInsightError)}</span>` : ""}
         </div>
         <p class="market-insight-note">
-          ${index.id === "all" ? "全部视图合并四个指数成分并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“✓已加”可移出。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
+          ${index.id === "all" ? "全部视图合并港股通与四个指数范围并按股票代码去重，默认按最新市值降序排列。" : index.id === "watchlist" ? "自选视图汇总列表中手动加入的股票，默认按最新市值降序排列；再次点击“✓已加”可移出。" : index.id === "stockconnect" ? "港股通视图按港交所最新一期中国结算官方合计持仓名单收录，默认按最新市值降序排列。" : "列表默认按指数权重降序排列；公开成分接口未提供完整权重时，保留官方成分名单顺序。恒生科技权重采用2026年6月8日生效的恒指公司检讨结果。"}
           5周超额收益 = 股票最近5个完整周度区间的累计涨跌幅 − 恒生指数同期累计涨跌幅。所有股票统一使用恒生指数；同期数据不足时显示 --。
           空头持仓比例 = 证监会“合计须申报淡仓”股数 ÷ 行情总股本估算，不代表全市场全部空头；与证监会周度披露日期存在滞后。
           港股通比例为中国结算两个 CCASS 参与者的日终合计持仓占已发行股份比例。

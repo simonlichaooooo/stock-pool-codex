@@ -1,0 +1,58 @@
+name: Expand market insights to Stock Connect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/market-insight-stock-connect-universe.sql"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-connect-market-insight-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install market-data dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-market-data.txt
+      - name: Test market insights
+        run: python -m unittest discover -s tests
+      - name: Build current Stock Connect universe
+        run: node scripts/update-market-overview.mjs
+      - name: Backfill issued shares and holding ratios
+        run: python scripts/market-data-ingest.py issued-shares --start 2023-01-01 --workers 12
+      - name: Backfill weekly and monthly metrics
+        run: |
+          python scripts/market-data-ingest.py metrics --workers 12
+          python scripts/market-data-ingest.py monthly-metrics --workers 12
+      - name: Rebuild overview and verify 01330
+        run: |
+          node scripts/update-market-overview.mjs
+          python scripts/verify-stock-connect-universe.py
+      - name: Publish expanded universe snapshot
+        run: |
+          if git diff --quiet -- data/market-insights.json; then
+            echo "No snapshot changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/market-insights.json
+          git commit -m "chore: publish Stock Connect market insight universe"
+          git push

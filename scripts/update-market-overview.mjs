@@ -9,9 +9,7 @@ const DAY_MS = 86400000;
 if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
 
 const snapshot = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
-const indexCodeById = { hstech:"HSTECH", hsli:"HSLI", hsmi:"HSMI", hssi:"HSSI" };
-const scopeMembers = Object.fromEntries(Object.entries(snapshot.constituents?.indexes || {}).map(([id, item]) => [id, new Set((item.members || []).map((member) => String(member.code).padStart(5, "0")))]));
-scopeMembers.all = new Set(Object.values(scopeMembers).flatMap((codes) => [...codes]));
+const indexCodeById = { hstech:"HSTECH", hsli:"HSLI", hsmi:"HSMI", hssi:"HSSI", stockconnect:"STOCK_CONNECT" };
 
 function isoDate(daysAgo) {
   return new Date(Date.now() - daysAgo * DAY_MS).toISOString().slice(0, 10);
@@ -88,11 +86,42 @@ function metricTrend(dates, codes, signalAt) {
   }).filter((point) => point.denominator);
 }
 
-const [weeklyRows, shortRows, connectRows] = await Promise.all([
+const [weeklyRows, shortRows, connectRows, securities] = await Promise.all([
   fetchRows("hk_market_insight_metrics_weekly", `select=index_code,stock_code,week_date,bias_5w_pct,bias_speed_30w_pct&week_date=gte.${isoDate(760)}&order=week_date.asc`),
   fetchRows("hk_short_positions_weekly", `select=stock_code,report_date,short_ratio_pct&report_date=gte.${isoDate(420)}&short_ratio_pct=not.is.null&order=report_date.asc`),
-  fetchRows("hk_stock_connect_holdings_daily", `select=stock_code,holding_date,total_holding_shares&holding_date=gte.${isoDate(420)}&total_holding_shares=not.is.null&completeness=eq.official_aggregate&order=holding_date.asc`)
+  fetchRows("hk_stock_connect_holdings_daily", `select=stock_code,holding_date,total_holding_shares,holding_ratio_pct&holding_date=gte.${isoDate(420)}&total_holding_shares=not.is.null&completeness=eq.official_aggregate&order=holding_date.asc`),
+  fetchRows("market_securities", "select=stock_code,name_zh,name_en&order=stock_code.asc")
 ]);
+
+const latestConnectDate = connectRows.at(-1)?.holding_date;
+const latestConnectRows = connectRows.filter((row) => row.holding_date === latestConnectDate && number(row.total_holding_shares) > 0);
+if (!latestConnectDate || latestConnectRows.length < 100) throw new Error("Latest official Stock Connect universe is incomplete");
+const securityByCode = new Map(securities.map((row) => [row.stock_code, row]));
+const displayCode = (code) => String(code).padStart(5, "0").replace(/^0/, "");
+snapshot.constituents ||= { indexes:{} };
+snapshot.constituents.indexes ||= {};
+snapshot.constituents.indexes.stockconnect = {
+  label:"港股通",
+  code:"STOCK_CONNECT",
+  quoteId:"",
+  asOf:latestConnectDate,
+  sourceUrl:"https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk",
+  members:latestConnectRows.map((row) => {
+    const security = securityByCode.get(row.stock_code) || {};
+    return { code:displayCode(row.stock_code), name:security.name_zh || security.name_en || row.stock_code };
+  }).sort((a, b) => a.code.localeCompare(b.code))
+};
+snapshot.stockConnect = {
+  asOf:latestConnectDate,
+  sourceUrl:"https://www3.hkexnews.hk/sdw/search/mutualmarket.aspx?t=hk",
+  byCode:Object.fromEntries(latestConnectRows.map((row) => [displayCode(row.stock_code), {
+    shares:number(row.total_holding_shares),
+    ratio:number(row.holding_ratio_pct)
+  }]))
+};
+
+const scopeMembers = Object.fromEntries(Object.entries(snapshot.constituents.indexes).map(([id, item]) => [id, new Set((item.members || []).map((member) => String(member.code).padStart(5, "0")))]));
+scopeMembers.all = new Set(Object.values(scopeMembers).flatMap((codes) => [...codes]));
 
 const weeklyByIndexCode = new Map();
 weeklyRows.forEach((row) => {
@@ -137,7 +166,7 @@ function weeklyLastDates(dates) {
 }
 
 const scopes = {};
-for (const scopeId of ["all", "hstech", "hsli", "hsmi", "hssi"]) {
+for (const scopeId of ["all", "stockconnect", "hstech", "hsli", "hsmi", "hssi"]) {
   const codes = [...scopeMembers[scopeId]];
   // 行情源偶尔会为单只股票写入非标准周日期。只有覆盖当前范围至少六成股票的
   // 日期才可作为市场截面，避免 1/500 之类的残缺周污染广度、连续性和环比。

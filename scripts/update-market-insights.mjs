@@ -88,6 +88,8 @@ async function updateConstituents(next) {
       }).filter((item) => item.code && item.name)
     };
   }
+  // 港股通范围由每日官方持仓任务维护；刷新恒生成分时保留该独立范围。
+  if (previousIndexes.stockconnect?.members?.length) indexes.stockconnect = previousIndexes.stockconnect;
   next.constituents = { indexes };
   return new Set(Object.values(indexes).flatMap((index) => index.members.map((item) => item.code)));
 }

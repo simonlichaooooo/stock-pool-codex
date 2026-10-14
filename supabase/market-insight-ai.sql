@@ -2,7 +2,7 @@
 
 create table if not exists public.market_insight_ai_analyses (
   id uuid primary key default gen_random_uuid(),
-  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')),
+  index_code text not null check (index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI', 'STOCK_CONNECT')),
   stock_code text not null references public.market_securities(stock_code) on delete cascade,
   range_key text not null check (range_key in ('2Y', '1Y', 'YTD')),
   data_fingerprint text not null,

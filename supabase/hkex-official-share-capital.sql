@@ -194,7 +194,7 @@ as
 with universe as (
   select distinct index_code, stock_code
   from public.hk_market_insight_metrics_weekly
-  where index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI')
+  where index_code in ('HSTECH', 'HSLI', 'HSMI', 'HSSI', 'STOCK_CONNECT')
 ), coverage as (
   select stock_code,
          min(effective_date) as first_official_date,
