@@ -6454,9 +6454,37 @@
       catch (error) { console.warn("市场洞察本地缓存写入失败。", error); }
     }
 
+    function marketInsightSnapshotUniverse(snapshot = state.marketInsightSnapshot) {
+      const packed = snapshot?.currentUniverse;
+      if (!Array.isArray(packed?.fields) || !Array.isArray(packed?.rows)) return [];
+      return packed.rows.map((values) => Object.fromEntries(packed.fields.map((field, index) => [field, values[index] ?? null])));
+    }
+
+    async function fetchMarketInsightUniverseBatches(indexCode, fields) {
+      const indexFilter = marketInsightUniverseIndexFilter(indexCode);
+      const codes = [...new Set((state.marketInsightRows || []).map((row) => String(row.rawCode || "").padStart(5, "0")).filter(Boolean))];
+      if (!codes.length) return [];
+      const batches = [];
+      for (let start = 0; start < codes.length; start += 40) batches.push(codes.slice(start, start + 40));
+      let cursor = 0;
+      const result = [];
+      const workers = Array.from({ length:Math.min(4, batches.length) }, async () => {
+        while (cursor < batches.length) {
+          const batch = batches[cursor++];
+          const codeFilter = batch.map(encodeURIComponent).join(",");
+          const rows = await supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?index_code=${indexFilter}&stock_code=in.(${codeFilter})&select=${fields}&limit=500`);
+          result.push(...(rows || []));
+        }
+      });
+      await Promise.all(workers);
+      return result;
+    }
+
     async function fetchPersistedMarketInsightUniverse(indexCode, { force = false } = {}) {
       if (!state.session?.access_token || state.session.access_token === "local-demo") return [];
       const broadIndex = ["ALL", "WATCHLIST"].includes(indexCode);
+      const snapshotRows = marketInsightSnapshotUniverse();
+      if (!force && snapshotRows.length) return broadIndex ? snapshotRows : snapshotRows.filter((item) => item.index_code === indexCode);
       let cachedAll = state.marketInsightUniverseCache.ALL;
       if (!force && !cachedAll?.length) {
         cachedAll = readCachedMarketInsightUniverse();
@@ -6468,9 +6496,8 @@
         const prefetched = await marketInsightUniverseInFlight;
         return broadIndex ? prefetched : prefetched.filter((item) => item.index_code === indexCode);
       }
-      const indexFilter = marketInsightUniverseIndexFilter(indexCode);
       const fields = "index_code,stock_code,week_date,index_return_quality,close_price,bias_5w_pct,bias_30w_pct,bias_40w_pct,bias_50w_pct,bias_speed_5w_pct,bias_speed_30w_pct,bias_speed_40w_pct,bias_speed_50w_pct,percentile_5w_2y,percentile_30w_2y,percentile_40w_2y,percentile_50w_2y,five_week_return_pct,index_five_week_return_pct,excess_five_week_return_pct,short_ratio_pct,short_change_5w_pct,connect_holding_ratio_pct,connect_change_5w_pct";
-      const request = supabaseRequest(`/rest/v1/current_hk_market_insight_filter_universe?index_code=${indexFilter}&select=${fields}&limit=3000`);
+      const request = fetchMarketInsightUniverseBatches(indexCode, fields);
       if (broadIndex) marketInsightUniverseInFlight = request;
       try {
         const universe = await request || [];
@@ -7515,13 +7542,12 @@
       state.marketInsightError = "";
       render();
       const index = MARKET_INSIGHT_INDEXES.find((item) => item.id === indexId) || MARKET_INSIGHT_INDEXES[0];
-      const universePromise = fetchPersistedMarketInsightUniverse(index.code, { force })
-        .then((universe) => ({ universe, error:null }))
-        .catch((error) => ({ universe:null, error }));
       await loadMarketInsightSnapshot({ force });
       render();
       let rows = [...state.marketInsightRows];
-      const universeResult = await universePromise;
+      const universeResult = await fetchPersistedMarketInsightUniverse(index.code, { force })
+        .then((universe) => ({ universe, error:null }))
+        .catch((error) => ({ universe:null, error }));
       if (universeResult.universe) {
         rows = applyPersistedMarketInsightUniverse(rows, universeResult.universe, index.code);
         state.marketInsightRows = [...rows];
@@ -13525,7 +13551,6 @@
 
     async function afterProfileReady(initialStocksPromise = null) {
       loadMarketInsightWatchlist();
-      fetchPersistedMarketInsightUniverse("ALL").catch((error) => console.warn("市场洞察后台预取失败。", error));
       const stocksReady = initialStocksPromise || loadStocks();
       const auxiliaryReady = Promise.allSettled([
         loadPortfolios(),

@@ -5,6 +5,17 @@ const SUPABASE_URL = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "");
 const PAGE_SIZE = 1000;
 const DAY_MS = 86400000;
+const CURRENT_UNIVERSE_FIELDS = [
+  "index_code", "stock_code", "week_date", "index_return_quality", "close_price",
+  "bias_5w_pct", "bias_30w_pct", "bias_40w_pct", "bias_50w_pct",
+  "bias_speed_5w_pct", "bias_speed_30w_pct", "bias_speed_40w_pct", "bias_speed_50w_pct",
+  "percentile_5w_2y", "percentile_30w_2y", "percentile_40w_2y", "percentile_50w_2y",
+  "five_week_return_pct", "index_five_week_return_pct", "excess_five_week_return_pct",
+  "short_ratio_pct", "short_change_5w_pct", "connect_holding_ratio_pct", "connect_change_5w_pct"
+];
+const CURRENT_WEEKLY_FIELDS = CURRENT_UNIVERSE_FIELDS.filter((field) => ![
+  "short_ratio_pct", "short_change_5w_pct", "connect_holding_ratio_pct", "connect_change_5w_pct"
+].includes(field));
 
 if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
 
@@ -86,8 +97,9 @@ function metricTrend(dates, codes, signalAt) {
   }).filter((point) => point.denominator);
 }
 
-const [weeklyRows, shortRows, connectRows, securities] = await Promise.all([
+const [weeklyRows, currentWeeklyRows, shortRows, connectRows, securities] = await Promise.all([
   fetchRows("hk_market_insight_metrics_weekly", `select=index_code,stock_code,week_date,bias_5w_pct,bias_speed_30w_pct&week_date=gte.${isoDate(760)}&order=week_date.asc`),
+  fetchRows("hk_market_insight_metrics_weekly", `select=${CURRENT_WEEKLY_FIELDS.join(",")}&week_date=gte.${isoDate(45)}&order=week_date.asc`),
   fetchRows("hk_short_positions_weekly", `select=stock_code,report_date,short_ratio_pct&report_date=gte.${isoDate(420)}&short_ratio_pct=not.is.null&order=report_date.asc`),
   fetchRows("hk_stock_connect_holdings_daily", `select=stock_code,holding_date,total_holding_shares,holding_ratio_pct&holding_date=gte.${isoDate(420)}&total_holding_shares=not.is.null&completeness=eq.official_aggregate&order=holding_date.asc`),
   fetchRows("market_securities", "select=stock_code,name_zh,name_en&order=stock_code.asc")
@@ -118,6 +130,40 @@ snapshot.stockConnect = {
     shares:number(row.total_holding_shares),
     ratio:number(row.holding_ratio_pct)
   }]))
+};
+
+function latestAndPrevious(rows, dateField, valueField) {
+  const usable = rows.filter((row) => number(row[valueField]) !== null);
+  const latest = usable.at(-1);
+  if (!latest) return { latest:null, previous:null };
+  const cutoff = new Date(`${latest[dateField]}T00:00:00Z`).getTime() - 35 * DAY_MS;
+  const previous = [...usable].reverse().find((row) => new Date(`${row[dateField]}T00:00:00Z`).getTime() <= cutoff) || null;
+  return { latest, previous };
+}
+
+const latestWeeklyByIndexAndCode = new Map();
+currentWeeklyRows.forEach((row) => latestWeeklyByIndexAndCode.set(`${row.index_code}:${row.stock_code}`, row));
+const shortLatestByCode = new Map([...groupBy(shortRows, "stock_code")].map(([code, rows]) => [code, latestAndPrevious(rows, "report_date", "short_ratio_pct")]));
+const connectLatestByCode = new Map([...groupBy(connectRows, "stock_code")].map(([code, rows]) => [code, latestAndPrevious(rows, "holding_date", "holding_ratio_pct")]));
+const currentUniverseRows = [...latestWeeklyByIndexAndCode.values()].map((row) => {
+  const short = shortLatestByCode.get(row.stock_code) || {};
+  const connect = connectLatestByCode.get(row.stock_code) || {};
+  const shortRatio = number(short.latest?.short_ratio_pct);
+  const shortPrevious = number(short.previous?.short_ratio_pct);
+  const connectRatio = number(connect.latest?.holding_ratio_pct);
+  const connectPrevious = number(connect.previous?.holding_ratio_pct);
+  return {
+    ...row,
+    short_ratio_pct:shortRatio,
+    short_change_5w_pct:shortRatio !== null && shortPrevious !== null ? shortRatio - shortPrevious : null,
+    connect_holding_ratio_pct:connectRatio,
+    connect_change_5w_pct:connectRatio !== null && connectPrevious !== null ? connectRatio - connectPrevious : null
+  };
+});
+snapshot.currentUniverse = {
+  asOf:currentUniverseRows.map((row) => row.week_date).filter(Boolean).sort().at(-1) || null,
+  fields:CURRENT_UNIVERSE_FIELDS,
+  rows:currentUniverseRows.map((row) => CURRENT_UNIVERSE_FIELDS.map((field) => row[field] ?? null))
 };
 
 const scopeMembers = Object.fromEntries(Object.entries(snapshot.constituents.indexes).map(([id, item]) => [id, new Set((item.members || []).map((member) => String(member.code).padStart(5, "0")))]));
