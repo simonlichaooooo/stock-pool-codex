@@ -6481,10 +6481,10 @@
     }
 
     async function fetchPersistedMarketInsightUniverse(indexCode, { force = false } = {}) {
-      if (!state.session?.access_token || state.session.access_token === "local-demo") return [];
       const broadIndex = ["ALL", "WATCHLIST"].includes(indexCode);
       const snapshotRows = marketInsightSnapshotUniverse();
       if (!force && snapshotRows.length) return broadIndex ? snapshotRows : snapshotRows.filter((item) => item.index_code === indexCode);
+      if (!state.session?.access_token || state.session.access_token === "local-demo") return [];
       let cachedAll = state.marketInsightUniverseCache.ALL;
       if (!force && !cachedAll?.length) {
         cachedAll = readCachedMarketInsightUniverse();
