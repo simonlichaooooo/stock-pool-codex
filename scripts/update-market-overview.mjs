@@ -68,6 +68,19 @@ function percentile(values, current) {
   return usable.length === 1 ? 100 : (lower + .5 * Math.max(0, equal - 1)) / (usable.length - 1) * 100;
 }
 
+async function fetchCurrentWeeklyRows() {
+  const rows = [];
+  // The database index starts with index_code. Query one scope at a time so the
+  // snapshot job never scans the full multi-year metrics table for recent rows.
+  for (const indexCode of Object.values(indexCodeById)) {
+    rows.push(...await fetchRows(
+      "hk_market_insight_metrics_weekly",
+      `select=${CURRENT_WEEKLY_FIELDS.join(",")}&index_code=eq.${indexCode}&week_date=gte.${isoDate(45)}&order=week_date.asc`
+    ));
+  }
+  return rows;
+}
+
 function finishMetric(label, description, trend, currentCodes, eligibleCodes, asOf) {
   const current = trend.at(-1)?.value ?? null;
   const previous = trend.at(-2)?.value ?? null;
@@ -99,7 +112,7 @@ function metricTrend(dates, codes, signalAt) {
 
 const [weeklyRows, currentWeeklyRows, shortRows, connectRows, securities] = await Promise.all([
   fetchRows("hk_market_insight_metrics_weekly", `select=index_code,stock_code,week_date,bias_5w_pct,bias_speed_30w_pct&week_date=gte.${isoDate(760)}&order=week_date.asc`),
-  fetchRows("hk_market_insight_metrics_weekly", `select=${CURRENT_WEEKLY_FIELDS.join(",")}&week_date=gte.${isoDate(45)}&order=week_date.asc`),
+  fetchCurrentWeeklyRows(),
   fetchRows("hk_short_positions_weekly", `select=stock_code,report_date,short_ratio_pct&report_date=gte.${isoDate(420)}&short_ratio_pct=not.is.null&order=report_date.asc`),
   fetchRows("hk_stock_connect_holdings_daily", `select=stock_code,holding_date,total_holding_shares,holding_ratio_pct&holding_date=gte.${isoDate(420)}&total_holding_shares=not.is.null&completeness=eq.official_aggregate&order=holding_date.asc`),
   fetchRows("market_securities", "select=stock_code,name_zh,name_en&order=stock_code.asc")
